@@ -82,8 +82,6 @@ double		con_times[NUM_CON_TIMES];	// realtime time the line was generated
 
 int			con_vislines;
 
-qboolean	con_debuglog = false;
-
 qboolean	con_initialized;
 
 
@@ -716,6 +714,10 @@ static int	log_fd = -1;			// log file descriptor
 /*
 ================
 Con_DebugLog
+
+Writes msg to log if -condebug was specified on the command line
+
+Note: msg is expected to be in UTF-8, not Quake charset
 ================
 */
 void Con_DebugLog(const char *msg)
@@ -747,10 +749,6 @@ void Con_Printf (const char *fmt, ...)
 
 // also echo to debugging console
 	Sys_Printf ("%s", msg);
-
-// log all messages to file
-	if (con_debuglog)
-		Con_DebugLog(msg);
 
 	if (!con_initialized)
 		return;
@@ -1800,7 +1798,6 @@ void LOG_Init (quakeparms_t *parms)
 		return;
 	}
 
-	con_debuglog = true;
 	Con_DebugLog (va("LOG started on: %s \n", session));
 
 }

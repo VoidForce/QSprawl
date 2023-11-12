@@ -1706,6 +1706,29 @@ void M_Menu_Maps_f (void)
 	m_state = m_maps;
 	m_entersound = true;
 	M_Maps_Init ();
+
+	// Handle optional map argument
+	if (Cmd_Argc() >= 2)
+	{
+		char		mapname[MAX_QPATH];
+		size_t		i;
+
+		COM_StripExtension (Cmd_Argv (1), mapname, sizeof (mapname));
+
+		for (i = 0; i < VEC_SIZE (mapsmenu.items); i++)
+			if (q_strcasecmp (mapname, mapsmenu.items[i].name) == 0)
+				break;
+
+		if (i == VEC_SIZE (mapsmenu.items))
+		{
+			Con_SafePrintf ("Couldn't find map \"%s\".\n", mapname);
+			return;
+		}
+
+		mapsmenu.list.cursor = i;
+		M_SetSkillMenuMap (mapname);
+		M_Menu_Skill_f ();
+	}
 }
 
 void M_Maps_Draw (void)
