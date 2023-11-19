@@ -1334,6 +1334,7 @@ void Host_Init (void)
 		Sys_Error ("Only %4.1f megs of memory available, can't execute game", host_parms->memsize / (float)0x100000);
 
 	Memory_Init (host_parms->membase, host_parms->memsize);
+	AsyncQueue_Init (&async_queue, 1024);
 	Cbuf_Init ();
 	Cmd_Init ();
 	LOG_Init (host_parms);
@@ -1351,7 +1352,6 @@ void Host_Init (void)
 	Mod_Init ();
 	NET_Init ();
 	SV_Init ();
-	AsyncQueue_Init (&async_queue, 1024);
 
 	Con_Printf ("Exe: " __TIME__ " " __DATE__ " (%s %d-bit)\n", SDL_GetPlatform (), (int)sizeof(void*)*8);
 	Con_Printf ("%4.1f megabyte heap\n", host_parms->memsize/ (1024*1024.0));

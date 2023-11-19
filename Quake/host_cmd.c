@@ -1306,6 +1306,15 @@ void Modlist_ShutDown (void)
 	}
 }
 
+qboolean Modlist_IsInstalled (const char *game)
+{
+	filelist_item_t *item;
+	for (item = modlist; item; item = item->next)
+		if (q_strcasecmp (item->name, game) == 0 && Modlist_GetStatus (item) == MODSTATUS_INSTALLED)
+			return true;
+	return false;
+}
+
 //==============================================================================
 //ericw -- demo list management
 //==============================================================================
@@ -2463,11 +2472,12 @@ static void Host_Loadgame_f (void)
 	int	entnum;
 	int	version;
 	float	spawn_parms[NUM_SPAWN_PARMS];
+	qboolean kexonly = false;
 
 	if (cmd_source != src_command)
 		return;
 
-	if (Cmd_Argc() != 2)
+	if (Cmd_Argc() < 2)
 	{
 		Con_Printf ("load <savename> : load a game\n");
 		return;
@@ -2478,6 +2488,10 @@ static void Host_Loadgame_f (void)
 		Con_Printf ("Relative pathnames are not allowed.\n");
 		return;
 	}
+
+	// When loading a file that doesn't belong to a mod dir we only accept KEX saves
+	if (Cmd_Argc () >= 3 && q_strcasecmp (Cmd_Argv (2), "kex") == 0)
+		kexonly = true;
 
 	if (nomonsters.value)
 	{
@@ -2491,6 +2505,21 @@ static void Host_Loadgame_f (void)
 	COM_AddExtension (relname, ".sav", sizeof(relname));
 
 	q_snprintf (name, sizeof(name), "%s/%s", com_gamedir, relname);
+
+	// Look for savefile in basedirs instead of gamedir
+	if (kexonly || !Sys_FileExists (name))
+	{
+		for (i = com_numbasedirs - 1; i >= 0; i--)
+		{
+			q_snprintf (name, sizeof(name), "%s/%s", com_basedirs[i], relname);
+			if (Sys_FileExists (name))
+			{
+				kexonly = true;
+				break;
+			}
+		}
+	}
+
 	if (!Sys_FileExists (name))
 	{
 		Con_Printf ("ERROR: %s not found.\n", relname);
@@ -2519,14 +2548,33 @@ static void Host_Loadgame_f (void)
 
 	data = start;
 	data = COM_ParseIntNewline (data, &version);
-	if (version != SAVEGAME_VERSION)
+	if (version == SAVEGAME_VERSION_KEX)
 	{
+		extern char com_gamenames[];
+		const char *game = *com_gamenames ? com_gamenames : GAMENAME;
+		data = COM_ParseStringNewline (data);
+		if (strcmp (game, com_token) != 0)
+		{
+			if (!Modlist_IsInstalled (com_token))
+			{
+				Con_Printf ("ERROR: mod \"%s\" is not installed.\n");
+				return;
+			}
+			COM_SwitchGame (com_token);
+			Cbuf_Execute ();
+			if (key_dest == key_menu)
+				M_ToggleMenu_f ();
+		}
+	}
+	else if (version != SAVEGAME_VERSION || kexonly)
+	{
+		int expected = kexonly ? SAVEGAME_VERSION_KEX : SAVEGAME_VERSION;
 		free (start);
 		start = NULL;
 		if (sv.autoloading)
-			Con_Printf ("ERROR: Savegame is version %i, not %i\n", version, SAVEGAME_VERSION);
+			Con_Printf ("ERROR: Savegame is version %i, not %i\n", version, expected);
 		else
-			Host_Error ("Savegame is version %i, not %i", version, SAVEGAME_VERSION);
+			Host_Error ("Savegame is version %i, not %i", version, expected);
 		Host_InvalidateSave (relname);
 		SCR_EndLoadingPlaque ();
 		return;
@@ -2604,6 +2652,10 @@ static void Host_Loadgame_f (void)
 
 		entnum++;
 	}
+
+	// Free edicts allocated during map loading but no longer used after restoring saved game state
+	for (i = entnum; i < qcvm->num_edicts; i++)
+		ED_Free (EDICT_NUM (i));
 
 	qcvm->num_edicts = entnum;
 	qcvm->time = time;

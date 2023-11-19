@@ -1187,7 +1187,7 @@ const char *ED_ParseEdict (const char *data, edict_t *ent)
 	}
 
 	if (!init)
-		ED_AddToFreeList (ent);
+		ED_Free (ent);
 
 	return data;
 }

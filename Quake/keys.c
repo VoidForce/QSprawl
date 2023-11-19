@@ -1138,10 +1138,10 @@ void Key_Event (int key, qboolean down)
 		kb = keybindings[key];
 		if (kb && kb[0] == '+')
 		{
-			sprintf (cmd, "-%s %i\n", kb+1, key);
+			q_snprintf (cmd, sizeof (cmd), "-%s %i\n", kb+1, key);
 			Cbuf_AddText (cmd);
 		}
-		if (key_dest == key_console && key == K_MOUSE1 && !down)
+		if (key_dest == key_console && key == K_MOUSE1)
 			Con_Click ();
 		return;
 	}
@@ -1163,7 +1163,7 @@ void Key_Event (int key, qboolean down)
 		{
 			if (kb[0] == '+')
 			{	// button commands add keynum as a parm
-				sprintf (cmd, "%s %i\n", kb, key);
+				q_snprintf (cmd, sizeof (cmd), "%s %i\n", kb, key);
 				Cbuf_AddText (cmd);
 			}
 			else

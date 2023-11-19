@@ -880,6 +880,18 @@ void CL_Viewpos_f (void)
 }
 
 /*
+===============
+CL_Viewpos_Completion_f -- tab completion for the viewpos command
+===============
+*/
+static void CL_Viewpos_Completion_f (const char *partial)
+{
+	if (Cmd_Argc () != 2)
+		return;
+	Con_AddToTabList ("copy", partial, NULL);
+}
+
+/*
 =============
 CL_SetStat_f
 =============
@@ -940,6 +952,8 @@ CL_Init
 */
 void CL_Init (void)
 {
+	cmd_function_t *cmd;
+
 	SZ_Alloc (&cls.message, 1024);
 
 	CL_InitInput ();
@@ -987,7 +1001,9 @@ void CL_Init (void)
 	Cmd_AddCommand ("timedemo", CL_TimeDemo_f);
 
 	Cmd_AddCommand ("tracepos", CL_Tracepos_f); //johnfitz
-	Cmd_AddCommand ("viewpos", CL_Viewpos_f); //johnfitz
+	cmd = Cmd_AddCommand ("viewpos", CL_Viewpos_f); //johnfitz
+	if (cmd)
+		cmd->completion = CL_Viewpos_Completion_f;
 
 	Cmd_AddCommand_ServerCommand ("st", CL_SetStat_f);
 	Cmd_AddCommand_ServerCommand ("sts", CL_SetStatString_f);

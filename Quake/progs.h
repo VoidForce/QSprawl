@@ -279,7 +279,8 @@ typedef struct savedata_s
 	int				buffersize;
 } savedata_t;
 
-#define	SAVEGAME_VERSION	5
+#define	SAVEGAME_VERSION		5
+#define	SAVEGAME_VERSION_KEX	6
 
 extern THREAD_LOCAL globalvars_t	*pr_global_struct;
 extern THREAD_LOCAL qcvm_t			*qcvm;

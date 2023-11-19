@@ -2375,9 +2375,9 @@ void COM_AddGameDirectory (const char *dir)
 	}
 }
 
-void COM_ResetGameDirectories(char *newgamedirs)
+void COM_ResetGameDirectories(const char *newgamedirs)
 {
-	char *newpath, *path;
+	const char *newpath, *path;
 	searchpath_t *search;
 	//Kill the extra game if it is loaded
 	while (com_searchpaths != com_base_searchpaths)
@@ -2424,11 +2424,73 @@ void COM_ResetGameDirectories(char *newgamedirs)
 //==============================================================================
 //johnfitz -- dynamic gamedir stuff -- modified by QuakeSpasm team.
 //==============================================================================
+
+/*
+=================
+COM_SwitchGame
+=================
+*/
+void COM_SwitchGame (const char *paths)
+{
+	extern cvar_t max_edicts;
+	if (!q_strcasecmp(paths, COM_GetGameNames(true)))
+	{
+		Con_Printf("\"game\" is already \"%s\"\n", COM_GetGameNames(true));
+		return;
+	}
+
+	Host_WaitForSaveThread ();
+
+	com_modified = true;
+
+	//Kill the server
+	CL_Disconnect ();
+	Host_ShutdownServer(true);
+
+	//Write config file
+	Host_WriteConfiguration ();
+
+	// stop parsing map files before changing file system search paths
+	ExtraMaps_Clear ();
+
+	COM_ResetGameDirectories(paths);
+
+	//clear out and reload appropriate data
+	Cache_Flush ();
+	Mod_ResetAll();
+	Sky_ClearAll();
+	if (!isDedicated)
+	{
+		TexMgr_NewGame ();
+		Draw_NewGame ();
+		R_NewGame ();
+	}
+	ExtraMaps_Init ();
+	Host_Resetdemos ();
+	DemoList_Rebuild ();
+	SaveList_Rebuild ();
+	SkyList_Rebuild ();
+	M_CheckMods ();
+	Cvar_SetQuick (&max_edicts, max_edicts.default_string);
+
+	Con_Printf("\n%s\n\"game\" changed to \"%s\"\n", Con_Quakebar (40), COM_GetGameNames(true));
+
+	VID_Lock ();
+	Cbuf_AddText ("unaliasall\n");
+	Cbuf_AddText ("exec quake.rc\n");
+	Cbuf_AddText ("vid_unlock\n");
+}
+
+
+/*
+=================
+COM_Game_f
+=================
+*/
 static void COM_Game_f (void)
 {
 	if (Cmd_Argc() > 1)
 	{
-		extern cvar_t max_edicts;
 		int i, pri;
 		char paths[1024];
 
@@ -2471,52 +2533,8 @@ static void COM_Game_f (void)
 			}
 		}
 
-		if (!q_strcasecmp(paths, COM_GetGameNames(true)))
-		{
-			Con_Printf("\"game\" is already \"%s\"\n", COM_GetGameNames(true));
-			return;
-		}
+		COM_SwitchGame (paths);
 
-		Host_WaitForSaveThread ();
-
-		com_modified = true;
-
-		//Kill the server
-		CL_Disconnect ();
-		Host_ShutdownServer(true);
-
-		//Write config file
-		Host_WriteConfiguration ();
-
-		// stop parsing map files before changing file system search paths
-		ExtraMaps_Clear ();
-
-		COM_ResetGameDirectories(paths);
-
-		//clear out and reload appropriate data
-		Cache_Flush ();
-		Mod_ResetAll();
-		Sky_ClearAll();
-		if (!isDedicated)
-		{
-			TexMgr_NewGame ();
-			Draw_NewGame ();
-			R_NewGame ();
-		}
-		ExtraMaps_Init ();
-		Host_Resetdemos ();
-		DemoList_Rebuild ();
-		SaveList_Rebuild ();
-		SkyList_Rebuild ();
-		M_CheckMods ();
-		Cvar_SetQuick (&max_edicts, max_edicts.default_string);
-
-		Con_Printf("\n%s\n\"game\" changed to \"%s\"\n", Con_Quakebar (40), COM_GetGameNames(true));
-
-		VID_Lock ();
-		Cbuf_AddText ("unaliasall\n");
-		Cbuf_AddText ("exec quake.rc\n");
-		Cbuf_AddText ("vid_unlock\n");
 	}
 	else //Diplay the current gamedir
 		Con_Printf("\"game\" is \"%s\"\n", COM_GetGameNames(true));
@@ -2799,12 +2817,27 @@ static qboolean COM_PatchCmdLine (const char *fullpath)
 		return false;
 	}
 
+	UTF8_ToQuake (printpath, sizeof (printpath), relpath);
+
 	// Apply game dir
-	Q_strncpy (game, relpath, (int)(sep - relpath));
-	COM_AddArg ("-game");
-	COM_AddArg (game);
 	if (*sep)
+	{
+		Q_strncpy (game, relpath, (int)(sep - relpath));
+		COM_AddArg ("-game");
+		COM_AddArg (game);
 		relpath = sep + 1;
+	}
+	else if (type == FS_ENT_DIRECTORY)
+	{
+		COM_AddArg ("-game");
+		COM_AddArg (relpath);
+		return true;
+	}
+	else
+	{
+		game[0] = '\0';
+	}
+
 	q_strlcpy (qpath, relpath, sizeof (qpath));
 	COM_NormalizePath (qpath);
 
@@ -2831,8 +2864,16 @@ static qboolean COM_PatchCmdLine (const char *fullpath)
 			// Map file
 			if (q_strcasecmp (ext, "bsp") == 0)
 			{
-				if (q_strncasecmp (qpath, "maps/", 5) != 0)
+				if (!game[0])
+				{
+					Con_SafePrintf ("Map \"%s\" not in a mod dir, ignoring.\n", printpath);
 					return false;
+				}
+				if (q_strncasecmp (qpath, "maps/", 5) != 0)
+				{
+					Con_SafePrintf ("Map \"%s\" not in the \"maps\" dir, ignoring.\n", printpath);
+					return false;
+				}
 				memmove (qpath, qpath + 5, strlen (qpath + 5) + 1);
 				Cbuf_AddText (va ("menu_maps \"%s\"\n", qpath));
 				return true;
@@ -2841,13 +2882,19 @@ static qboolean COM_PatchCmdLine (const char *fullpath)
 			// Save file
 			if (q_strcasecmp (ext, "sav") == 0)
 			{
-				Cbuf_AddText (va ("load \"%s\"\n", qpath));
+				const char *kex = game[0] ? "" : "kex";
+				Cbuf_AddText (va ("load \"%s\" %s\n", qpath, kex));
 				return true;
 			}
 
 			// Demo file
 			if (q_strcasecmp (ext, "dem") == 0)
 			{
+				if (!game[0])
+				{
+					Con_SafePrintf ("Demo \"%s\" not in a mod dir, ignoring.\n", printpath);
+					return false;
+				}
 				Cbuf_AddText (va ("playdemo \"%s\"\n", qpath));
 				return true;
 			}
@@ -2859,8 +2906,10 @@ static qboolean COM_PatchCmdLine (const char *fullpath)
 		break;
 	}
 
-	UTF8_ToQuake (printpath, sizeof (printpath), relpath);
-	Con_SafePrintf ("Unsupported file type \"%s\"\n", printpath);
+	if (!game[0])
+		Con_SafePrintf ("File \"%s\" not in a mod dir, ignoring.\n", printpath);
+	else
+		Con_SafePrintf ("Unsupported file type \"%s\", ignoring.\n", printpath);
 
 	return false;
 }
