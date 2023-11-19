@@ -169,6 +169,12 @@ void		end_sys_globals;		// flag for structure dumping
 .float		button0;		// fire
 .float		button1;		// use
 .float		button2;		// jump
+.float		b_attack2;
+.float		b_slide;
+.float		b_reload;
+.float		b_melee;
+.float		b_kick;
+.float		b_adrenaline;
 
 .float		impulse;		// weapon changes
 

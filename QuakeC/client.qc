@@ -1021,6 +1021,37 @@ void() PlayerPreThink =
 	{
 		PlayerJump ();
 	}
+	
+	/*
+	if (self.b_attack2)
+	{
+		dprint("Attack2\n");
+	}
+	if (self.b_slide)
+	{
+		dprint("Slide\n");
+	}
+	if (self.b_melee)
+	{
+		dprint("Melee\n");
+	}
+	if (self.b_kick)
+	{
+		dprint("Kick\n");
+	}
+	if (self.b_adrenaline)
+	{
+		dprint("Adrenaline\n");
+	}
+	if (self.b_reload)
+	{
+		dprint("Reload\n");
+	}
+	if (self.button1)
+	{
+		dprint("Use\n");
+	}
+	*/
 
 	else
 		self.flags = self.flags | FL_JUMPRELEASED;

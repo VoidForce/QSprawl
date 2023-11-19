@@ -463,9 +463,17 @@ void SV_ReadClientMove (usercmd_t *move)
 	move->upmove = MSG_ReadShort ();
 
 // read buttons
-	bits = MSG_ReadByte ();
-	host_client->edict->v.button0 = bits & 1;
-	host_client->edict->v.button2 = (bits & 2)>>1;
+	bits = MSG_ReadShort ();
+	host_client->edict->v.button0 = bits & 1; //attack
+	host_client->edict->v.button2 = (bits & 2) >> 1; //jump
+// qsprawl new buttons
+	host_client->edict->v.button1 = (bits & 4) >> 2; // use
+	host_client->edict->v.b_attack2 = (bits & 8) >> 3;
+	host_client->edict->v.b_slide = (bits & 16) >> 4;
+	host_client->edict->v.b_reload = (bits & 32) >> 5;
+	host_client->edict->v.b_melee = (bits & 64) >> 6;
+	host_client->edict->v.b_kick = (bits & 128) >> 7;
+	host_client->edict->v.b_adrenaline = (bits & 256) >> 8;
 
 	i = MSG_ReadByte ();
 	if (i)

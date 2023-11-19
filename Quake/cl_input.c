@@ -57,6 +57,8 @@ kbutton_t	in_left, in_right, in_forward, in_back;
 kbutton_t	in_lookup, in_lookdown, in_moveleft, in_moveright;
 kbutton_t	in_strafe, in_speed, in_use, in_jump, in_attack;
 kbutton_t	in_up, in_down;
+//qsprawl
+kbutton_t	in_attack2, in_slide, in_reload, in_melee, in_kick, in_adrenaline;
 
 int			in_impulse;
 
@@ -176,6 +178,20 @@ void IN_JumpDown (void) {KeyDown(&in_jump);}
 void IN_JumpUp (void) {KeyUp(&in_jump);}
 
 void IN_Impulse (void) {in_impulse=Q_atoi(Cmd_Argv(1));}
+//qsprawl
+void IN_Attack2Down(void) { KeyDown(&in_attack2); }
+void IN_Attack2Up(void) { KeyUp(&in_attack2); }
+void IN_SlideDown(void) { KeyDown(&in_slide); }
+void IN_SlideUp(void) { KeyUp(&in_slide); }
+void IN_ReloadDown(void) { KeyDown(&in_reload); }
+void IN_ReloadUp(void) { KeyUp(&in_reload); }
+void IN_MeleeDown(void) { KeyDown(&in_melee); }
+void IN_MeleeUp(void) { KeyUp(&in_melee); }
+void IN_KickDown(void) { KeyDown(&in_kick); }
+void IN_KickUp(void) { KeyUp(&in_kick); }
+void IN_AdrenalineDown(void) { KeyDown(&in_adrenaline); }
+void IN_AdrenalineUp(void) { KeyUp(&in_adrenaline); }
+
 
 /*
 ===============
@@ -233,11 +249,11 @@ float CL_KeyState (kbutton_t *key)
 
 
 //==========================================================================
-
-cvar_t	cl_upspeed = {"cl_upspeed","200",CVAR_NONE};
-cvar_t	cl_forwardspeed = {"cl_forwardspeed","200", CVAR_ARCHIVE};
-cvar_t	cl_backspeed = {"cl_backspeed","200", CVAR_ARCHIVE};
-cvar_t	cl_sidespeed = {"cl_sidespeed","350",CVAR_NONE};
+//qsprawl changed default values to 1000
+cvar_t	cl_upspeed = {"cl_upspeed","1000",CVAR_NONE};
+cvar_t	cl_forwardspeed = {"cl_forwardspeed","1000", CVAR_ARCHIVE};
+cvar_t	cl_backspeed = {"cl_backspeed","1000", CVAR_ARCHIVE};
+cvar_t	cl_sidespeed = {"cl_sidespeed","1000",CVAR_NONE};
 
 cvar_t	cl_movespeedkey = {"cl_movespeedkey","2.0",CVAR_NONE};
 
@@ -376,7 +392,7 @@ void CL_SendMove (const usercmd_t *cmd)
 	sizebuf_t	buf;
 	byte	data[128];
 
-	buf.maxsize = 128;
+	buf.maxsize = 65536;
 	buf.cursize = 0;
 	buf.data = data;
 
@@ -415,8 +431,36 @@ void CL_SendMove (const usercmd_t *cmd)
 		if (in_jump.state & 3)
 			bits |= 2;
 		in_jump.state &= ~2;
+	//qsprawl new keys
+		if (in_use.state & 3)
+			bits |= 4;
+		in_use.state &= ~2;
 
-		MSG_WriteByte (&buf, bits);
+		if (in_attack2.state & 3)
+			bits |= 8;
+		in_attack2.state &= ~2;
+
+		if (in_slide.state & 3)
+			bits |= 16;
+		in_slide.state &= ~2;
+
+		if (in_reload.state & 3)
+			bits |= 32;
+		in_reload.state &= ~2;
+
+		if (in_melee.state & 3)
+			bits |= 64;
+		in_melee.state &= ~2;
+
+		if (in_kick.state & 3)
+			bits |= 128;
+		in_kick.state &= ~2;
+
+		if (in_adrenaline.state & 3)
+			bits |= 256;
+		in_adrenaline.state &= ~2;
+
+		MSG_WriteShort (&buf, bits);
 
 		MSG_WriteByte (&buf, in_impulse);
 		in_impulse = 0;
@@ -484,6 +528,18 @@ void CL_InitInput (void)
 	Cmd_AddCommand ("-klook", IN_KLookUp);
 	Cmd_AddCommand ("+mlook", IN_MLookDown);
 	Cmd_AddCommand ("-mlook", IN_MLookUp);
-
+	//voidforce
+	Cmd_AddCommand("+attack2", IN_Attack2Down);
+	Cmd_AddCommand("-attack2", IN_Attack2Up);
+	Cmd_AddCommand("+slide", IN_SlideDown);
+	Cmd_AddCommand("-slide", IN_SlideUp);
+	Cmd_AddCommand("+reload", IN_ReloadDown);
+	Cmd_AddCommand("-reload", IN_ReloadUp);
+	Cmd_AddCommand("+melee", IN_MeleeDown);
+	Cmd_AddCommand("-melee", IN_MeleeUp);
+	Cmd_AddCommand("+kick", IN_KickDown);
+	Cmd_AddCommand("-kick", IN_KickUp);
+	Cmd_AddCommand("+adrenaline", IN_AdrenalineDown);
+	Cmd_AddCommand("-adrenaline", IN_AdrenalineUp);
 }
 

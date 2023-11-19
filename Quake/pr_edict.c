@@ -1722,7 +1722,11 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 	if (qcvm->progs->crc != PROGHEADER_CRC)
 	{
 		if (fatal)
-			Host_Error ("%s system vars have been modified, progdefs.h is out of date", filename);
+		{
+			//qsprawl, crc check information
+			Con_Printf("%d \n", qcvm->progs->crc);
+			Host_Error("%s system vars have been modified, progdefs.h is out of date", filename);
+		}
 		else
 		{
 			switch(qcvm->progs->crc)
