@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "miniz.h"
 #include "unicode_translit.h"
 
-static char	*largv[MAX_NUM_ARGVS + 1];
+static const char	*largv[MAX_NUM_ARGVS + 1];
 static char	argvdummy[] = " ";
 
 int		safemode;
@@ -55,8 +55,8 @@ static void COM_Path_f (void);
 #define PAK0_CRC_V091		28804	/* id1/pak0.pak - v0.91/0.92, not supported */
 
 THREAD_LOCAL char	com_token[1024];
-int		com_argc;
-char	**com_argv;
+int			com_argc;
+const char	**com_argv;
 
 #define CMDLINE_LENGTH	256		/* johnfitz -- mirrored in cmd.c */
 char	com_cmdline[CMDLINE_LENGTH];
@@ -1045,6 +1045,37 @@ void SZ_Print (sizebuf_t *buf, const char *data)
 
 /*
 ============
+COM_FirstPathSep
+
+Returns a pointer to the first path separator, if any, or the end of the string
+============
+*/
+const char *COM_FirstPathSep (const char *path)
+{
+	while (*path && !Sys_IsPathSep (*path))
+		path++;
+	return path;
+}
+
+/*
+============
+COM_NormalizePath
+
+Replaces all path separators with forward slashes
+============
+*/
+void COM_NormalizePath (char *path)
+{
+	while (*path)
+	{
+		if (Sys_IsPathSep (*path))
+			*path = '/';
+		path++;
+	}
+}
+
+/*
+============
 COM_SkipPath
 ============
 */
@@ -1498,6 +1529,22 @@ void COM_InitArgv (int argc, char **argv)
 		hipnotic = true;
 		standard_quake = false;
 	}
+}
+
+/*
+================
+COM_AddArg
+
+Returns the index of the new argument or -1 on overflow
+================
+*/
+int COM_AddArg (const char *arg)
+{
+	if (com_argc >= MAX_NUM_ARGVS)
+		return -1;
+	com_argv[com_argc] = arg;
+	com_argv[com_argc + 1] = argvdummy;
+	return com_argc++;
 }
 
 /*
@@ -2651,6 +2698,175 @@ static void COM_MigrateNightdiveUserFiles (void)
 
 /*
 =================
+COM_SetBaseDirRec
+
+Looks for a valid basedir in all the ancestors of the supplied path
+Returns the path relative to that basedir if successful, NULL otherwise
+=================
+*/
+static const char *COM_SetBaseDirRec (const char *start)
+{
+	char	buf[MAX_OSPATH];
+	size_t	i, len;
+
+	q_strlcpy (buf, start, sizeof (buf));
+	len = strlen (start);
+
+	for (i = len - 1; i > 1; i--)
+	{
+		if (Sys_IsPathSep (buf[i]))
+		{
+			buf[i] = '\0';
+			if (COM_SetBaseDir (buf))
+				return start + i + 1;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+=================
+COM_MakeRelative
+=================
+*/
+static const char *COM_MakeRelative (const char *basepath, const char *fullpath)
+{
+	for (; *basepath && *fullpath; ++basepath, ++fullpath)
+	{
+		if (Sys_IsPathSep (*basepath) != Sys_IsPathSep (*fullpath))
+			return NULL;
+		if (*basepath != *fullpath)
+			return NULL;
+	}
+
+	while (Sys_IsPathSep (*fullpath))
+		++fullpath;
+
+	return fullpath;
+}
+
+/*
+=================
+COM_PatchCmdLine
+
+Tries to initialize basedir from a single command-line argument
+(either a mod dir or a map/save/demo file)
+
+Returns true if successful, false otherwise
+=================
+*/
+static qboolean COM_PatchCmdLine (const char *fullpath)
+{
+	static char	game[MAX_QPATH];
+	char		qpath[MAX_QPATH];
+	char		printpath[MAX_OSPATH];
+	const char	*relpath;
+	const char	*sep;
+	int			type;
+	int			i;
+
+	// The path (file or directory) must exist
+	type = Sys_FileType (fullpath);
+	if (type == FS_ENT_NONE)
+	{
+		UTF8_ToQuake (printpath, sizeof (printpath), fullpath);
+		Con_SafePrintf ("\"%s\" does not exist\n", printpath);
+		return false;
+	}
+
+	// Look for the corresponding basedir
+	relpath = NULL;
+	for (i = 0; i < com_numbasedirs; i++)
+	{
+		relpath = COM_MakeRelative (com_basedirs[i], fullpath);
+		if (relpath)
+			break;
+	}
+	if (!relpath)
+	{
+		UTF8_ToQuake (printpath, sizeof (printpath), fullpath);
+		Con_SafePrintf ("\"%s\" does not belong to an existing Quake installation\n", printpath);
+		return false;
+	}
+
+	// Game dir is the first component of the relative path
+	sep = COM_FirstPathSep (relpath);
+	if ((uintptr_t)(sep - relpath) >= sizeof (game))
+	{
+		UTF8_ToQuake (printpath, sizeof (printpath), relpath);
+		Con_SafePrintf ("\"%s\" is too long\n", printpath);
+		return false;
+	}
+
+	// Apply game dir
+	Q_strncpy (game, relpath, (int)(sep - relpath));
+	COM_AddArg ("-game");
+	COM_AddArg (game);
+	if (*sep)
+		relpath = sep + 1;
+	q_strlcpy (qpath, relpath, sizeof (qpath));
+	COM_NormalizePath (qpath);
+
+	// Check argument type
+	switch (type)
+	{
+	case FS_ENT_DIRECTORY:
+		if (qpath[0])
+		{
+			if (q_strcasecmp (qpath, "maps") == 0)
+			{
+				Cbuf_AddText ("menu_maps\n");
+				return true;
+			}
+			UTF8_ToQuake (printpath, sizeof (printpath), qpath);
+			Con_SafePrintf ("\x02subdir \"%s\" ignored\n", printpath);
+		}
+		return true;
+
+	case FS_ENT_FILE:
+		{
+			const char *ext = COM_FileGetExtension (qpath);
+
+			// Map file
+			if (q_strcasecmp (ext, "bsp") == 0)
+			{
+				if (q_strncasecmp (qpath, "maps/", 5) != 0)
+					return false;
+				memmove (qpath, qpath + 5, strlen (qpath + 5) + 1);
+				Cbuf_AddText (va ("menu_maps \"%s\"\n", qpath));
+				return true;
+			}
+
+			// Save file
+			if (q_strcasecmp (ext, "sav") == 0)
+			{
+				Cbuf_AddText (va ("load \"%s\"\n", qpath));
+				return true;
+			}
+
+			// Demo file
+			if (q_strcasecmp (ext, "dem") == 0)
+			{
+				Cbuf_AddText (va ("playdemo \"%s\"\n", qpath));
+				return true;
+			}
+
+			break;
+		}
+
+	default:
+		break;
+	}
+
+	UTF8_ToQuake (printpath, sizeof (printpath), relpath);
+	Con_SafePrintf ("Unsupported file type \"%s\"\n", printpath);
+
+	return false;
+}
+
+/*
+=================
 COM_InitBaseDir
 =================
 */
@@ -2834,23 +3050,74 @@ storesetup:
 
 /*
 =================
+COM_ChooseStartArgFlavor
+
+Checks if the supplied path belongs to the user dir
+of a specific Quake flavor (original/remastered)
+and adds the corresponding command-line argument if needed
+=================
+*/
+static void COM_ChooseStartArgFlavor (const char *startarg)
+{
+	steamgame_t steamquake;
+	char steampath[MAX_OSPATH];
+	char userdir[MAX_OSPATH];
+
+	if (Sys_GetAltUserPrefDir (true, userdir, sizeof (userdir)) && COM_MakeRelative (userdir, startarg))
+	{
+		COM_AddArg ("-prefremaster");
+		return;
+	}
+
+	if (Sys_GetAltUserPrefDir (false, userdir, sizeof (userdir)) && COM_MakeRelative (userdir, startarg))
+	{
+		COM_AddArg ("-preforiginal");
+		return;
+	}
+
+	if (Steam_FindGame (&steamquake, QUAKE_STEAM_APPID) &&
+		Steam_ResolvePath (steampath, sizeof (steampath), &steamquake) &&
+		Sys_GetSteamQuakeUserDir (userdir, sizeof (userdir), steamquake.library) &&
+		COM_MakeRelative (userdir, startarg))
+	{
+		COM_AddArg ("-prefremaster");
+		return;
+	}
+
+	if (Sys_GetGOGQuakeEnhancedUserDir (userdir, sizeof (userdir)) && COM_MakeRelative (userdir, startarg))
+	{
+		COM_AddArg ("-prefremaster");
+		return;
+	}
+}
+
+/*
+=================
 COM_InitFilesystem
 =================
 */
 void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 {
 	int i;
-	const char *p;
+	const char *p, *startarg;
 
 	Cvar_RegisterVariable (&registered);
 	Cvar_RegisterVariable (&cmdline);
 	Cmd_AddCommand ("path", COM_Path_f);
 	Cmd_AddCommand ("game", COM_Game_f); //johnfitz
 
-	COM_InitBaseDir ();
+	startarg = (com_argc == 2 && Sys_FileType (com_argv[1]) != FS_ENT_NONE) ? com_argv[1] : NULL;
+	if (startarg)
+		COM_ChooseStartArgFlavor (startarg);
+
+	if (!startarg || !COM_SetBaseDirRec (startarg))
+		COM_InitBaseDir ();
 
 	if (host_parms->userdir != host_parms->basedir)
 		COM_AddBaseDir (host_parms->userdir);
+
+	if (startarg)
+		COM_PatchCmdLine (startarg);
 
 	i = COM_CheckParm ("-basegame");
 	if (i)

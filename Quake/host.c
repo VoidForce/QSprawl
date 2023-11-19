@@ -830,6 +830,7 @@ static void Host_CheckAutosave (void)
 
 	if (cls.signon == SIGNONS)
 	{
+		// Track new secrets
 		if (pr_global_struct->found_secrets != sv.autosave.prev_secrets)
 		{
 			sv.autosave.prev_secrets = pr_global_struct->found_secrets;
@@ -839,6 +840,7 @@ static void Host_CheckAutosave (void)
 			sv.autosave.secret_boost = q_max (0.f, sv.autosave.secret_boost - host_frametime / 1.5f);
 	}
 
+	// Track health changes
 	if (!sv.autosave.prev_health)
 		sv.autosave.prev_health = sv_player->v.health;
 	health_change = sv_player->v.health - sv.autosave.prev_health;
@@ -847,34 +849,56 @@ static void Host_CheckAutosave (void)
 			sv.autosave.hurt_time = qcvm->time;
 	sv.autosave.prev_health = sv_player->v.health;
 
+	// Track attacking
 	if (sv_player->v.button0)
 		sv.autosave.shoot_time = qcvm->time;
 
+	// Time spent with cheats active doesn't count
 	if (sv_player->v.movetype == MOVETYPE_NOCLIP || (int)sv_player->v.flags & (FL_GODMODE|FL_NOTARGET))
 	{
 		sv.autosave.cheat += host_frametime;
 		return;
 	}
 
+	// Don't save if the player has been hurt recently
 	if (qcvm->time - sv.autosave.hurt_time < 3.f)
 		return;
+
+	// Don't save if the player has fired recently
 	if (qcvm->time - sv.autosave.shoot_time < 3.f)
 		return;
 
+	// Only save when the player slows down a bit
 	speed = VectorLength (sv_player->v.velocity);
 	if (speed > 100.f)
 		return;
 
+	// Copper's func_void holds the player at the bottom for a bit before inflicting damage,
+	// so we can't assume it's safe to save just because we're no longer falling
+	if ((int)sv_player->v.movetype == MOVETYPE_NONE)
+		return;
+
+	// Don't save too often
 	elapsed = qcvm->time - sv.autosave.time - sv.autosave.cheat;
 	if (elapsed < 3.f)
 		return;
 
+	// Compute a normalized autosave score
+
+	// Base value is the fraction of the autosave interval already passed
 	score = elapsed / sv_autosave_interval.value;
+	// Scale down the score if health + armor is below 100 (save less often with lower health)
 	score *= q_min (100.f, (sv_player->v.health + sv_player->v.armortype * sv_player->v.armorvalue)) / 100.f;
+	// Boost the score right after picking up health
 	score += q_max (0.f, health_change) / 100.f;
+	// Lower score a bit based on speed (favor standing still/slowing down)
 	score -= (speed / 100.f) * 0.25f;
+	// Boost the score after finding a secret
 	score += sv.autosave.secret_boost * 0.25f;
+	// Boost the score after teleporting
 	score += CLAMP (0.f, 1.f - (qcvm->time - sv_player->v.teleport_time) / 1.5f, 1.f) * 0.5f;
+
+	// Only save if the score is high enough
 	if (score < 1.f)
 		return;
 
@@ -1308,9 +1332,6 @@ void Host_Init (void)
 
 	if (host_parms->memsize < minimum_memory)
 		Sys_Error ("Only %4.1f megs of memory available, can't execute game", host_parms->memsize / (float)0x100000);
-
-	com_argc = host_parms->argc;
-	com_argv = host_parms->argv;
 
 	Memory_Init (host_parms->membase, host_parms->memsize);
 	Cbuf_Init ();

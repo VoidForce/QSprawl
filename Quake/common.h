@@ -280,8 +280,8 @@ const char *COM_Parse (const char *data);
 const char *COM_ParseEx (const char *data, cpe_mode mode);
 
 
-extern	int		com_argc;
-extern	char	**com_argv;
+extern	int			com_argc;
+extern	const char	**com_argv;
 
 extern	int		safemode;
 /* safe mode: in true, the engine will behave as if one

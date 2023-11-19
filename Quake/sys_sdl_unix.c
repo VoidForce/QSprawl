@@ -715,6 +715,9 @@ void Sys_Printf (const char *fmt, ...)
 
 	UTF8_FromQuake (u8text, sizeof (u8text), qtext);
 	printf ("%s", u8text);
+
+	// log all messages to file as well if -condebug was specified
+	Con_DebugLog (u8text);
 }
 
 void Sys_Quit (void)
