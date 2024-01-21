@@ -1,6 +1,10 @@
 C:/QSprawl/Sprawl/progs.dat
 
+#pragma autoproto
+#pragma warning disable Q208
+
 defs.qc
+math.qc
 subs.qc
 fight.qc
 ai.qc

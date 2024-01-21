@@ -3470,6 +3470,17 @@ static void PF_clientcommand(void)
 		Con_Printf("PF_clientcommand: not a client\n");
 }
 
+extern	cvar_t	host_timescale;
+static void PF_change_timescale(void)
+{
+	if (deathmatch.value || coop.value)
+		return;
+	float newvalue;
+	newvalue = G_FLOAT(OFS_PARM0);
+	newvalue = CLAMP(0, newvalue, 10);
+	host_timescale.value = newvalue;
+}
+
 
 #define PF_BOTH(x)	x,x
 #define PF_CSQC(x)	NULL,x
@@ -3637,6 +3648,7 @@ builtindef_t pr_builtindefs[] =
 	{"tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE},		// float(string str)
 
 	{"sprintf",					PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF},					// string(string fmt, ...)
+	{"change_timescale",		PF_BOTH(PF_change_timescale),	700 }, //void PF_change_timescale(float newvalue)
 };
 int pr_numbuiltindefs = countof (pr_builtindefs);
 

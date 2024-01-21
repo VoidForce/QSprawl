@@ -118,13 +118,10 @@ SV_UserFriction
 
 ==================
 */
-void SV_UserFriction (void)
+void SV_UserFriction(float friction)
 {
 	float	*vel;
-	float	speed, newspeed, control;
-	vec3_t	start, stop;
-	float	friction;
-	trace_t	trace;
+	float	speed, newspeed;
 
 	vel = velocity;
 
@@ -132,22 +129,8 @@ void SV_UserFriction (void)
 	if (!speed)
 		return;
 
-// if the leading edge is over a dropoff, increase friction
-	start[0] = stop[0] = origin[0] + vel[0]/speed*16;
-	start[1] = stop[1] = origin[1] + vel[1]/speed*16;
-	start[2] = origin[2] + sv_player->v.mins[2];
-	stop[2] = start[2] - 34;
-
-	trace = SV_Move (start, vec3_origin, vec3_origin, stop, true, sv_player);
-
-	if (trace.fraction == 1.0)
-		friction = sv_friction.value*sv_edgefriction.value;
-	else
-		friction = sv_friction.value;
-
 // apply friction
-	control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
-	newspeed = speed - host_frametime*control*friction;
+	newspeed = speed - host_frametime * speed * friction;
 
 	if (newspeed < 0)
 		newspeed = 0;
@@ -155,7 +138,6 @@ void SV_UserFriction (void)
 
 	vel[0] = vel[0] * newspeed;
 	vel[1] = vel[1] * newspeed;
-	vel[2] = vel[2] * newspeed;
 }
 
 /*
@@ -163,46 +145,88 @@ void SV_UserFriction (void)
 SV_Accelerate
 ==============
 */
-cvar_t	sv_maxspeed = {"sv_maxspeed", "320", CVAR_NOTIFY|CVAR_SERVERINFO};
-cvar_t	sv_accelerate = {"sv_accelerate", "10", CVAR_NONE};
-void SV_Accelerate (float wishspeed, const vec3_t wishdir)
+//cvar_t	sv_maxspeed = {"sv_maxspeed", "320", CVAR_NOTIFY|CVAR_SERVERINFO};
+//cvar_t	sv_accelerate = {"sv_accelerate", "10", CVAR_NONE};
+//Qsprawl
+void SV_Accelerate (float wish_speed, vec3_t wish_direction)
 {
 	int			i;
-	float		addspeed, accelspeed, currentspeed;
+	float		addspeed, accelspeed, dotspeed;
 
-	currentspeed = DotProduct (velocity, wishdir);
-	addspeed = wishspeed - currentspeed;
+	dotspeed = DotProduct(velocity, wish_direction);
+	addspeed = wish_speed - dotspeed;
 	if (addspeed <= 0)
 		return;
-	accelspeed = sv_accelerate.value*host_frametime*wishspeed;
+	accelspeed = sv_player->v.phys_acceleration * host_frametime * wish_speed;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
-	for (i=0 ; i<3 ; i++)
-		velocity[i] += accelspeed*wishdir[i];
+	for (i = 0; i < 3; i++)
+		velocity[i] += accelspeed * wish_direction[i];
 }
 
-void SV_AirAccelerate (float wishspeed, vec3_t wishveloc)
+//Qsprawl
+void SV_AirAccelerate(vec3_t wish_velocity) 
 {
-	int			i;
-	float		addspeed, wishspd, accelspeed, currentspeed;
+	int i;
+	vec3_t acceleration = { 0, 0, 0 };
+	float result;
+	float reach; // distance to reach the wished velocity value
 
-	wishspd = VectorNormalize (wishveloc);
-	if (wishspd > 30)
-		wishspd = 30;
-	currentspeed = DotProduct (velocity, wishveloc);
-	addspeed = wishspd - currentspeed;
-	if (addspeed <= 0)
-		return;
-//	accelspeed = sv_accelerate.value * host_frametime;
-	accelspeed = sv_accelerate.value*wishspeed * host_frametime;
-	if (accelspeed > addspeed)
-		accelspeed = addspeed;
+	SV_UserFriction(sv_player->v.phys_airfriction);
+	VectorScale(wish_velocity, host_frametime * sv_player->v.phys_airacceleration, acceleration);
 
-	for (i=0 ; i<3 ; i++)
-		velocity[i] += accelspeed*wishveloc[i];
+	for (i = 0; i < 2; i++)
+	{
+		// in case of zero, we just skip	
+		if (wish_velocity[i] != 0)
+		{ 
+			// so, if curent value is more than maximum limit, keep it unchanged.
+			result = velocity[i];
+
+			// if reach have opposite sign of wish_velocity, that means that current speed already more 
+			// than maximum speed, that's how we know that we don't want to add anything more
+			reach = wish_velocity[i] - velocity[i]; 
+			// case in which we have some distance to travel to wished value
+			//positive values
+			if ((wish_velocity[i] > 0) && reach > 0)
+			{
+				// add acceleration
+				result = velocity[i] + acceleration[i];
+				// limit to max speed
+				result = q_min_f(result, wish_velocity[i]); 
+			}
+			//negative values
+			else if ((wish_velocity[i] < 0) && reach < 0)
+			{
+				// add acceleration
+				result = velocity[i] + acceleration[i];
+				// limit to max speed
+				result = q_max_f(result, wish_velocity[i]);
+			}
+		
+			velocity[i] = result;
+		}
+	}
 }
 
+void SV_WallRun()
+{
+	vec3_t	start, stop;
+	trace_t	trace;
+	// if the leading edge is over a dropoff, increase friction
+	start[0] = stop[0] = origin[0];
+	start[1] = stop[1] = origin[1];
+	start[2] = stop[2] = origin[2];
+
+	trace = SV_Move(start, vec3_origin, vec3_origin, stop, true, sv_player);
+
+	if (trace.fraction == 1.0)
+	{
+	
+	}
+
+}
 
 void DropPunchAngle (void)
 {
@@ -242,10 +266,10 @@ void SV_WaterMove (void)
 		wishvel[2] += cmd.upmove;
 
 	wishspeed = VectorLength(wishvel);
-	if (wishspeed > sv_maxspeed.value)
+	if (wishspeed > sv_player->v.phys_speed)
 	{
-		VectorScale (wishvel, sv_maxspeed.value/wishspeed, wishvel);
-		wishspeed = sv_maxspeed.value;
+		VectorScale(wishvel, sv_player->v.phys_speed / wishspeed, wishvel);
+		wishspeed = sv_player->v.phys_speed;
 	}
 	wishspeed *= 0.7;
 
@@ -255,7 +279,7 @@ void SV_WaterMove (void)
 	speed = VectorLength (velocity);
 	if (speed)
 	{
-		newspeed = speed - host_frametime * speed * sv_friction.value;
+		newspeed = speed - host_frametime * speed * sv_player->v.phys_friction;
 		if (newspeed < 0)
 			newspeed = 0;
 		VectorScale (velocity, newspeed/speed, velocity);
@@ -274,7 +298,7 @@ void SV_WaterMove (void)
 		return;
 
 	VectorNormalize (wishvel);
-	accelspeed = sv_accelerate.value * wishspeed * host_frametime;
+	accelspeed = sv_player->v.phys_acceleration * wishspeed * host_frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -310,13 +334,13 @@ void SV_NoclipMove (void)
 	velocity[2] = forward[2]*cmd.forwardmove + right[2]*cmd.sidemove;
 	velocity[2] += cmd.upmove*2; //doubled to match running speed
 
-	if (VectorLength (velocity) > sv_maxspeed.value)
+	if (VectorLength (velocity) > sv_player->v.phys_speed)
 	{
 		VectorNormalize (velocity);
-		VectorScale (velocity, sv_maxspeed.value, velocity);
+		VectorScale (velocity, sv_player->v.phys_speed, velocity);
 	}
 }
-
+//----------------------------------------------------------------------------------------------------------------------------------------------------
 /*
 ===================
 SV_AirMove
@@ -325,8 +349,8 @@ SV_AirMove
 void SV_AirMove (void)
 {
 	int			i;
-	vec3_t		wishvel, wishdir;
-	float		wishspeed;
+	vec3_t		wish_velocity, wish_direction;
+	float		wish_speed;
 	float		fmove, smove;
 
 	AngleVectors (sv_player->v.angles, forward, right, up);
@@ -339,33 +363,38 @@ void SV_AirMove (void)
 		fmove = 0;
 
 	for (i=0 ; i<3 ; i++)
-		wishvel[i] = forward[i]*fmove + right[i]*smove;
+		wish_velocity[i] = forward[i]*fmove + right[i]*smove;
 
 	if ( (int)sv_player->v.movetype != MOVETYPE_WALK)
-		wishvel[2] = cmd.upmove;
+		wish_velocity[2] = cmd.upmove;
 	else
-		wishvel[2] = 0;
+		wish_velocity[2] = 0;
 
-	VectorCopy (wishvel, wishdir);
-	wishspeed = VectorNormalize(wishdir);
-	if (wishspeed > sv_maxspeed.value)
+	VectorCopy (wish_velocity, wish_direction);
+	wish_speed = VectorNormalize(wish_direction);
+
+	//limiting wish velocity to max speed
+	if (wish_speed > sv_player->v.phys_speed)
 	{
-		VectorScale (wishvel, sv_maxspeed.value/wishspeed, wishvel);
-		wishspeed = sv_maxspeed.value;
+		VectorScale(wish_velocity, sv_player->v.phys_speed / wish_speed, wish_velocity);
+		wish_speed = sv_player->v.phys_speed;
 	}
 
 	if ( sv_player->v.movetype == MOVETYPE_NOCLIP)
 	{	// noclip
-		VectorCopy (wishvel, velocity);
-	}
-	else if ( onground )
-	{
-		SV_UserFriction ();
-		SV_Accelerate (wishspeed, wishdir);
+		VectorCopy (wish_velocity, velocity);
 	}
 	else
-	{	// not on ground, so little effect on velocity
-		SV_AirAccelerate (wishspeed, wishvel);
+	{
+		if (onground)
+		{
+			SV_UserFriction(sv_player->v.phys_friction);
+			SV_Accelerate(wish_speed, wish_direction);
+		}
+		else
+		{
+			SV_AirAccelerate(wish_velocity);
+		}
 	}
 }
 

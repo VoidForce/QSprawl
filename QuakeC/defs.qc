@@ -31,6 +31,7 @@ entity		other;
 entity		world;
 float		time;
 float		frametime;
+float		timescale;
 
 float		force_retouch;		// force all entities to touch triggers
 								// next frame.  this is needed because
@@ -229,6 +230,15 @@ void		end_sys_globals;		// flag for structure dumping
 
 .string		noise, noise1, noise2, noise3;	// contains names of wavs to play
 
+.float		phys_speed;
+.float		phys_friction;
+.float		phys_gravity;
+.float		phys_acceleration;
+.float		phys_airacceleration;
+.float		phys_airfriction;
+.float		entity_type;
+.float 		wallrun;
+
 //================================================
 void		end_sys_fields;			// flag for structure dumping
 //================================================
@@ -411,6 +421,16 @@ float	MSG_ONE			= 1;		// reliable to one (msg_entity)
 float	MSG_ALL			= 2;		// reliable to all
 float	MSG_INIT		= 3;		// write to the init string
 
+//slowmo states
+const float SLOWMO_VALUE = 0.4;
+const float SLOWMO_FADE_TIME = 0.25;
+const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
+
+const float TYPE_GENERAL = 0;
+const float TYPE_PLAYER = 1;
+const float SLIDE_OFFSET = 10;
+const float STANDART_OFFSET = 22;
+
 //================================================
 
 //
@@ -427,6 +447,8 @@ entity	activator;		// the entity that activated a trigger or brush
 
 entity	damage_attacker;	// set by T_Damage
 float	framecount;
+float	slowmotion;
+float	slowmotion_time;
 
 float		skill;
 
@@ -448,7 +470,7 @@ float		skill;
 //
 .float		light_lev;		// not used by game, but parsed by light util
 .float		style;
-
+.float		gravity;
 
 //
 // monster ai
@@ -504,6 +526,7 @@ float	AS_MISSILE		= 4;
 .float		air_finished;	// when time > air_finished, start drowning
 .float		bubble_count;	// keeps track of the number of bubbles
 .string		deathtype;		// keeps track of how the player died
+.float		slide_active;
 
 //
 // object stuff
@@ -692,29 +715,4 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
-
-//============================================================================
-
-//
-// subs.qc
-//
-void(vector tdest, float tspeed, void() func) SUB_CalcMove;
-void(entity ent, vector tdest, float tspeed, void() func) SUB_CalcMoveEnt;
-void(vector destangle, float tspeed, void() func) SUB_CalcAngleMove;
-void()  SUB_CalcMoveDone;
-void() SUB_CalcAngleMoveDone;
-void() SUB_Null;
-void() SUB_UseTargets;
-void() SUB_Remove;
-
-//
-//	combat.qc
-//
-void(entity targ, entity inflictor, entity attacker, float damage) T_Damage;
-
-
-float (entity e, float healamount, float ignore) T_Heal; // health function
-
-float(entity targ, entity inflictor) CanDamage;
-
-
+void (float newvalue) change_timescale = #700;

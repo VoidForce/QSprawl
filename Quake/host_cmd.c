@@ -3727,6 +3727,8 @@ void Host_InitCommands (void)
 
 	Cmd_AddCommand_ClientCommand ("status", Host_Status_f);
 	Cmd_AddCommand ("quit", Host_Quit_f);
+	Cmd_AddCommand ("q", Host_Quit_f);
+	Cmd_AddCommand ("Q", Host_Quit_f);
 	Cmd_AddCommand_ClientCommand ("god", Host_God_f);
 	Cmd_AddCommand_ClientCommand ("notarget", Host_Notarget_f);
 	Cmd_AddCommand_ClientCommand ("fly", Host_Fly_f);

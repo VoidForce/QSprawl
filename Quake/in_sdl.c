@@ -599,7 +599,7 @@ void IN_JoyMove (usercmd_t *cmd)
 	float	speed;
 	joyaxis_t moveRaw, moveDeadzone, moveEased;
 	joyaxis_t lookRaw, lookDeadzone, lookEased;
-	extern	cvar_t	sv_maxspeed;
+	//extern	cvar_t	sv_maxspeed;
 
 	if (!joy_enable.value)
 		return;
@@ -628,12 +628,12 @@ void IN_JoyMove (usercmd_t *cmd)
 	moveEased = IN_ApplyEasing(moveDeadzone, joy_exponent_move.value);
 	lookEased = IN_ApplyEasing(lookDeadzone, joy_exponent.value);
 
-	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0 || cl_forwardspeed.value >= sv_maxspeed.value))
+	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0 || cl_forwardspeed.value >= sv_player->v.phys_speed))
 		// running
-		speed = sv_maxspeed.value;
-	else if (cl_forwardspeed.value >= sv_maxspeed.value)
+		speed = sv_player->v.phys_speed;
+	else if (cl_forwardspeed.value >= sv_player->v.phys_speed)
 		// not running, with always run = vanilla
-		speed = q_min(sv_maxspeed.value, cl_forwardspeed.value / cl_movespeedkey.value);
+		speed = q_min(sv_player->v.phys_speed, cl_forwardspeed.value / cl_movespeedkey.value);
 	else
 		// not running, with always run = off or quakespasm
 		speed = cl_forwardspeed.value;

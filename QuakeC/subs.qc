@@ -600,3 +600,17 @@ string getModelByNum(float it_num)
 			return string_null;
 	}
 };
+
+// copper mod's code for easier dprints (by Lunaran)
+void(string s, string ss) dprint2 = 
+	{ dprint(s); dprint(ss); }
+void(string s, string ss, string sss) dprint3 = 
+	{ dprint(s); dprint(ss); dprint(sss); }
+void(string s, string ss, string sss, string ssss) dprint4 = 
+	{ dprint(s); dprint(ss); dprint(sss); dprint(ssss); }
+void(string s, string ss, string sss, string ssss, string sssss) dprint5 = 
+	{ dprint(s); dprint(ss); dprint(sss); dprint(ssss); dprint(sssss); }
+void(string s1, string s2, string s3, string s4, string s5, string s6) dprint6 = 
+	{ dprint(s1); dprint(s2); dprint(s3); dprint(s4); dprint(s5); dprint(s6); dprint("\n"); }
+void() endl =
+	{ dprint("\n");}

@@ -147,11 +147,11 @@ void SV_Init (void)
 	extern	cvar_t	sv_gravity;
 	extern	cvar_t	sv_nostep;
 	extern	cvar_t	sv_freezenonclients;
-	extern	cvar_t	sv_friction;
-	extern	cvar_t	sv_edgefriction;
-	extern	cvar_t	sv_stopspeed;
-	extern	cvar_t	sv_maxspeed;
-	extern	cvar_t	sv_accelerate;
+	//extern	cvar_t	sv_friction;
+	//extern	cvar_t	sv_edgefriction;
+	//extern	cvar_t	sv_stopspeed;
+	//extern	cvar_t	sv_maxspeed;
+	//extern	cvar_t	sv_accelerate;
 	extern	cvar_t	sv_idealpitchscale;
 	extern	cvar_t	sv_aim;
 	extern	cvar_t	sv_altnoclip; //johnfitz
@@ -161,15 +161,15 @@ void SV_Init (void)
 	extern	cvar_t	sv_autosave_interval;
 
 	Cvar_RegisterVariable (&sv_maxvelocity);
-	Cvar_RegisterVariable (&sv_gravity);
-	Cvar_RegisterVariable (&sv_friction);
-	Cvar_SetCallback (&sv_gravity, Host_Callback_Notify);
-	Cvar_SetCallback (&sv_friction, Host_Callback_Notify);
-	Cvar_RegisterVariable (&sv_edgefriction);
-	Cvar_RegisterVariable (&sv_stopspeed);
-	Cvar_RegisterVariable (&sv_maxspeed);
-	Cvar_SetCallback (&sv_maxspeed, Host_Callback_Notify);
-	Cvar_RegisterVariable (&sv_accelerate);
+Cvar_RegisterVariable (&sv_gravity);
+//Cvar_RegisterVariable (&sv_friction);
+Cvar_SetCallback (&sv_gravity, Host_Callback_Notify);
+//Cvar_SetCallback (&sv_friction, Host_Callback_Notify);
+//Cvar_RegisterVariable (&sv_edgefriction);
+//Cvar_RegisterVariable (&sv_stopspeed);
+//Cvar_RegisterVariable (&sv_maxspeed);
+//Cvar_SetCallback (&sv_maxspeed, Host_Callback_Notify);
+//Cvar_RegisterVariable (&sv_accelerate);
 	Cvar_RegisterVariable (&sv_idealpitchscale);
 	Cvar_RegisterVariable (&sv_aim);
 	Cvar_RegisterVariable (&sv_nostep);

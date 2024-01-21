@@ -8,6 +8,7 @@ typedef struct
 	int	world;
 	float	time;
 	float	frametime;
+	float	timescale;
 	float	force_retouch;
 	string_t	mapname;
 	float	deathmatch;
@@ -144,6 +145,15 @@ typedef struct
 	string_t	noise1;
 	string_t	noise2;
 	string_t	noise3;
+	float		phys_speed;
+	float		phys_friction;
+	float		phys_gravity;
+	float		phys_acceleration;
+	float		phys_airacceleration;
+	float		phys_airfriction;
+	float		entity_type;
+	float 		wallrun;
+
 } entvars_t;
 
-#define PROGHEADER_CRC 23050
+#define PROGHEADER_CRC 34653

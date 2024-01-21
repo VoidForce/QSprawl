@@ -554,20 +554,30 @@ void() PutClientInServer =
 	local	entity spot;
 
 	self.classname = "player";
+	self.entity_type = TYPE_PLAYER;
 	self.health = 100;
 	self.takedamage = DAMAGE_AIM;
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_WALK;
+
+	self.phys_speed = 320;
+	self.phys_friction = 8;
+	self.phys_gravity = 650;
+	self.phys_acceleration = 13;
+	self.phys_airacceleration = 4;
+	self.phys_airfriction = 0.6;
+
 	self.show_hostile = 0;
 	self.max_health = 100;
 	self.flags = FL_CLIENT;
-	self.air_finished = time + 12;
 	self.dmg = 2;   		// initial water damage
+	self.effects = 0;
+	
+	self.air_finished = time + 12;
 	self.super_damage_finished = 0;
 	self.radsuit_finished = 0;
 	self.invisible_finished = 0;
 	self.invincible_finished = 0;
-	self.effects = 0;
 	self.invincible_time = 0;
 
 	DecodeLevelParms ();
@@ -1018,10 +1028,84 @@ void() PlayerPreThink =
 		return;	// dying, so do nothing
 
 	if (self.button2)
+		PlayerJump();
+	else
+		self.flags = self.flags | FL_JUMPRELEASED;
+
+	local float interpolation;
+	// catch in and out
+	if (slowmotion)
 	{
-		PlayerJump ();
+		if (!self.b_adrenaline)
+		{
+			if (slowmotion_time > 0) // use the length of previous fade
+				slowmotion_time = time + (SLOWMO_FADE_TIME - (slowmotion_time - time));
+			else
+				slowmotion_time = time + SLOWMO_FADE_TIME; //start fade out 
+			
+			slowmotion = 0;
+		}
+	}
+	else
+	{
+		if (self.b_adrenaline)
+		{
+			if (slowmotion_time > 0) // use the length of previous fade
+				slowmotion_time = time + (SLOWMO_FADE_TIME - (slowmotion_time - time));
+			else
+				slowmotion_time = time + SLOWMO_FADE_TIME/2; //start fade in
+			
+			slowmotion = 1;
+		}
+	}
+	// make changes to timescale
+	if (slowmotion_time > 0)
+	{
+		if (slowmotion)
+			interpolation = lerp(SLOWMO_VALUE, 1.0, (slowmotion_time - time) * SLOWMO_FADE_HELPER*2); // helper is const of 1/SLOWMO_FADE_TIME to save calculation time
+		else 
+			interpolation = lerp(1.0, SLOWMO_VALUE, (slowmotion_time - time) * SLOWMO_FADE_HELPER);
+			
+		interpolation = (ceil(interpolation * 10)) * 0.1; // round to 0.1
+		change_timescale(interpolation);
+		
+		if (slowmotion_time < time)
+			slowmotion_time = 0;
 	}
 	
+	local vector velocity2d;
+	if (self.b_slide)
+	{
+		if (!self.slide_active && (self.flags & FL_ONGROUND))
+		{
+			dprint("Slide\n");
+			self.phys_acceleration = 0;
+			self.phys_friction = 1;
+			velocity2d_z = vlen(self.velocity);
+			if (velocity2d_z > 5)
+			{
+				velocity2d = self.velocity;
+				velocity2d_z = 0;
+				velocity2d = normalize(velocity2d);
+				self.velocity_x += velocity2d_x*270;
+				self.velocity_y += velocity2d_y*270;
+			}
+			self.slide_active = 1;
+		}
+	}
+	else
+	{
+		if (self.slide_active)
+		{
+			self.phys_acceleration = 13;
+			self.phys_friction = 8;
+			self.slide_active = 0;
+		}
+	}
+	if (self.slide_active && self.view_ofs_z > SLIDE_OFFSET)
+		self.view_ofs_z --;
+	else if (!self.slide_active && self.view_ofs_z < STANDART_OFFSET)
+		self.view_ofs_z ++;
 	/*
 	if (self.b_attack2)
 	{
@@ -1053,8 +1137,10 @@ void() PlayerPreThink =
 	}
 	*/
 
-	else
-		self.flags = self.flags | FL_JUMPRELEASED;
+	local float dspeed;
+
+	dspeed=vlen([self.velocity_x,self.velocity_y, 0]);
+	dprint3("speed = ", ftos(dspeed), "\n");
 
 	// teleporters can force a non-moving pause time	
 	if (time < self.pausetime)

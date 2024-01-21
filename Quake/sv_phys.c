@@ -41,8 +41,8 @@ solid_edge items only clip against bsp models.
 
 */
 
-cvar_t	sv_friction = {"sv_friction","4",CVAR_NOTIFY|CVAR_SERVERINFO};
-cvar_t	sv_stopspeed = {"sv_stopspeed","100",CVAR_NONE};
+//cvar_t	sv_friction = {"sv_friction","4",CVAR_NOTIFY|CVAR_SERVERINFO};
+//cvar_t	sv_stopspeed = {"sv_stopspeed","100",CVAR_NONE};
 cvar_t	sv_gravity = {"sv_gravity","800",CVAR_NOTIFY|CVAR_SERVERINFO};
 cvar_t	sv_maxvelocity = {"sv_maxvelocity","2000",CVAR_NONE};
 cvar_t	sv_nostep = {"sv_nostep","0",CVAR_NONE};
@@ -375,13 +375,23 @@ void SV_AddGravity (edict_t *ent)
 	float	ent_gravity;
 	eval_t	*val;
 
-	val = GetEdictFieldValueByName(ent, "gravity");
-	if (val && val->_float)
-		ent_gravity = val->_float;
+	val = GetEdictFieldValueByName(ent, "entity_type");
+	if (val->_float == 1) //player type entity
+	{
+		// we use exact value from .phys_gravity instead of server gravity * gravity
+		val = GetEdictFieldValueByName(ent, "phys_gravity");
+		ent->v.velocity[2] -= val->_float * host_frametime;
+	}
 	else
-		ent_gravity = 1.0;
+	{
+		val = GetEdictFieldValueByName(ent, "gravity");
+		if (val && val->_float)
+			ent_gravity = val->_float;
+		else
+			ent_gravity = 1.0;
 
-	ent->v.velocity[2] -= ent_gravity * sv_gravity.value * host_frametime;
+		ent->v.velocity[2] -= ent_gravity * sv_gravity.value * host_frametime;
+	}
 }
 
 
@@ -811,8 +821,8 @@ void SV_WalkMove (edict_t *ent)
 	if ( !(clip & 2) )
 		return;		// move didn't block on a step
 
-	if (!oldonground && ent->v.waterlevel == 0)
-		return;		// don't stair up while jumping
+	/*if (!oldonground && ent->v.waterlevel == 0)
+		return;		// don't stair up while jumping*/
 
 	if (ent->v.movetype != MOVETYPE_WALK)
 		return;		// gibbed by a trigger
