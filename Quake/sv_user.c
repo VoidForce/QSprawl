@@ -175,7 +175,6 @@ void SV_AirAccelerate(vec3_t wish_velocity)
 
 	SV_UserFriction(sv_player->v.phys_airfriction);
 	VectorScale(wish_velocity, host_frametime * sv_player->v.phys_airacceleration, acceleration);
-
 	for (i = 0; i < 2; i++)
 	{
 		// in case of zero, we just skip	
@@ -210,21 +209,67 @@ void SV_AirAccelerate(vec3_t wish_velocity)
 	}
 }
 
+void SV_WallRunDetection()
+{
+	trace_t	trace;
+	vec3_t w_forward, w_backward, w_left, w_right;
+	vec3_t half_mins, half_maxs;
+	int i;
+	float WallDetectionDistance;
+
+	sv_player->v.wallrun = 0; //reset
+	WallDetectionDistance = 32;
+	//let us define tracing vectors
+	for (i = 0; i < 3; i++)
+	{
+		sv_player->v.wall_normal[i] = 0; //reset
+		w_forward[i] = origin[i] + forward[i] * WallDetectionDistance;
+		w_backward[i] = origin[i] - forward[i] * WallDetectionDistance;
+		w_right[i] = origin[i] + right[i] * WallDetectionDistance;
+		w_left[i] = origin[i] - right[i] * WallDetectionDistance;
+	}
+
+	i = 0;
+	VectorCopy(sv_player->v.mins, half_mins);
+	VectorCopy(sv_player->v.maxs, half_maxs);
+	half_mins[2] += 12;
+	half_maxs[2] -= 16;
+
+	trace = SV_Move(origin, half_mins, half_maxs, w_forward, true, sv_player);
+	if (trace.fraction != 1.0)
+	{
+		sv_player->v.wallrun += 1;
+		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
+	}
+	trace = SV_Move(origin, half_mins, half_maxs, w_backward, true, sv_player);
+	if (trace.fraction != 1.0)
+	{
+		sv_player->v.wallrun += 2;
+		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
+	}
+
+	trace = SV_Move(origin, half_mins, half_maxs, w_right, true, sv_player);
+	if (trace.fraction != 1.0)
+	{
+		sv_player->v.wallrun += 4;
+		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
+	}
+	trace = SV_Move(origin, half_mins, half_maxs, w_left, true, sv_player);
+	if (trace.fraction != 1.0)
+	{
+		sv_player->v.wallrun += 8;
+		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
+	}
+
+	sv_player->v.wall_normal[2] = 0;
+	VectorNormalize(sv_player->v.wall_normal);
+
+	//Con_DPrintf("wallrun = %f \n", sv_player->v.wallrun);
+	//Con_DPrintf("wall_normal = [%f,%f,%f] \n", sv_player->v.wall_normal[0], sv_player->v.wall_normal[1], sv_player->v.wall_normal[2]);
+}
+
 void SV_WallRun()
 {
-	vec3_t	start, stop;
-	trace_t	trace;
-	// if the leading edge is over a dropoff, increase friction
-	start[0] = stop[0] = origin[0];
-	start[1] = stop[1] = origin[1];
-	start[2] = stop[2] = origin[2];
-
-	trace = SV_Move(start, vec3_origin, vec3_origin, stop, true, sv_player);
-
-	if (trace.fraction == 1.0)
-	{
-	
-	}
 
 }
 
@@ -351,6 +396,8 @@ void SV_AirMove (void)
 	int			i;
 	vec3_t		wish_velocity, wish_direction;
 	float		wish_speed;
+	vec3_t		current_velocity;
+	float		speed2d;
 	float		fmove, smove;
 
 	AngleVectors (sv_player->v.angles, forward, right, up);
@@ -386,13 +433,36 @@ void SV_AirMove (void)
 	}
 	else
 	{
+		sv_player->v.wallrun = 0; //reset
 		if (onground)
 		{
+			if (sv_player->v.wall_jumps)
+				sv_player->v.wall_jumps = 0;
 			SV_UserFriction(sv_player->v.phys_friction);
 			SV_Accelerate(wish_speed, wish_direction);
 		}
 		else
 		{
+			SV_WallRunDetection();
+			if (sv_player->v.wallrun)
+			{
+				//gravity
+				VectorCopy(velocity, current_velocity);
+				current_velocity[2] = 0;
+				speed2d = VectorNormalize(current_velocity);
+				speed2d = speed2d / sv_player->v.phys_speed;
+				speed2d = clamp_f(0, speed2d, 1);
+				sv_player->v.phys_gravity = 650 * (1 - (speed2d*0.6));
+				//wall S U C C
+				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
+				velocity[0] += current_velocity[0];
+				velocity[1] += current_velocity[1];
+			}
+			else
+			{
+				sv_player->v.phys_gravity = 650;
+			}
+			//	SV_WallRun();
 			SV_AirAccelerate(wish_velocity);
 		}
 	}
@@ -449,12 +519,14 @@ void SV_ClientThink (void)
 // walk
 //
 	//johnfitz -- alternate noclip
+
 	if (sv_player->v.movetype == MOVETYPE_NOCLIP && sv_altnoclip.value)
 		SV_NoclipMove ();
 	else if (sv_player->v.waterlevel >= 2 && sv_player->v.movetype != MOVETYPE_NOCLIP)
 		SV_WaterMove ();
 	else
 		SV_AirMove ();
+	//Con_DPrintf("1velocity = [%f,%f,%f] \n", velocity[0], velocity[1], velocity[2]);
 	//johnfitz
 }
 

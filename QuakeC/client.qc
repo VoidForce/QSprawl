@@ -818,6 +818,8 @@ void() PlayerDeathThink =
 
 void() PlayerJump =
 {	
+	local vector walljump_direction;
+	local float z;
 	if (self.flags & FL_WATERJUMP)
 		return;
 	
@@ -847,20 +849,37 @@ void() PlayerJump =
 		return;
 	}
 
-	if (!(self.flags & FL_ONGROUND))
+	if ( !(self.flags & FL_ONGROUND) && (!(self.wallrun) || self.jump_timer > time) )
 		return;
 
 	if ( !(self.flags & FL_JUMPRELEASED) )
 		return;		// don't pogo stick
 
 	self.flags = self.flags - (self.flags & FL_JUMPRELEASED);
-
-	self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
-	
 	self.button2 = 0;
-	// player jumping sound
-	sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
-	self.velocity_z = self.velocity_z + 270;
+
+	if (self.wallrun && (self.jump_timer < time))
+	{
+		if (self.wall_jumps > 2) 
+			return;
+		self.wall_jumps++;
+		z = self.velocity_z;
+		walljump_direction = self.wall_normal * 270;
+		walljump_direction_z = 0;
+		self.velocity += walljump_direction;
+		self.velocity_z += 200;
+		self.velocity_z = max(125, self.velocity_z);
+		self.jump_timer = time + 0.5;
+			// player jumping sound
+		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
+	}
+	else
+	{
+		self.velocity_z = self.velocity_z + 270;
+		self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
+		// player jumping sound
+		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
+	}
 };
 
 
@@ -1078,7 +1097,7 @@ void() PlayerPreThink =
 	{
 		if (!self.slide_active && (self.flags & FL_ONGROUND))
 		{
-			dprint("Slide\n");
+			//dprint("Slide\n");
 			self.phys_acceleration = 0;
 			self.phys_friction = 1;
 			velocity2d_z = vlen(self.velocity);
@@ -1091,6 +1110,7 @@ void() PlayerPreThink =
 				self.velocity_y += velocity2d_y*270;
 			}
 			self.slide_active = 1;
+			self.crouch_timer = time + 0.2;
 		}
 	}
 	else
@@ -1100,12 +1120,13 @@ void() PlayerPreThink =
 			self.phys_acceleration = 13;
 			self.phys_friction = 8;
 			self.slide_active = 0;
+			self.crouch_timer = time + 0.2;
 		}
 	}
 	if (self.slide_active && self.view_ofs_z > SLIDE_OFFSET)
-		self.view_ofs_z --;
+		self.view_ofs_z = lerp( SLIDE_OFFSET, STANDART_OFFSET, (self.crouch_timer - time)*5);
 	else if (!self.slide_active && self.view_ofs_z < STANDART_OFFSET)
-		self.view_ofs_z ++;
+		self.view_ofs_z = lerp( STANDART_OFFSET, SLIDE_OFFSET, (self.crouch_timer - time)*5);
 	/*
 	if (self.b_attack2)
 	{

@@ -3945,7 +3945,7 @@ static const char* const bindnames[][2] =
 	{"+attack2",		"Alternative attack"},
 	{"+melee",			"Quick melee"},
 	{"+kick",			"Kick"},
-	{"+adrenaline",		"Activate slow motion"},
+	{"+adrenaline",		"Adrenaline"},
 	{"+reload",			"Reload"},
 	{"+use",			"Use"},
 	{"impulse 10",		"Next weapon"},
@@ -4003,7 +4003,7 @@ void M_Menu_Keys_f (void)
 	m_entersound = true;
 	keysmenu.list.cursor = 0;
 	keysmenu.list.scroll = 0;
-	keysmenu.list.numitems = hipnotic ? NUMCOMMANDS : NUMCOMMANDS - 2;
+	keysmenu.list.numitems = NUMCOMMANDS;
 	keysmenu.list.isactive_fn = M_Keys_IsSelectable;
 	keysmenu.list.search.match_fn = M_Keys_Match;
 

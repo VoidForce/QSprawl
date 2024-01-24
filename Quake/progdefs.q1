@@ -152,8 +152,10 @@ typedef struct
 	float		phys_airacceleration;
 	float		phys_airfriction;
 	float		entity_type;
-	float 		wallrun;
+	float		wallrun;
+	vec3_t		wall_normal;
+	float		wall_jumps;
 
 } entvars_t;
 
-#define PROGHEADER_CRC 34653
+#define PROGHEADER_CRC 51592

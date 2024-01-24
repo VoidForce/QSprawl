@@ -237,7 +237,9 @@ void		end_sys_globals;		// flag for structure dumping
 .float		phys_airacceleration;
 .float		phys_airfriction;
 .float		entity_type;
-.float 		wallrun;
+.float		wallrun;
+.vector		wall_normal;
+.float 		wall_jumps;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -527,6 +529,8 @@ float	AS_MISSILE		= 4;
 .float		bubble_count;	// keeps track of the number of bubbles
 .string		deathtype;		// keeps track of how the player died
 .float		slide_active;
+.float 		jump_timer;
+.float		crouch_timer;
 
 //
 // object stuff
