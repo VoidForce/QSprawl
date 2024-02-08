@@ -565,7 +565,7 @@ void() PutClientInServer =
 	self.phys_gravity = 650;
 	self.phys_acceleration = 13;
 	self.phys_airacceleration = 4;
-	self.phys_airfriction = 0.6;
+	self.phys_airfriction = 0.3;
 
 	self.show_hostile = 0;
 	self.max_health = 100;
@@ -864,7 +864,7 @@ void() PlayerJump =
 			return;
 		self.wall_jumps++;
 		z = self.velocity_z;
-		walljump_direction = self.wall_normal * 270;
+		walljump_direction = self.wall_normal * 200 + v_forward * 100;
 		walljump_direction_z = 0;
 		self.velocity += walljump_direction;
 		self.velocity_z += 200;
@@ -1010,6 +1010,25 @@ void() CheckWaterJump =
 	}
 };
 
+void() SetMovementParams_Slide =
+{
+	self.phys_acceleration = 0;
+	self.phys_friction = 0.8;
+};
+
+void() SetMovementParams_Crouchwalk =
+{
+	self.phys_acceleration = 13;
+	self.phys_friction = 8;
+	self.phys_speed = 160;
+};
+
+void() SetMovementParams_Standard =
+{
+	self.phys_acceleration = 13;
+	self.phys_friction = 8;
+	self.phys_speed = 320;
+};
 
 /*================
 PlayerPreThink
@@ -1093,39 +1112,77 @@ void() PlayerPreThink =
 	}
 	
 	local vector velocity2d;
+	local float dspeed;
+
+	dspeed=vlen([self.velocity_x,self.velocity_y, 0]);
+	dprint3("speed = ", ftos(dspeed), "\n");
+	
+	// Slide button pressed
 	if (self.b_slide)
 	{
-		if (!self.slide_active && (self.flags & FL_ONGROUND))
+		// catch all events on the ground
+		if (self.flags & FL_ONGROUND)
 		{
-			//dprint("Slide\n");
-			self.phys_acceleration = 0;
-			self.phys_friction = 1;
-			velocity2d_z = vlen(self.velocity);
-			if (velocity2d_z > 5)
+			// we not yet in the slide state, so dicide what to do
+			if (!(self.movementflags & MF_INSLIDE)) 
 			{
-				velocity2d = self.velocity;
-				velocity2d_z = 0;
-				velocity2d = normalize(velocity2d);
-				self.velocity_x += velocity2d_x*270;
-				self.velocity_y += velocity2d_y*270;
+				// set slide movement params first
+				self.movementflags |= MF_INSLIDE;
+				self.crouch_timer = time + 0.2;
+				SetMovementParams_Slide();
+				
+				// we on the ground and it's first frame when we press the slide button, so do the slide initial boost
+				if (dspeed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
+				{
+					velocity2d = self.velocity;
+					velocity2d_z = 0;
+					velocity2d = normalize(velocity2d);
+					if (!(self.movementflags & MF_CROUCHINAIR))
+					{
+						self.velocity_x += velocity2d_x * 270;
+						self.velocity_y += velocity2d_y * 270;
+					}
+					else
+					{
+						self.velocity_x += velocity2d_x * 150;
+						self.velocity_y += velocity2d_y * 150;
+					}
+				}
 			}
-			self.slide_active = 1;
-			self.crouch_timer = time + 0.2;
+			// we sliding too slow so stop slide and start crouch-walk
+			else if (dspeed < SLIDE_STOPSPEED)
+			{
+				SetMovementParams_Crouchwalk();
+			}
+		}
+		
+		else
+		{
+		// we trying to crouch in the air, mark it
+			if (!(self.movementflags & MF_INSLIDE))
+				self.movementflags |= MF_CROUCHINAIR;
 		}
 	}
 	else
 	{
-		if (self.slide_active)
+		// slide button is not pressed anymore, but we still in the slide state
+		// so reset movement parameters, and get rid of the slide state
+		if (self.movementflags & MF_INSLIDE)
 		{
-			self.phys_acceleration = 13;
-			self.phys_friction = 8;
-			self.slide_active = 0;
-			self.crouch_timer = time + 0.2;
+			SetMovementParams_Standard();
+			self.movementflags -= self.movementflags & MF_INSLIDE; 
+			self.crouch_timer = time + 0.2; // save time for view offset lerping
 		}
+
+		// reset crouch in the air flag
+		if (self.movementflags & MF_CROUCHINAIR)
+			self.movementflags -= self.movementflags & MF_CROUCHINAIR; 
+		
 	}
-	if (self.slide_active && self.view_ofs_z > SLIDE_OFFSET)
+	// View offset lerping when in/out of crouch
+	if ((self.movementflags & MF_INSLIDE) && self.view_ofs_z > SLIDE_OFFSET)
 		self.view_ofs_z = lerp( SLIDE_OFFSET, STANDART_OFFSET, (self.crouch_timer - time)*5);
-	else if (!self.slide_active && self.view_ofs_z < STANDART_OFFSET)
+	else if (!(self.movementflags & MF_INSLIDE) && self.view_ofs_z < STANDART_OFFSET)
 		self.view_ofs_z = lerp( STANDART_OFFSET, SLIDE_OFFSET, (self.crouch_timer - time)*5);
 	/*
 	if (self.b_attack2)
@@ -1158,10 +1215,7 @@ void() PlayerPreThink =
 	}
 	*/
 
-	local float dspeed;
 
-	dspeed=vlen([self.velocity_x,self.velocity_y, 0]);
-	dprint3("speed = ", ftos(dspeed), "\n");
 
 	// teleporters can force a non-moving pause time	
 	if (time < self.pausetime)

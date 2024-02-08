@@ -132,7 +132,7 @@ void SV_UserFriction(float friction)
 // apply friction
 	newspeed = speed - host_frametime * speed * friction;
 
-	if (newspeed < 0)
+	if (newspeed < 20)
 		newspeed = 0;
 	newspeed /= speed;
 
@@ -398,6 +398,7 @@ void SV_AirMove (void)
 	float		wish_speed;
 	vec3_t		current_velocity;
 	float		speed2d;
+	float		gravity_multiplier;
 	float		fmove, smove;
 
 	AngleVectors (sv_player->v.angles, forward, right, up);
@@ -457,12 +458,23 @@ void SV_AirMove (void)
 				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
 				velocity[0] += current_velocity[0];
 				velocity[1] += current_velocity[1];
+
+				if (sv_player->v.b_slide)
+				{
+					if (velocity[2] < 0)
+					{
+						gravity_multiplier = 1 + CLAMP(0, -velocity[2] / 300, 0.6);
+						VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
+					}
+					sv_player->v.phys_gravity = 650 * (1 - (speed2d * 0.4));
+				}
 			}
 			else
 			{
 				sv_player->v.phys_gravity = 650;
 			}
 			//	SV_WallRun();
+
 			SV_AirAccelerate(wish_velocity);
 		}
 	}

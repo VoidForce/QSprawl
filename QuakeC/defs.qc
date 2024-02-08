@@ -260,6 +260,8 @@ void		end_sys_fields;			// flag for structure dumping
 
 float	FALSE					= 0;
 float 	TRUE					= 1;
+//
+const float SLIDE_STOPSPEED		= 100;
 
 // edict.flags
 float	FL_FLY					= 1;
@@ -274,6 +276,9 @@ float	FL_ONGROUND				= 512;	// standing on something
 float	FL_PARTIALGROUND		= 1024;	// not all corners are valid
 float	FL_WATERJUMP			= 2048;	// player jumping out of water
 float	FL_JUMPRELEASED			= 4096;	// for jump debouncing
+
+float 	MF_CROUCHINAIR			= 1;
+float	MF_INSLIDE				= 2;
 
 // edict.movetype values
 float	MOVETYPE_NONE			= 0;	// never moves
@@ -531,6 +536,7 @@ float	AS_MISSILE		= 4;
 .float		slide_active;
 .float 		jump_timer;
 .float		crouch_timer;
+.float		movementflags;
 
 //
 // object stuff
