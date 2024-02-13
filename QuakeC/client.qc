@@ -562,10 +562,10 @@ void() PutClientInServer =
 
 	self.phys_speed = 320;
 	self.phys_friction = 8;
-	self.phys_gravity = 650;
+	self.phys_gravity = 720;
 	self.phys_acceleration = 13;
 	self.phys_airacceleration = 4;
-	self.phys_airfriction = 0.3;
+	self.phys_airfriction = 0.6;
 
 	self.show_hostile = 0;
 	self.max_health = 100;
@@ -820,6 +820,7 @@ void() PlayerJump =
 {	
 	local vector walljump_direction;
 	local float z;
+	local float jump_force;
 	if (self.flags & FL_WATERJUMP)
 		return;
 	
@@ -864,11 +865,14 @@ void() PlayerJump =
 			return;
 		self.wall_jumps++;
 		z = self.velocity_z;
-		walljump_direction = self.wall_normal * 200 + v_forward * 100;
+		jump_force = clamp(0, time - self.jump_timer, 1);
+		
+		walljump_direction = (self.wall_normal * 200) + v_forward * (100 + (1 - jump_force) * 75);
 		walljump_direction_z = 0;
 		self.velocity += walljump_direction;
-		self.velocity_z += 200;
+		self.velocity_z += 100 + 270 * jump_force;
 		self.velocity_z = max(125, self.velocity_z);
+		//self.velocity_z = min(500, self.velocity_z);
 		self.jump_timer = time + 0.5;
 			// player jumping sound
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
@@ -876,6 +880,7 @@ void() PlayerJump =
 	else
 	{
 		self.velocity_z = self.velocity_z + 270;
+		self.jump_timer = time;
 		self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
 		// player jumping sound
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
@@ -1013,7 +1018,7 @@ void() CheckWaterJump =
 void() SetMovementParams_Slide =
 {
 	self.phys_acceleration = 0;
-	self.phys_friction = 0.8;
+	self.phys_friction = 1;
 };
 
 void() SetMovementParams_Crouchwalk =

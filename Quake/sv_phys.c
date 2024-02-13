@@ -868,8 +868,8 @@ void SV_WalkMove (edict_t *ent)
 
 //qsprawl TODO: make velocity move along wall normal
 // extra friction based on view angle
-	if ( clip & 2 )
-		SV_WallFriction (ent, &steptrace);
+//	if ( clip & 2 )
+//		SV_WallFriction (ent, &steptrace);
 
 // move down
 	downtrace = SV_PushEntity (ent, downmove);	// FIXME: don't link?

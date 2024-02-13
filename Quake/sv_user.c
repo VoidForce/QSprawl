@@ -236,26 +236,26 @@ void SV_WallRunDetection()
 	half_maxs[2] -= 16;
 
 	trace = SV_Move(origin, half_mins, half_maxs, w_forward, true, sv_player);
-	if (trace.fraction != 1.0)
+	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
 	{
 		sv_player->v.wallrun += 1;
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
 	}
 	trace = SV_Move(origin, half_mins, half_maxs, w_backward, true, sv_player);
-	if (trace.fraction != 1.0)
+	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
 	{
 		sv_player->v.wallrun += 2;
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
 	}
 
 	trace = SV_Move(origin, half_mins, half_maxs, w_right, true, sv_player);
-	if (trace.fraction != 1.0)
+	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
 	{
 		sv_player->v.wallrun += 4;
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
 	}
 	trace = SV_Move(origin, half_mins, half_maxs, w_left, true, sv_player);
-	if (trace.fraction != 1.0)
+	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
 	{
 		sv_player->v.wallrun += 8;
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
@@ -397,6 +397,9 @@ void SV_AirMove (void)
 	vec3_t		wish_velocity, wish_direction;
 	float		wish_speed;
 	vec3_t		current_velocity;
+	vec3_t		down;
+	float		wall_direction;
+	vec3_t		wall_vector;
 	float		speed2d;
 	float		gravity_multiplier;
 	float		fmove, smove;
@@ -447,13 +450,26 @@ void SV_AirMove (void)
 			SV_WallRunDetection();
 			if (sv_player->v.wallrun)
 			{
+				// slide along the wall
+				down[0] = 0; down[1] = 0; down[2] = -1; //how do we define constant array without assigning it to a variable?
+				CrossProduct(sv_player->v.wall_normal, down, wall_vector); // find a vector along the wall
+				VectorNormalize(wall_vector);
+				wall_direction = DotProduct(wish_direction, wall_vector); //decide at which direction we want to go
+				if (wall_direction < 0)
+				{
+					VectorScale(wall_vector, -1, wall_vector);
+				}
+				VectorAdd(wall_vector, wish_direction, wall_vector);
+				VectorNormalize(wall_vector);
+				VectorScale(wall_vector, wish_speed, wish_velocity);
+
 				//gravity
 				VectorCopy(velocity, current_velocity);
 				current_velocity[2] = 0;
 				speed2d = VectorNormalize(current_velocity);
 				speed2d = speed2d / sv_player->v.phys_speed;
 				speed2d = clamp_f(0, speed2d, 1);
-				sv_player->v.phys_gravity = 650 * (1 - (speed2d*0.6));
+				sv_player->v.phys_gravity = 720 * (1 - (speed2d*0.55));
 				//wall S U C C
 				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
 				velocity[0] += current_velocity[0];
@@ -466,15 +482,17 @@ void SV_AirMove (void)
 						gravity_multiplier = 1 + CLAMP(0, -velocity[2] / 300, 0.6);
 						VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
 					}
-					sv_player->v.phys_gravity = 650 * (1 - (speed2d * 0.4));
+					sv_player->v.phys_gravity = 720 * (1 - (speed2d * 0.4));
 				}
 			}
 			else
 			{
-				sv_player->v.phys_gravity = 650;
+				sv_player->v.phys_gravity = 720;
 			}
 			//	SV_WallRun();
-
+			// 
+			
+			//wish_velocity = [0,0,0];
 			SV_AirAccelerate(wish_velocity);
 		}
 	}

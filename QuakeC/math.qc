@@ -4,6 +4,11 @@ float signedDistanceCircles(vector c1Center, float c1Radius, vector c2Center, fl
   return vlen(c1Center - c2Center) - (c1Radius + c2Radius);
 }
 
+float clamp(float flr, float v, float cl) 
+{
+  return min(max(v, flr), cl);
+}
+
 float clamp01(float v) 
 {
   return min(max(v, 0), 1);
