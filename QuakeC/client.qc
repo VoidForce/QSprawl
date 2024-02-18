@@ -285,7 +285,8 @@ void() IntermissionThink =
 void() execute_changelevel =
 {
 	local entity	pos;
-
+	
+	ResetSlowmotion();
 	intermission_running = 1;
 
 	// enforce a wait time before allowing changelevel
@@ -1035,6 +1036,13 @@ void() SetMovementParams_Standard =
 	self.phys_speed = 320;
 };
 
+void() ResetSlowmotion =
+{
+	slowmotion_time = 0;
+	slowmotion = 0;
+	change_timescale(0);
+};
+
 /*================
 PlayerPreThink
 
@@ -1063,6 +1071,8 @@ void() PlayerPreThink =
 
 	if (self.deadflag >= DEAD_DEAD)
 	{
+		if (slowmotion)
+			ResetSlowmotion();
 		PlayerDeathThink ();
 		return;
 	}
@@ -1077,6 +1087,8 @@ void() PlayerPreThink =
 
 	local float interpolation;
 	// catch in and out
+	// player can release button during transition phase, so we need to know how deep into transition we was
+	// then start new transition back from that point
 	if (slowmotion)
 	{
 		if (!self.b_adrenaline)
@@ -1144,17 +1156,19 @@ void() PlayerPreThink =
 					velocity2d = normalize(velocity2d);
 					if (!(self.movementflags & MF_CROUCHINAIR))
 					{
+						// ground boost
 						self.velocity_x += velocity2d_x * 270;
 						self.velocity_y += velocity2d_y * 270;
 					}
 					else
 					{
+						//boost after we land while holding crouch
 						self.velocity_x += velocity2d_x * 150;
 						self.velocity_y += velocity2d_y * 150;
 					}
 				}
 			}
-			// we sliding too slow so stop slide and start crouch-walk
+			// we sliding too slow, so stop slide and start crouch-walk
 			else if (dspeed < SLIDE_STOPSPEED)
 			{
 				SetMovementParams_Crouchwalk();
@@ -1193,10 +1207,6 @@ void() PlayerPreThink =
 	if (self.b_attack2)
 	{
 		dprint("Attack2\n");
-	}
-	if (self.b_slide)
-	{
-		dprint("Slide\n");
 	}
 	if (self.b_melee)
 	{

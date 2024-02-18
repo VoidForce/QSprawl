@@ -981,6 +981,7 @@ void SV_CleanupEnts (void)
 	for (e=1 ; e<qcvm->num_edicts ; e++, ent = NEXT_EDICT(ent))
 	{
 		ent->v.effects = (int)ent->v.effects & ~EF_MUZZLEFLASH;
+		ent->v.effects = (int)ent->v.effects & ~EF_NOLERP;
 	}
 }
 

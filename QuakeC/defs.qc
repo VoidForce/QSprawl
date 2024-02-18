@@ -420,6 +420,7 @@ float	EF_BRIGHTFIELD	= 1;
 float	EF_MUZZLEFLASH 	= 2;
 float	EF_BRIGHTLIGHT 	= 4;
 float	EF_DIMLIGHT 	= 8;
+float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect
 
 
 // messages
@@ -725,4 +726,4 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
-void (float newvalue) change_timescale = #700;
+void (float newvalue) change_timescale = #700; // clamped from 0 to 10

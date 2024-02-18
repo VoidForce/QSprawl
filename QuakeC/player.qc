@@ -170,7 +170,7 @@ void()	player_run =[	$rockrun1,	player_run	]
 void()	player_shot1 =	[$shotatt1, player_shot2	] 
 {
 	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 };
 
 void()	player_shot2 =	[$shotatt2, player_shot3	] {self.weaponframe=2;};
@@ -204,7 +204,7 @@ void()	player_axed4 =	[$axattd4, player_run	] {self.weaponframe=8;};
 
 void() player_nail1   =[$nailatt1, player_nail2  ] 
 {
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
 		{player_run ();return;}
@@ -221,7 +221,7 @@ void() player_nail1   =[$nailatt1, player_nail2  ]
 
 void() player_nail2   =[$nailatt2, player_nail1  ]
 {
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
 		{player_run ();return;}
@@ -240,7 +240,7 @@ void() player_nail2   =[$nailatt2, player_nail1  ]
 
 void() player_light1   =[$light1, player_light2  ] 
 {
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
 		{player_run ();return;}
@@ -257,7 +257,7 @@ void() player_light1   =[$light1, player_light2  ]
 
 void() player_light2   =[$light2, player_light1  ]
 {
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
 		{player_run ();return;}
@@ -278,7 +278,7 @@ void() player_light2   =[$light2, player_light1  ]
 void() player_rocket1   =[$rockatt1, player_rocket2  ] 
 {
 	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 };
 
 void() player_rocket2   =[$rockatt2, player_rocket3  ] {self.weaponframe=2;};
