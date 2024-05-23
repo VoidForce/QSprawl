@@ -120,10 +120,54 @@ in a frame.  Not used for pushmove objects, because they must be exact.
 Returns false if the entity removed itself.
 =============
 */
+
+void SV_RunNewThinks(edict_t* ent)
+{
+	float	thinktime;
+	qboolean isthink = false;
+
+	thinktime = ent->v.nextthinkA;
+	if (thinktime <= 0 || thinktime > qcvm->time + host_frametime)
+		isthink = false;
+	else
+		isthink = true;
+	if (thinktime < qcvm->time)
+		thinktime = qcvm->time;
+
+	if (isthink)
+	{
+		ent->v.nextthinkA = 0;
+		pr_global_struct->time = thinktime;
+		pr_global_struct->self = EDICT_TO_PROG(ent);
+		pr_global_struct->other = EDICT_TO_PROG(qcvm->edicts);
+		PR_ExecuteProgram(ent->v.thinkA);
+		isthink = false;
+	}
+
+	thinktime = ent->v.nextthinkB;
+	if (thinktime <= 0 || thinktime > qcvm->time + host_frametime)
+		isthink = false;
+	else
+		isthink = true;
+	if (thinktime < qcvm->time)
+		thinktime = qcvm->time;
+
+	if (isthink)
+	{
+		ent->v.nextthinkB = 0;
+		pr_global_struct->time = thinktime;
+		pr_global_struct->self = EDICT_TO_PROG(ent);
+		pr_global_struct->other = EDICT_TO_PROG(qcvm->edicts);
+		PR_ExecuteProgram(ent->v.thinkB);
+		isthink = false;
+	}
+}
+
 qboolean SV_RunThink (edict_t *ent)
 {
 	float	thinktime;
 
+	SV_RunNewThinks(ent);
 	thinktime = ent->v.nextthink;
 	if (thinktime <= 0 || thinktime > qcvm->time + host_frametime)
 		return true;
@@ -380,7 +424,7 @@ void SV_AddGravity (edict_t *ent)
 	{
 		// we use exact value from .phys_gravity instead of server gravity * gravity
 		val = GetEdictFieldValueByName(ent, "phys_gravity");
-		ent->v.velocity[2] -= val->_float * host_frametime;
+		ent->v.velocity[2] -= val->_float * sv_gravity.value * host_frametime;
 	}
 	else
 	{

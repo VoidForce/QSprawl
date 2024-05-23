@@ -85,6 +85,10 @@ typedef struct
 	func_t	touch;
 	func_t	use;
 	func_t	think;
+	func_t	thinkA;
+	func_t	thinkB;
+	float	nextthinkA;
+	float	nextthinkB;
 	func_t	blocked;
 	float	nextthink;
 	int	groundentity;
@@ -158,4 +162,4 @@ typedef struct
 
 } entvars_t;
 
-#define PROGHEADER_CRC 51592
+#define PROGHEADER_CRC 54972

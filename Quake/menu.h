@@ -37,6 +37,8 @@ enum m_state_e {
 	m_options,
 	m_video,
 	m_keys,
+	m_calibration,
+	m_gamepad,
 	m_mods,
 	m_modinfo,
 	m_help,
@@ -59,7 +61,7 @@ void M_Init (void);
 void M_Keydown (int key);
 void M_Charinput (int key);
 void M_Mousemove (int x, int y);
-qboolean M_TextEntry (void);
+enum textmode_t M_TextEntry (void);
 qboolean M_KeyBinding (void);
 void M_ToggleMenu_f (void);
 
@@ -80,6 +82,7 @@ void M_DrawPic (int x, int y, qpic_t *pic);
 void M_DrawSubpic (int x, int y, qpic_t *pic, int left, int top, int width, int height);
 void M_DrawTransPic (int x, int y, qpic_t *pic);
 void M_DrawCheckbox (int x, int y, int on);
+void M_DrawTextBox (int x, int y, int width, int lines);
 
 #endif	/* _QUAKE_MENU_H */
 

@@ -70,6 +70,7 @@ $frame pull1 pull2 pull3 pull4 pull5 pull6 pull7 pull8 pull9 pull10 pull11
 
 void() OgreGrenadeExplode =
 {
+	removeFromList(self);
 	T_RadiusDamage (self, self.owner, 40, world);
 	sound (self, CHAN_VOICE, "weapons/r_exp3.wav", 1, ATTN_NORM);
 
@@ -143,6 +144,8 @@ void() OgreFireGrenade =
 	setmodel (missile, "progs/grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, self.origin);
+	missile.isgrenade = 1;
+	appendToList(missile);
 };
 
 

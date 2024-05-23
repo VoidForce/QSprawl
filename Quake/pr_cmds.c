@@ -1104,6 +1104,37 @@ static void PF_Find (void)
 	RETURN_EDICT(qcvm->edicts);
 }
 
+// entity (.string field, float match) findfloat = #700;
+static void PF_FindFloat(void)
+{
+	int		i;
+	int		field;
+	float	match, temp;
+	edict_t* ent;
+	edict_t* chain;
+
+	chain = (edict_t*)qcvm->edicts;
+
+	field = G_INT(OFS_PARM0);
+	match = G_FLOAT(OFS_PARM1);
+
+	ent = NEXT_EDICT(qcvm->edicts);
+	for (i = 1; i < qcvm->num_edicts; i++, ent = NEXT_EDICT(ent))
+	{
+		if (ent->free)
+			continue;
+
+		temp = E_FLOAT(ent, field);
+		if (temp != match)
+			continue;
+
+		ent->v.chain = EDICT_TO_PROG(chain);
+		chain = ent;
+	}
+
+	RETURN_EDICT(chain);
+}
+
 static void PR_CheckEmptyString (const char *s)
 {
 	if (s[0] <= ' ')
@@ -3648,8 +3679,9 @@ builtindef_t pr_builtindefs[] =
 	{"tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE},		// float(string str)
 
 	{"sprintf",					PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF},					// string(string fmt, ...)
-	{"change_timescale",		PF_BOTH(PF_change_timescale),	700 }, //void PF_change_timescale(float newvalue)
+	{"findfloat",				PF_SSQC(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
+	{"change_timescale",		PF_BOTH(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
 };
-int pr_numbuiltindefs = countof (pr_builtindefs);
+int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 
 COMPILE_TIME_ASSERT (builtin_buffer_size, countof (pr_builtindefs) + 1 <= MAX_BUILTINS);

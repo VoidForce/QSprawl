@@ -56,7 +56,7 @@ void CL_InitTEnts (void)
 CL_ParseBeam
 =================
 */
-void CL_ParseBeam (qmodel_t *m)
+void CL_ParseBeam (qmodel_t *m, float staytime)
 {
 	int		ent;
 	vec3_t	start, end;
@@ -77,10 +77,11 @@ void CL_ParseBeam (qmodel_t *m)
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
-			b->entity = ent;
+			b->entity = ent; //why? it's the same entity
 			b->model = m;
-			b->endtime = cl.time + 0.2;
-			VectorCopy (start, b->start);
+			b->starttime = cl.time - 0.001;
+			b->endtime = cl.time + staytime;
+			VectorCopy(start, b->start);
 			VectorCopy (end, b->end);
 			return;
 		}
@@ -88,11 +89,12 @@ void CL_ParseBeam (qmodel_t *m)
 // find a free beam
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 	{
-		if (!b->model || b->endtime < cl.time)
+		if (!b->model || b->starttime > cl.time || b->endtime < cl.time)
 		{
 			b->entity = ent;
 			b->model = m;
-			b->endtime = cl.time + 0.2;
+			b->starttime = cl.time - 0.001;
+			b->endtime = cl.time + staytime;
 			VectorCopy (start, b->start);
 			VectorCopy (end, b->end);
 			return;
@@ -120,6 +122,8 @@ void CL_ParseTEnt (void)
 	dlight_t	*dl;
 	int		rnd;
 	int		colorStart, colorLength;
+	const char* str; //qsprawl
+	float	staytime;
 
 	type = MSG_ReadByte ();
 	switch (type)
@@ -208,22 +212,28 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_LIGHTNING1:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true));
+		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true), 0.2);
 		break;
 
 	case TE_LIGHTNING2:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt2.mdl", true));
+		CL_ParseBeam (Mod_ForName("progs/bolt2.mdl", true), 0.2);
 		break;
 
 	case TE_LIGHTNING3:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true));
+		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true), 0.2);
 		break;
 
 // PGM 01/21/97
 	case TE_BEAM:				// grappling hook beam
-		CL_ParseBeam (Mod_ForName("progs/beam.mdl", true));
+		CL_ParseBeam (Mod_ForName("progs/beam.mdl", true), 0.2);
 		break;
 // PGM 01/21/97
+//qsprawl
+	case TE_BEAMBYNAME:
+		str = MSG_ReadString ();
+		staytime = MSG_ReadCoord(cl.protocolflags);
+		CL_ParseBeam(Mod_ForName(str, true), staytime);
+		break;
 
 	case TE_LAVASPLASH:
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
@@ -306,13 +316,13 @@ void CL_UpdateTEnts (void)
 // update lightning
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 	{
-		if (!b->model || b->endtime < cl.time)
+		if (!b->model || b->starttime > cl.time || b->endtime < cl.time)
 			continue;
 
 	// if coming from the player, update the start position
 		if (b->entity == cl.viewentity)
 		{
-			VectorCopy (cl_entities[cl.viewentity].origin, b->start);
+			//VectorCopy (cl_entities[cl.viewentity].origin, b->start); // qSprawl fix this to use offset
 		}
 
 	// calculate pitch and yaw

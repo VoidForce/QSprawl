@@ -144,6 +144,10 @@ void		end_sys_globals;		// flag for structure dumping
 .void()		touch;
 .void()		use;
 .void()		think;
+.void()		thinkA;
+.void()		thinkB;
+.float		nextthinkA;
+.float		nextthinkB;
 .void()		blocked;		// for doors or plats, called when can't push other
 
 .float		nextthink;
@@ -392,6 +396,7 @@ float	TE_KNIGHTSPIKE	= 8;
 float	TE_LIGHTNING3	= 9;
 float	TE_LAVASPLASH	= 10;
 float	TE_TELEPORT		= 11;
+float	TE_BEAMBYNAME	= 14; //qsprawl
 
 // sound channels
 // channel 0 never willingly overrides
@@ -420,7 +425,8 @@ float	EF_BRIGHTFIELD	= 1;
 float	EF_MUZZLEFLASH 	= 2;
 float	EF_BRIGHTLIGHT 	= 4;
 float	EF_DIMLIGHT 	= 8;
-float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect
+float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect // 1 frame
+float	EF_NOLERP2 		= 256; // old behaviour 2 frames
 
 
 // messages
@@ -508,6 +514,44 @@ float	AS_MISSILE		= 4;
 //
 // player only fields
 //
+// qsprawl
+// new player related constants/flags
+//
+float SFL_RESETWEAPONFRAME = 1;
+float SFL_SEMIAUTO = 2;
+float SFL_LEFTHAND = 4;
+float SFL_INQUICKMELEE = 8;
+float SFL_STOPMELEE = 16;
+float SFL_HOLD = 32;
+float SFL_MONSTER = 64;
+
+const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
+const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
+const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
+const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
+//
+.float		sprawlflags;
+.float		pistol_finished;
+.float		shotgun_finished;
+.float		gauss_finished;
+.float		grenade_finished;
+.float		rocket_finished;
+
+.vector		punch_fast;
+.vector		punch_normal;
+.vector		punch_slow;
+.float		punch_time;
+.float		punch_relaxtime;
+
+entity		grenade_handler; // global
+.entity		list_next;
+.entity		list_previous;
+.float		isgrenade; // findfloat(isgrenade, 1);
+
+.string		quickmelee_model; // stores the current weapon model;
+.float		quickmelee_weapon;
+//
+
 .float		walkframe;
 
 .float 		attack_finished;
@@ -726,4 +770,5 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
-void (float newvalue) change_timescale = #700; // clamped from 0 to 10
+void (float newvalue) change_timescale = #701; // clamped from 0 to 10
+entity(.float fld, float match) findfloat = #700 // returns chain of entities

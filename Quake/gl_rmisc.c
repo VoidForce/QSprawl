@@ -38,6 +38,9 @@ extern cvar_t r_showtris;
 extern cvar_t r_showbboxes;
 extern cvar_t r_showbboxes_think;
 extern cvar_t r_showbboxes_health;
+extern cvar_t r_showbboxes_links;
+extern cvar_t r_showbboxes_targets;
+extern cvar_t r_showfields;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
@@ -224,8 +227,6 @@ R_Init
 */
 void R_Init (void)
 {
-	extern cvar_t gl_finish;
-
 	Cmd_AddCommand ("timerefresh", R_TimeRefresh_f);
 	Cmd_AddCommand ("pointfile", R_ReadPointFile_f);
 	Cmd_AddCommand ("r_showbboxes_filter", R_ShowbboxesFilter_f);
@@ -268,6 +269,9 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_showbboxes);
 	Cvar_RegisterVariable (&r_showbboxes_think);
 	Cvar_RegisterVariable (&r_showbboxes_health);
+	Cvar_RegisterVariable (&r_showbboxes_links);
+	Cvar_RegisterVariable (&r_showbboxes_targets);
+	Cvar_RegisterVariable (&r_showfields);
 	Cvar_RegisterVariable (&gl_farclip);
 	Cvar_RegisterVariable (&gl_fullbrights);
 	Cvar_SetCallback (&gl_fullbrights, GL_Fullbrights_f);
@@ -310,8 +314,10 @@ void R_TranslatePlayerSkin (int playernum)
 
 	//FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
 	if (!gl_nocolors.value)
+	{
 		if (playertextures[playernum])
 			TexMgr_ReloadImage (playertextures[playernum], top, bottom);
+	}
 }
 
 /*
@@ -394,6 +400,7 @@ static void R_ParseWorldspawn (void)
 		return; // error
 	if (com_token[0] != '{')
 		return; // error
+
 	while (1)
 	{
 		data = COM_Parse(data);
@@ -652,7 +659,7 @@ This must be called if you do anything that could make the cached bindings
 invalid (e.g. manually binding, destroying the context).
 ====================
 */
-void GL_ClearBufferBindings ()
+void GL_ClearBufferBindings (void)
 {
 	int i;
 

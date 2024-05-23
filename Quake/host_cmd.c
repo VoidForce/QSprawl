@@ -76,7 +76,7 @@ static filelist_item_t *FileList_AddWithData (const char *name, const void *data
 			return item;
 	}
 
-	item = (filelist_item_t *) Z_Malloc(sizeof(filelist_item_t) + datasize);
+	item = (filelist_item_t *) malloc (sizeof(filelist_item_t) + datasize);
 	q_strlcpy (item->name, name, sizeof(item->name));
 	if (datasize)
 	{
@@ -131,7 +131,7 @@ static void FileList_Clear (filelist_item_t **list)
 	while (*list)
 	{
 		blah = (*list)->next;
-		Z_Free(*list);
+		free (*list);
 		*list = blah;
 	}
 }
@@ -546,6 +546,7 @@ static void Host_Maps_f (void)
 static const char *const knownmods[][2] =
 {
 	{"id1",			"Quake"},
+	{"sprawl",		"Sprawl"},
 	{"hipnotic",	"Scourge of Armagon"},
 	{"rogue",		"Dissolution of Eternity"},
 	{"dopa",		"Dimension of the Past"},
@@ -797,8 +798,8 @@ static void Modlist_RegisterAddons (void *param)
 		"Add-on server status:\n"
 		"%3d add-on%s available for download\n"
 		"%3d add-on%s already installed\n\n",
-		total - installed, PLURAL (total - installed),
-		installed, PLURAL (installed)
+		PLURAL (total - installed),
+		PLURAL (installed)
 	);
 
 	extramods_json = json;
@@ -1448,11 +1449,9 @@ static qboolean SkyList_AddFile (const char *path)
 	// Check that the file is in the right directory
 	// We need this for pak files, which are all passed to this function
 	// without any kind of path filtering
-	len = strlen (path);
-	if (len <= sizeof (prefix) - 1 || q_strncasecmp (path, prefix, sizeof (prefix) - 1))
+	if (q_strncasecmp (path, prefix, sizeof (prefix) - 1) != 0)
 		return false;
 	path += sizeof (prefix) - 1;
-	len -= sizeof (prefix) - 1;
 
 	// Only accept TGA files
 	ext = COM_FileGetExtension (path);
@@ -1461,6 +1460,7 @@ static qboolean SkyList_AddFile (const char *path)
 
 	// Check that the image has the right suffix
 	COM_StripExtension (path, skyname, sizeof (skyname));
+	len = strlen (skyname);
 	if (len < sizeof (suffix) - 1)
 		return false;
 	len -= sizeof (suffix) - 1;
@@ -1469,7 +1469,7 @@ static qboolean SkyList_AddFile (const char *path)
 	skyname[len] = '\0';
 
 	// All ok, add skybox to the list
-	FileList_Add (skyname + (sizeof (prefix) - 1), &skylist);
+	FileList_Add (skyname, &skylist);
 
 	return true;
 }
@@ -1789,12 +1789,12 @@ static void Host_SetPos_f(void)
 		SV_ClientPrintf("   setpos <x> <y> <z> <pitch> <yaw> <roll>\n");
 		SV_ClientPrintf("current values:\n");
 		SV_ClientPrintf("   %i %i %i %i %i %i\n",
-			(int)sv_player->v.origin[0],
-			(int)sv_player->v.origin[1],
-			(int)sv_player->v.origin[2],
-			(int)sv_player->v.v_angle[0],
-			(int)sv_player->v.v_angle[1],
-			(int)sv_player->v.v_angle[2]);
+			Q_rint (sv_player->v.origin[0]),
+			Q_rint (sv_player->v.origin[1]),
+			Q_rint (sv_player->v.origin[2]),
+			Q_rint (sv_player->v.v_angle[0]),
+			Q_rint (sv_player->v.v_angle[1]),
+			Q_rint (sv_player->v.v_angle[2]));
 		return;
 	}
 
@@ -2195,38 +2195,39 @@ Host_SavegameComment
 Writes a SAVEGAME_COMMENT_LENGTH character comment describing the current
 ===============
 */
-void Host_SavegameComment (char *text)
+void Host_SavegameComment (char text[SAVEGAME_COMMENT_LENGTH + 1])
 {
 	int		i;
 	char	*levelname;
 	char	kills[20];
-	char	*p1, *p2;
+	char	*p;
 
 	for (i = 0; i < SAVEGAME_COMMENT_LENGTH; i++)
 		text[i] = ' ';
+	text[SAVEGAME_COMMENT_LENGTH] = '\0';
 
-// Remove CR/LFs from level name to avoid broken saves, e.g. with autumn_sp map:
-// https://celephais.net/board/view_thread.php?id=60452&start=3666
 	levelname = cl.levelname[0] ? cl.levelname : cl.mapname;
-	p1 = strchr(levelname, '\n');
-	p2 = strchr(levelname, '\r');
-	if (p1 != NULL) *p1 = 0;
-	if (p2 != NULL) *p2 = 0;
 
 	i = (int) strlen(levelname);
 	if (i > 22) i = 22;
 	memcpy (text, levelname, (size_t)i);
+
+// Remove CR/LFs from level name to avoid broken saves, e.g. with autumn_sp map:
+// https://celephais.net/board/view_thread.php?id=60452&start=3666
+	while ((p = strchr(text, '\n')) != NULL)
+		*p = ' ';
+	while ((p = strchr(text, '\r')) != NULL)
+		*p = ' ';
+
 	sprintf (kills,"kills:%3i/%3i", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]);
 	memcpy (text+22, kills, strlen(kills));
+
 // convert space to _ to make stdio happy
 	for (i = 0; i < SAVEGAME_COMMENT_LENGTH; i++)
 	{
 		if (text[i] == ' ')
 			text[i] = '_';
 	}
-	if (p1 != NULL) *p1 = '\n';
-	if (p2 != NULL) *p2 = '\r';
-	text[SAVEGAME_COMMENT_LENGTH] = '\0';
 }
 
 static void Host_InvalidateSave (const char *relname)
@@ -2557,7 +2558,7 @@ static void Host_Loadgame_f (void)
 		{
 			if (!Modlist_IsInstalled (com_token))
 			{
-				Con_Printf ("ERROR: mod \"%s\" is not installed.\n");
+				Con_Printf ("ERROR: mod \"%s\" is not installed.\n", com_token);
 				return;
 			}
 			COM_SwitchGame (com_token);
@@ -2676,6 +2677,9 @@ static void Host_Loadgame_f (void)
 		CL_EstablishConnection ("local");
 		Host_Reconnect_f ();
 	}
+
+	if (cls.state != ca_dedicated && key_dest == key_game)
+		IN_Activate(); // moved to here from M_Load_Key()
 }
 
 //============================================================================
@@ -2961,7 +2965,6 @@ static void Host_Pause_f (void)
 	if (cls.demoplayback)
 	{
 		cls.demopaused = !cls.demopaused;
-		cl.paused = cls.demopaused;
 		return;
 	}
 
@@ -3135,7 +3138,7 @@ static void Host_Spawn_f (void)
 
 	MSG_WriteByte (&host_client->message, svc_signonnum);
 	MSG_WriteByte (&host_client->message, 3);
-	host_client->sendsignon = true;
+	host_client->sendsignon = PRESPAWN_FLUSH;
 }
 
 /*

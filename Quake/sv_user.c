@@ -132,7 +132,7 @@ void SV_UserFriction(float friction)
 // apply friction
 	newspeed = speed - host_frametime * speed * friction;
 
-	if (newspeed < 20)
+	if (newspeed < 10)
 		newspeed = 0;
 	newspeed /= speed;
 
@@ -140,6 +140,24 @@ void SV_UserFriction(float friction)
 	vel[1] = vel[1] * newspeed;
 }
 
+void SV_FrictionVector(vec3_t velocity_in, float friction, vec3_t velocity_out)
+{
+	float	speed, newspeed;
+
+	speed = sqrt(velocity_in[0] * velocity_in[0] + velocity_in[1] * velocity_in[1]);
+	if (!speed)
+		return;
+
+	// apply friction
+	newspeed = speed - host_frametime * speed * friction;
+
+	if (newspeed < 10)
+		newspeed = 0;
+	newspeed /= speed;
+
+	velocity_out[0] = velocity_in[0] * newspeed;
+	velocity_out[1] = velocity_in[1] * newspeed;
+}
 /*
 ==============
 SV_Accelerate
@@ -165,8 +183,9 @@ void SV_Accelerate (float wish_speed, vec3_t wish_direction)
 		velocity[i] += accelspeed * wish_direction[i];
 }
 
-//Qsprawl
-void SV_AirAccelerate(vec3_t wish_velocity) 
+/*
+//Qsprawl: Does both acceleration and braking deceleration in one go
+void SV_AirAccelerate(vec3_t wish_velocity)
 {
 	int i;
 	vec3_t acceleration = { 0, 0, 0 };
@@ -179,13 +198,13 @@ void SV_AirAccelerate(vec3_t wish_velocity)
 	{
 		// in case of zero, we just skip	
 		if (wish_velocity[i] != 0)
-		{ 
+		{
 			// so, if curent value is more than maximum limit, keep it unchanged.
 			result = velocity[i];
 
 			// if reach have opposite sign of wish_velocity, that means that current speed already more 
 			// than maximum speed, that's how we know that we don't want to add anything more
-			reach = wish_velocity[i] - velocity[i]; 
+			reach = wish_velocity[i] - velocity[i];
 			// case in which we have some distance to travel to wished value
 			//positive values
 			if ((wish_velocity[i] > 0) && reach > 0)
@@ -193,7 +212,7 @@ void SV_AirAccelerate(vec3_t wish_velocity)
 				// add acceleration
 				result = velocity[i] + acceleration[i];
 				// limit to max speed
-				result = q_min_f(result, wish_velocity[i]); 
+				result = q_min_f(result, wish_velocity[i]);
 			}
 			//negative values
 			else if ((wish_velocity[i] < 0) && reach < 0)
@@ -203,10 +222,50 @@ void SV_AirAccelerate(vec3_t wish_velocity)
 				// limit to max speed
 				result = q_max_f(result, wish_velocity[i]);
 			}
-		
+
 			velocity[i] = result;
 		}
 	}
+}*/
+
+void SV_AirAccelerate(float wishspeed, vec3_t wishveloc)
+{
+	int			i;
+	float		addspeed, wishspd, accelspeed, currentspeed;
+
+	wishspd = VectorNormalize(wishveloc);
+	if (wishspd > 60)
+		wishspd = 60;
+	currentspeed = DotProduct(velocity, wishveloc);
+	addspeed = wishspd - currentspeed;
+	if (addspeed <= 0)
+		return;
+	//	accelspeed = sv_accelerate.value * host_frametime;
+	accelspeed = sv_player->v.phys_airacceleration * wishspeed * host_frametime;
+	if (accelspeed > addspeed)
+		accelspeed = addspeed;
+
+	for (i = 0; i < 3; i++)
+		velocity[i] += accelspeed * wishveloc[i];
+}
+
+void SV_Q2AirAccelerate(float wishspeed, vec3_t wishdir)
+{
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+
+	currentspeed = DotProduct(velocity, wishdir);
+	addspeed = wishspeed - currentspeed;
+	if (addspeed <= 0)
+		return;
+
+	accelspeed = host_frametime * wishspeed;
+
+	if (accelspeed > addspeed)
+		accelspeed = addspeed;
+
+	for (i = 0; i < 3; i++)
+		velocity[i] += accelspeed * wishdir[i];
 }
 
 void SV_WallRunDetection()
@@ -217,6 +276,11 @@ void SV_WallRunDetection()
 	int i;
 	float WallDetectionDistance;
 
+	if (onground)
+	{
+		sv_player->v.wallrun = 0; //reset
+		return;
+	}
 	sv_player->v.wallrun = 0; //reset
 	WallDetectionDistance = 32;
 	//let us define tracing vectors
@@ -232,6 +296,7 @@ void SV_WallRunDetection()
 	i = 0;
 	VectorCopy(sv_player->v.mins, half_mins);
 	VectorCopy(sv_player->v.maxs, half_maxs);
+	//idk if there is a point in this? sv_move should use closest hull size instead of custom box size?
 	half_mins[2] += 12;
 	half_maxs[2] -= 16;
 
@@ -261,6 +326,7 @@ void SV_WallRunDetection()
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
 	}
 
+	// we don't want any vertical momentum added into wall suction velocity
 	sv_player->v.wall_normal[2] = 0;
 	VectorNormalize(sv_player->v.wall_normal);
 
@@ -268,18 +334,15 @@ void SV_WallRunDetection()
 	//Con_DPrintf("wall_normal = [%f,%f,%f] \n", sv_player->v.wall_normal[0], sv_player->v.wall_normal[1], sv_player->v.wall_normal[2]);
 }
 
-void SV_WallRun()
-{
-
-}
-
 void DropPunchAngle (void)
 {
 	float	len;
 
+	// find the length, normalize
 	len = VectorNormalize (sv_player->v.punchangle);
 
-	len -= 10*host_frametime;
+	//Con_DPrintf("frametime = %f, raw = %f \n", host_frametime*72, host_fpsframetime*250);
+	len -= (30 + len * 2) * host_frametime;
 	if (len < 0)
 		len = 0;
 	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);
@@ -397,7 +460,8 @@ void SV_AirMove (void)
 	vec3_t		wish_velocity, wish_direction;
 	float		wish_speed;
 	vec3_t		current_velocity;
-	vec3_t		down;
+	//vec3_t		current_direction;
+	vec3_t		down = { 0, 0, -1 };//how do we define constant array without assigning it to a variable?
 	float		wall_direction;
 	vec3_t		wall_vector;
 	float		speed2d;
@@ -423,6 +487,8 @@ void SV_AirMove (void)
 
 	VectorCopy (wish_velocity, wish_direction);
 	wish_speed = VectorNormalize(wish_direction);
+	//VectorCopy (velocity, current_direction);
+	//VectorNormalize(current_direction);
 
 	//limiting wish velocity to max speed
 	if (wish_speed > sv_player->v.phys_speed)
@@ -445,13 +511,18 @@ void SV_AirMove (void)
 			SV_UserFriction(sv_player->v.phys_friction);
 			SV_Accelerate(wish_speed, wish_direction);
 		}
-		else
+		else // in the air
 		{
+			VectorCopy(velocity, current_velocity);
+			current_velocity[2] = 0;
+			speed2d = VectorNormalize(current_velocity);
+			speed2d = speed2d / sv_player->v.phys_speed;
+			//speed2d = clamp_f(0, speed2d, 1);
+
 			SV_WallRunDetection();
 			if (sv_player->v.wallrun)
 			{
-				// slide along the wall
-				down[0] = 0; down[1] = 0; down[2] = -1; //how do we define constant array without assigning it to a variable?
+				// slide along the wall				 
 				CrossProduct(sv_player->v.wall_normal, down, wall_vector); // find a vector along the wall
 				VectorNormalize(wall_vector);
 				wall_direction = DotProduct(wish_direction, wall_vector); //decide at which direction we want to go
@@ -464,36 +535,36 @@ void SV_AirMove (void)
 				VectorScale(wall_vector, wish_speed, wish_velocity);
 
 				//gravity
-				VectorCopy(velocity, current_velocity);
-				current_velocity[2] = 0;
-				speed2d = VectorNormalize(current_velocity);
-				speed2d = speed2d / sv_player->v.phys_speed;
-				speed2d = clamp_f(0, speed2d, 1);
-				sv_player->v.phys_gravity = 720 * (1 - (speed2d*0.55));
+
+				sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speed2d, 1) *0.55));
+
 				//wall S U C C
+				// i used current velocity here to store the sucction vector, don't be confused
 				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
 				velocity[0] += current_velocity[0];
 				velocity[1] += current_velocity[1];
 
+				//move and fall faster when holding crouch
 				if (sv_player->v.b_slide)
 				{
 					if (velocity[2] < 0)
 					{
 						gravity_multiplier = 1 + CLAMP(0, -velocity[2] / 300, 0.6);
-						VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
+						wish_speed *= 1 + gravity_multiplier;
+						//VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
 					}
-					sv_player->v.phys_gravity = 720 * (1 - (speed2d * 0.4));
+					sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speed2d, 1) * 0.4));
 				}
 			}
-			else
+			else // not wallrunning
 			{
-				sv_player->v.phys_gravity = 720;
+				sv_player->v.phys_gravity = 1; // 0.9
 			}
-			//	SV_WallRun();
-			// 
-			
-			//wish_velocity = [0,0,0];
-			SV_AirAccelerate(wish_velocity);
+
+			//Con_DPrintf("wish_speed = %f, wish_direction = [%f,%f,%f] \n", wish_speed, wish_direction[0], wish_direction[1], wish_direction[2]);
+			SV_UserFriction(clamp_f(0, speed2d, 5) * 0.1);
+			SV_AirAccelerate(wish_speed, wish_velocity);
+			SV_Q2AirAccelerate(wish_speed, wish_direction);
 		}
 	}
 }
@@ -533,7 +604,8 @@ void SV_ClientThink (void)
 	angles = sv_player->v.angles;
 
 	VectorAdd (sv_player->v.v_angle, sv_player->v.punchangle, v_angle);
-	angles[ROLL] = V_CalcRoll (sv_player->v.angles, sv_player->v.velocity)*4;
+	angles[ROLL] = V_CalcRoll (sv_player->v.angles, sv_player->v.velocity) * 4;
+
 	if (!sv_player->v.fixangle)
 	{
 		angles[PITCH] = -v_angle[PITCH]/3;
@@ -556,7 +628,6 @@ void SV_ClientThink (void)
 		SV_WaterMove ();
 	else
 		SV_AirMove ();
-	//Con_DPrintf("1velocity = [%f,%f,%f] \n", velocity[0], velocity[1], velocity[2]);
 	//johnfitz
 }
 

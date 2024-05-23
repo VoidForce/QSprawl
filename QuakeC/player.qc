@@ -108,7 +108,11 @@ void() player_run;
 
 void()	player_stand1 =[	$axstnd1,	player_stand1	]
 {
-	self.weaponframe=0;
+	if (self.sprawlflags & SFL_RESETWEAPONFRAME)
+	{
+		self.weaponframe = 0;
+		self.sprawlflags -= self.sprawlflags & SFL_RESETWEAPONFRAME;
+	}
 
 	if (self.velocity_x || self.velocity_y)
 	{
@@ -138,7 +142,15 @@ void()	player_stand1 =[	$axstnd1,	player_stand1	]
 
 void()	player_run =[	$rockrun1,	player_run	]
 {
-	self.weaponframe=0;
+	// todo: keep it like that for now
+	if (self.weapon == IT_SHOTGUN)
+		self.effects = self.effects | EF_NOLERP;
+	
+	if (self.sprawlflags & SFL_RESETWEAPONFRAME)
+	{
+		self.weaponframe = 0;
+		self.sprawlflags -= self.sprawlflags & SFL_RESETWEAPONFRAME;
+	}
 
 	if (!self.velocity_x && !self.velocity_y)
 	{
@@ -166,38 +178,260 @@ void()	player_run =[	$rockrun1,	player_run	]
 	self.walkframe = self.walkframe + 1;
 };
 
+void() animatePistolFire = 
+{
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.weaponframe = 1;
+	self.think = loopPistolFire;
+	self.nextthink = time + 0.1;
+};
+
+void() loopPistolFire =
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.1;
+
+	if (self.weaponframe > 9)
+	{
+		self.think = player_run;
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+	}
+	else
+		self.think = loopPistolFire;
+};
+
+void() animateShotgunFire = 
+{
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.weaponframe = 1;
+	self.think = loopShotgunFire;
+	self.nextthink = time + 0.05;
+};
+
+void() loopShotgunFire =
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
+	
+	if (self.weaponframe == 10)
+		makePunch([-8,4,0], [-5,1,0], [0,0,0], 0.05);
+	if (self.weaponframe == 13)
+	{
+		launchCasing(self.origin, v_forward * 12 + v_right * 6 + v_up * (self.view_ofs_z-2), 1);
+		launchCasing(self.origin, v_forward * 12 + v_right * 8 + v_up * (self.view_ofs_z-2), 1);
+	}
+	if (self.weaponframe > 29)
+	{
+		self.think = player_run;
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+	}
+	else
+		self.think = loopShotgunFire;
+};
+
+void() animateSMGFire = 
+{
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	if (self.sprawlflags & SFL_LEFTHAND)
+	{
+		self.weaponframe = floor(1 + random()*2);
+		W_FireSMG(0);
+	}
+	else 
+	{
+		W_FireSMG(1);
+		self.weaponframe = floor(15 + random()*2);
+	}
+	self.sprawlflags = SFL_LEFTHAND ^ self.sprawlflags; // switch the bit
+	self.think = loopSMGFire;
+	self.nextthink = time + 0.05;
+};
+
+void() loopSMGFire =
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
+
+	if ((self.weaponframe > 13 && !(self.sprawlflags & SFL_LEFTHAND)) || (self.weaponframe > 27 && self.sprawlflags & SFL_LEFTHAND))
+	{
+		self.think = player_run;
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+	}
+	else
+		self.think = loopSMGFire;
+};
+
+void() quickMeleeStart = 
+{
+	self.sprawlflags |= SFL_INQUICKMELEE | SFL_STOPMELEE;
+	self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+	self.weaponmodel = "progs/v_axe.mdl";
+	
+	sound (self, CHAN_AUTO, "weapons/ax1.wav", 1, ATTN_NORM);
+	self.weaponframe = 1;
+	self.think = quickMeleeLoop;
+	self.nextthink = time + 0.05;
+};
+
+void() quickMeleeLoop = 
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
+	
+	if (self.weaponframe == 4)
+		W_FireAxe();
+	
+	if (self.weaponframe > 7) //7 39
+	{
+		self.attack_finished = time + 0.2;
+		self.effects = self.effects | EF_NOLERP;
+		self.sprawlflags -= self.sprawlflags & SFL_INQUICKMELEE;
+		W_DelpoyGun(self.weapon);
+	}
+	else
+		self.think = quickMeleeLoop;
+};
+
+void() animateGrenadeFire = 
+{
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.weaponframe = 1;
+	self.think = loopGrenadeFire;
+	self.nextthink = time + 0.05;
+};
+
+void() loopGrenadeFire =
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
+
+	if (self.weaponframe > 17)
+	{
+		self.think = player_run;
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+	}
+	else
+		self.think = loopGrenadeFire;
+};
+
+const float GAUSS_FIREFRAME = 21;
+
+void() heatupGauss =
+{
+	if (self.weaponframe > GAUSS_FIREFRAME)
+		self.weaponframe = 1;
+	else
+		self.weaponframe++;
+
+	self.sprawlflags |= SFL_HOLD;
+	self.think = heatupGaussLoop; 
+	self.nextthink = time + 0.03;
+};
+
+void() heatupGaussLoop = 
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.03;
+	
+	if (self.weaponframe > GAUSS_FIREFRAME)
+	{
+		W_FireGauss();
+		self.think = postGaussFire;
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+		self.gauss_finished = time + 1;
+		self.attack_finished = time + 0.2;
+		return;
+	}
+	else if (!self.button0)
+		self.think = cooldownGaussLoop;
+	else
+		self.think = heatupGaussLoop; 
+};
+
+void() cooldownGaussLoop =
+{
+	self.weaponframe--;
+	if (self.weaponframe < 1)
+		self.think = player_run;
+	else
+		self.think = cooldownGaussLoop;
+	
+	self.nextthink = time + 0.05;
+};
+
+void() postGaussFire =
+{
+	self.weaponframe++;
+	if (self.weaponframe > 47)
+	{
+		self.think = player_run;
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+	}
+	else
+		self.think = postGaussFire;
+	self.nextthink = time + 0.05;
+};
+
+void() katanaSwingStart = 
+{
+	self.weaponframe = 1;
+	self.think = katanaSwingLoop;
+	self.nextthink = time + 0.05;
+};
+
+void() katanaSwingLoop = 
+{
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
+	
+	if (self.weaponframe == 4)
+		W_FireAxe();
+	
+	if (self.weaponframe > 39)
+	{
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+		self.think = player_run;
+		self.attack_finished = time + 0.2;
+	}
+	else
+		self.think = katanaSwingLoop;
+};
+
+void() ee =
+{
+};
 
 void()	player_shot1 =	[$shotatt1, player_shot2	] 
 {
 	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP2;
 };
 
 void()	player_shot2 =	[$shotatt2, player_shot3	] {self.weaponframe=2;};
 void()	player_shot3 =	[$shotatt3, player_shot4	] {self.weaponframe=3;};
 void()	player_shot4 =	[$shotatt4, player_shot5	] {self.weaponframe=4;};
 void()	player_shot5 =	[$shotatt5, player_shot6	] {self.weaponframe=5;};
-void()	player_shot6 =	[$shotatt6, player_run	] {self.weaponframe=6;};
+void()	player_shot6 =	[$shotatt6, player_run	] {self.weaponframe=6; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 void()	player_axe1 =	[$axatt1, player_axe2	] {self.weaponframe=1;};
 void()	player_axe2 =	[$axatt2, player_axe3	] {self.weaponframe=2;};
 void()	player_axe3 =	[$axatt3, player_axe4	] {self.weaponframe=3;W_FireAxe();};
-void()	player_axe4 =	[$axatt4, player_run	] {self.weaponframe=4;};
+void()	player_axe4 =	[$axatt4, player_run	] {self.weaponframe=4; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 void()	player_axeb1 =	[$axattb1, player_axeb2	] {self.weaponframe=5;};
 void()	player_axeb2 =	[$axattb2, player_axeb3	] {self.weaponframe=6;};
 void()	player_axeb3 =	[$axattb3, player_axeb4	] {self.weaponframe=7;W_FireAxe();};
-void()	player_axeb4 =	[$axattb4, player_run	] {self.weaponframe=8;};
+void()	player_axeb4 =	[$axattb4, player_run	] {self.weaponframe=8; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 void()	player_axec1 =	[$axattc1, player_axec2	] {self.weaponframe=1;};
 void()	player_axec2 =	[$axattc2, player_axec3	] {self.weaponframe=2;};
 void()	player_axec3 =	[$axattc3, player_axec4	] {self.weaponframe=3;W_FireAxe();};
-void()	player_axec4 =	[$axattc4, player_run	] {self.weaponframe=4;};
+void()	player_axec4 =	[$axattc4, player_run	] {self.weaponframe=4; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 void()	player_axed1 =	[$axattd1, player_axed2	] {self.weaponframe=5;};
 void()	player_axed2 =	[$axattd2, player_axed3	] {self.weaponframe=6;};
 void()	player_axed3 =	[$axattd3, player_axed4	] {self.weaponframe=7;W_FireAxe();};
-void()	player_axed4 =	[$axattd4, player_run	] {self.weaponframe=8;};
+void()	player_axed4 =	[$axattd4, player_run	] {self.weaponframe=8; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 
 //============================================================================
@@ -207,7 +441,11 @@ void() player_nail1   =[$nailatt1, player_nail2  ]
 	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
-		{player_run ();return;}
+		{
+			self.sprawlflags |= SFL_RESETWEAPONFRAME;
+			player_run ();
+			return;
+		}
 
 	self.weaponframe = self.weaponframe + 1;
 
@@ -224,7 +462,11 @@ void() player_nail2   =[$nailatt2, player_nail1  ]
 	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
 
 	if (!self.button0)
-		{player_run ();return;}
+		{
+			self.sprawlflags |= SFL_RESETWEAPONFRAME;
+			player_run ();
+			return;
+		}
 
 	self.weaponframe = self.weaponframe + 1;
 
@@ -238,38 +480,43 @@ void() player_nail2   =[$nailatt2, player_nail1  ]
 
 //============================================================================
 
-void() player_light1   =[$light1, player_light2  ] 
+void() player_light1 = //[$light1, player_light2  ] 
 {
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
-
 	if (!self.button0)
-		{player_run ();return;}
+	{
+		//self.sprawlflags |= SFL_RESETWEAPONFRAME;
+		self.weaponframe = 69;
+		self.think = light_cool;
+		self.nextthink = time + 0.05;
+		//player_run ();
+		return;
+	}
+	
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	self.weaponframe++;
 
-	self.weaponframe = self.weaponframe + 1;
-
-	if (self.weaponframe == 5)
-		self.weaponframe = 1;
+	if (self.weaponframe == 53)
+		self.weaponframe = 11;
 
 	SuperDamageSound();
 	W_FireLightning();
 	self.attack_finished = time + 0.2;
+	self.think = player_light1;
+	self.nextthink = time + 0.05;
 };
 
-void() player_light2   =[$light2, player_light1  ]
+void() light_cool = 
 {
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
+	self.weaponframe++;
+	self.nextthink = time + 0.05;
 
-	if (!self.button0)
-		{player_run ();return;}
-
-	self.weaponframe = self.weaponframe + 1;
-
-	if (self.weaponframe == 5)
-		self.weaponframe = 1;
-
-	SuperDamageSound();
-	W_FireLightning();
-	self.attack_finished = time + 0.2;
+	if (self.weaponframe > 82)
+	{
+		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+		self.think = player_run;
+	}
+	else
+		self.think = light_cool;
 };
 
 //============================================================================
@@ -278,14 +525,14 @@ void() player_light2   =[$light2, player_light1  ]
 void() player_rocket1   =[$rockatt1, player_rocket2  ] 
 {
 	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP;
+	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP2;
 };
 
 void() player_rocket2   =[$rockatt2, player_rocket3  ] {self.weaponframe=2;};
 void() player_rocket3   =[$rockatt3, player_rocket4  ] {self.weaponframe=3;};
 void() player_rocket4   =[$rockatt4, player_rocket5  ] {self.weaponframe=4;};
 void() player_rocket5   =[$rockatt5, player_rocket6  ] {self.weaponframe=5;};
-void() player_rocket6   =[$rockatt6, player_run  ] {self.weaponframe=6;};
+void() player_rocket6   =[$rockatt6, player_run  ] {self.weaponframe=6; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 void(float num_bubbles) DeathBubbles;
 
 void() PainSound =

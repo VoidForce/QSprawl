@@ -47,3 +47,19 @@ vector(vector a, vector b, float mix) lerpv =
 
 float(float a, float b) min = { if (a <= b) return a; return b; }
 float(float a, float b) max = { if (a >= b) return a; return b; }
+
+vector(vector a, vector b) CrossProduct =
+{
+	vector c;
+	
+	c_x = a_y * b_z - a_z * b_y;
+	c_y = a_z * b_x - a_x * b_z;
+	c_z = a_x * b_y - a_y * b_x;
+	
+	return c;
+}
+
+float(vector pointonline, vector direction, vector point) DistanceToLine =
+{
+	return vlen(CrossProduct( point - pointonline, direction )) / vlen(direction);
+};

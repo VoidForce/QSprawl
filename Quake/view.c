@@ -68,10 +68,7 @@ cvar_t	gl_cshiftpercent_powerup = {"gl_cshiftpercent_powerup", "100", CVAR_NONE}
 
 cvar_t	r_viewmodel_quake = {"r_viewmodel_quake", "0", CVAR_ARCHIVE};
 
-float	v_dmg_time, v_dmg_roll, v_dmg_pitch;
-
 extern	int			in_forward, in_forward2, in_back;
-
 vec3_t	v_punchangles[2]; //johnfitz -- copied from cl.punchangle.  0 is current, 1 is previous value. never the same unless map just loaded
 
 /*
@@ -87,7 +84,7 @@ float V_CalcRoll (vec3_t angles, vec3_t velocity)
 	float	sign;
 	float	side;
 	float	value;
-
+	
 	AngleVectors (angles, forward, right, up);
 	side = DotProduct (velocity, right);
 	sign = side < 0 ? -1 : 1;
@@ -104,7 +101,6 @@ float V_CalcRoll (vec3_t angles, vec3_t velocity)
 
 	return side*sign;
 }
-
 
 /*
 ===============
@@ -253,10 +249,12 @@ void V_DriftPitch (void)
 ==============================================================================
 */
 
-cshift_t	cshift_empty = { {130,80,50}, 0 };
-cshift_t	cshift_water = { {130,80,50}, 128 };
-cshift_t	cshift_slime = { {0,25,5}, 150 };
-cshift_t	cshift_lava = { {255,80,0}, 150 };
+cshift_t cshift_empty = { {130,80,50}, 0 };
+static cshift_t cshift_water = { {130,80,50}, 128 };
+static cshift_t cshift_slime = { {0,25,5}, 150 };
+static cshift_t cshift_lava = { {255,80,0}, 150 };
+
+static float v_dmg_time, v_dmg_roll, v_dmg_pitch;
 
 float		v_blend[4];		// rgba 0.0 - 1.0; see note in V_PolyBlend for more info
 
@@ -504,7 +502,7 @@ V_UpdateBlend -- johnfitz -- V_UpdatePalette cleaned up and renamed
 void V_UpdateBlend (void)
 {
 	int		i, j;
-	float	frametime = cl.time - cl.oldtime;
+	float	frametime = fabs (cl.time - cl.oldtime); // time can go backwards when rewinding demos
 	qboolean	blend_changed;
 
 	V_CalcPowerupCshift ();
@@ -717,13 +715,49 @@ void V_CalcViewRoll (void)
 	{
 		r_refdef.viewangles[ROLL] += v_dmg_time/v_kicktime.value*v_dmg_roll;
 		r_refdef.viewangles[PITCH] += v_dmg_time/v_kicktime.value*v_dmg_pitch;
-		v_dmg_time -= host_frametime;
+		v_dmg_time -= fabs (cl.time - cl.oldtime);
 	}
 
 	if (cl.stats[STAT_HEALTH] <= 0)
 	{
 		r_refdef.viewangles[ROLL] = 80;	// dead view angle
 		return;
+	}
+}
+
+/*
+======
+View_ModelDrift -- Eukos from OpenKatana
+Adds a delay to the view model (such as a weapon) in the players view.
+======
+*/
+void View_ModelDrift(vec3_t vOrigin, vec3_t vAngles)
+{
+	int	i;
+	float	fSpeed, fDifference, fScale;
+	static	vec3_t	svLastFacing;
+	vec3_t	vForward, vRight, vUp, vDifference;
+
+	AngleVectors(vAngles, vForward, vRight, vUp);
+
+	if (host_frametime != 0.0f)
+	{
+		VectorSubtract(vForward, svLastFacing, vDifference);
+		fSpeed = 10.0f;
+		fDifference = VectorLength(vDifference);
+
+		if (fDifference > 10)
+			fSpeed *= fScale = fDifference / 10;
+
+		for (i = 0; i < 3; i++)
+			svLastFacing[i] += vDifference[i] * (fSpeed * host_frametime);
+		VectorNormalize(svLastFacing);
+
+		for (i = 0; i < 3; i++)
+		{
+			vOrigin[i] += (vDifference[i] * -1.0f) * 10.0f;
+			vAngles[YAW] += vDifference[i]*10;
+		}
 	}
 }
 
@@ -775,7 +809,6 @@ void V_CalcRefdef (void)
 // view is the weapon model (only visible from inside body)
 	view = &cl.viewent;
 
-
 // transform the view offset by the model's matrix to get the offset from
 // model origin for the view
 	ent->angles[YAW] = cl.viewangles[YAW];	// the model should face the view dir
@@ -812,8 +845,8 @@ void V_CalcRefdef (void)
 	V_BoundOffsets ();
 
 // set up gun position
+	//VectorAdd(cl.viewangles, cl.punchangle, view->angles);
 	VectorCopy (cl.viewangles, view->angles);
-
 	CalcGunAngle ();
 
 	VectorCopy (ent->origin, view->origin);
@@ -822,6 +855,8 @@ void V_CalcRefdef (void)
 	for (i=0 ; i<3 ; i++)
 		view->origin[i] += forward[i]*bob*0.4;
 	view->origin[2] += bob;
+
+	View_ModelDrift(view->origin, view->angles);
 
 	//johnfitz -- removed all gun position fudging code (was used to keep gun from getting covered by sbar)
 	//MarkV -- restored this with r_viewmodel_quake cvar
@@ -849,10 +884,10 @@ void V_CalcRefdef (void)
 	view->frame = cl.stats[STAT_WEAPONFRAME];
 	view->colormap = vid.colormap;
 	view->scale = ENTSCALE_DEFAULT;
-
-//johnfitz -- v_gunkick
+	
+	//johnfitz -- v_gunkick
 	if (v_gunkick.value == 1) //original quake kick
-		VectorAdd (r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
+		VectorAdd(r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
 	if (v_gunkick.value == 2) //lerped kick
 	{
 		float punchblend = (cl.time - cl.punchtime) / 0.1f;

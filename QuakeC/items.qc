@@ -443,7 +443,7 @@ void(float old, float new) Deathmatch_Weapon =
 	nr = RankForWeapon (new);
 
 	if ( nr < or )
-		self.weapon = new;
+		W_DelpoyGun(new);
 };
 
 /*=============
@@ -467,6 +467,7 @@ void() weapon_touch =
 	self = other;
 	best = W_BestWeapon();
 	self = stemp;
+
 
 	if (deathmatch == 2 || coop)
 		leave = 1;
@@ -552,10 +553,9 @@ void() weapon_touch =
 	
 	stemp = self;
 	self = other;
-
+	
 	if (!deathmatch)
-		self.weapon = new;
-
+		W_DelpoyGun(new);
 	else
 		Deathmatch_Weapon (old, new);
 
@@ -676,20 +676,20 @@ AMMO
 void() ammo_touch =
 {
 	local entity	stemp;
-	local float		best;
+	//local float		best;
 
 	if (other.classname != "player")
 		return;
 
 	if (other.health <= 0)
 		return;
-
+/*
 // if the player was using his best weapon, change up to the new one if better		
 	stemp = self;
 	self = other;
 	best = W_BestWeapon();
 	self = stemp;
-
+*/
 
 // shotgun
 	if (self.weapon == 1)
@@ -736,14 +736,16 @@ void() ammo_touch =
 	stuffcmd (other, "bf\n");
 
 	// change to a better weapon if appropriate
+	/*
 	if ( other.weapon == best )
 	{
 		stemp = self;
 		self = other;
-		self.weapon = W_BestWeapon();
+		W_DelpoyGun(W_BestWeapon());
 		W_SetCurrentAmmo ();
 		self = stemp;
 	}
+	*/
 
 	// if changed current ammo, update it
 	stemp = self;
@@ -1322,8 +1324,9 @@ PLAYER BACKPACKS
 void() BackpackTouch =
 {
 	local string    s;
-	local   float   best, old, new;
-	local           entity  stemp;
+	//local   float   best,
+	local   float   old, new;
+	//local           entity  stemp;
 	local   float   acount;
 
 	if (other.classname != "player")
@@ -1345,11 +1348,13 @@ void() BackpackTouch =
 		}
  	}
 
-	// if the player was using his best weapon, change up to the new one if better          
+/*
+	// if the player was using his best weapon, change up to the new one if better  
 	stemp = self;
 	self = other;
 	best = W_BestWeapon();
 	self = stemp;
+*/
 
 	// change weapons
 	other.ammo_shells = other.ammo_shells + self.ammo_shells;
@@ -1419,7 +1424,7 @@ void() BackpackTouch =
 	self = other;
 	
 	// change to the weapon
-	
+	/*
 		if (self.flags & FL_INWATER)
 		{
 			if (new != IT_LIGHTNING)
@@ -1432,7 +1437,7 @@ void() BackpackTouch =
 		{                
 			Deathmatch_Weapon (old, new);
 		}
-
+	*/
 	W_SetCurrentAmmo ();
 
 };

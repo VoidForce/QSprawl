@@ -161,15 +161,15 @@ void SV_Init (void)
 	extern	cvar_t	sv_autosave_interval;
 
 	Cvar_RegisterVariable (&sv_maxvelocity);
-Cvar_RegisterVariable (&sv_gravity);
-//Cvar_RegisterVariable (&sv_friction);
-Cvar_SetCallback (&sv_gravity, Host_Callback_Notify);
-//Cvar_SetCallback (&sv_friction, Host_Callback_Notify);
-//Cvar_RegisterVariable (&sv_edgefriction);
-//Cvar_RegisterVariable (&sv_stopspeed);
-//Cvar_RegisterVariable (&sv_maxspeed);
-//Cvar_SetCallback (&sv_maxspeed, Host_Callback_Notify);
-//Cvar_RegisterVariable (&sv_accelerate);
+	Cvar_RegisterVariable (&sv_gravity);
+	//Cvar_RegisterVariable (&sv_friction);
+	Cvar_SetCallback (&sv_gravity, Host_Callback_Notify);
+	//Cvar_SetCallback (&sv_friction, Host_Callback_Notify);
+	//Cvar_RegisterVariable (&sv_edgefriction);
+	//Cvar_RegisterVariable (&sv_stopspeed);
+	//Cvar_RegisterVariable (&sv_maxspeed);
+	//Cvar_SetCallback (&sv_maxspeed, Host_Callback_Notify);
+	//Cvar_RegisterVariable (&sv_accelerate);
 	Cvar_RegisterVariable (&sv_idealpitchscale);
 	Cvar_RegisterVariable (&sv_aim);
 	Cvar_RegisterVariable (&sv_nostep);
@@ -456,7 +456,7 @@ void SV_SendServerinfo (client_t *client)
 	MSG_WriteByte (&client->message, svc_signonnum);
 	MSG_WriteByte (&client->message, 1);
 
-	client->sendsignon = true;
+	client->sendsignon = PRESPAWN_FLUSH;
 	client->spawned = false;		// need prespawn, spawn, etc
 }
 
@@ -632,6 +632,7 @@ given point.
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel) //johnfitz -- added worldmodel as a parameter
 {
 	fatbytes = (worldmodel->numleafs+7)>>3; // ericw -- was +31, assumed to be a bug/typo
+	fatbytes = (fatbytes + VIS_ALIGN_MASK) & ~VIS_ALIGN_MASK; // round up
 	if (fatpvs == NULL || fatbytes > fatpvs_capacity)
 	{
 		fatpvs_capacity = fatbytes;
@@ -980,8 +981,10 @@ void SV_CleanupEnts (void)
 	ent = NEXT_EDICT(qcvm->edicts);
 	for (e=1 ; e<qcvm->num_edicts ; e++, ent = NEXT_EDICT(ent))
 	{
+		// Qsprawl todo: better to combine into 1 operation
 		ent->v.effects = (int)ent->v.effects & ~EF_MUZZLEFLASH;
 		ent->v.effects = (int)ent->v.effects & ~EF_NOLERP;
+		ent->v.effects = (int)ent->v.effects & ~EF_NOLERP2;
 	}
 }
 
@@ -1107,7 +1110,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	for (i=0 ; i<3 ; i++)
 	{
 		if (bits & (SU_PUNCH1<<i))
-			MSG_WriteChar (msg, ent->v.punchangle[i]);
+			MSG_WriteFloat (msg, ent->v.punchangle[i]/16);
 		if (bits & (SU_VELOCITY1<<i))
 			MSG_WriteChar (msg, ent->v.velocity[i]/16);
 	}

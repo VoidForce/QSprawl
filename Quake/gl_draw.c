@@ -25,11 +25,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
+const vec3_t	rgb_black = {0.f, 0.f, 0.f};
+const vec3_t	rgb_white = {1.f, 1.f, 1.f};
+
 cvar_t		scr_conalpha = {"scr_conalpha", "0.5", CVAR_ARCHIVE}; //johnfitz
 cvar_t		scr_conbrightness = {"scr_conbrightness", "1.0", CVAR_ARCHIVE};
 
 qpic_t		*draw_disc;
 qpic_t		*draw_backtile;
+qboolean	custom_conchars;
 
 gltexture_t *char_texture; //johnfitz
 byte		char_texture_data[256 * 10 * 10];
@@ -461,6 +465,8 @@ void Draw_LoadPics (void)
 	if (info->disksize < 128*128)
 		Sys_Error ("Draw_LoadPics: truncated conchars");
 
+	custom_conchars = (COM_HashBlock (data, 128*218) != 0xc7e2a10a);
+
 	for (i = 0; i < 256; i++)
 	{
 		row = i / 16;
@@ -736,7 +742,7 @@ void Draw_Character (int x, int y, int num)
 Draw_StringEx
 ================
 */
-void Draw_StringEx (int x, int y, int dim, const char *str)
+void Draw_StringEx (float x, float y, float dim, const char *str)
 {
 	if (y <= glcanvas.top - dim)
 		return;			// totally off screen
@@ -911,7 +917,7 @@ Fills a box of pixels with a single color
 void Draw_FillEx (float x, float y, float w, float h, const float *rgb, float alpha)
 {
 	guivertex_t *verts;
-	
+
 	GL_SetCanvasColor (rgb[0], rgb[1], rgb[2], alpha); //johnfitz -- added alpha
 	Draw_SetTexture (whitetexture);
 
@@ -1121,11 +1127,18 @@ void Draw_GetCanvasTransform (canvastype type, drawtransform_t *transform)
 		Draw_Transform (vid.guiwidth/s, vid.guiheight/s, s, CANVAS_ALIGN_CENTERX, CANVAS_ALIGN_CENTERY, transform);
 		break;
 	case CANVAS_SBAR:
-		s = CLAMP (1.0f, scr_sbarscale.value, (float)vid.guiwidth / 320.0f);
-		if (cl.gametype == GAME_DEATHMATCH && scr_hudstyle.value < 1)
+		if (hudstyle == HUD_QUAKEWORLD)	// qw hud could cut off if too short
+			s = CLAMP (1.0f, scr_sbarscale.value, (float)vid.guiheight / 240.0f);
+		else
+			s = CLAMP(1.0f, scr_sbarscale.value, (float)vid.guiwidth / 320.0f);
+		if (cl.gametype == GAME_DEATHMATCH && (hudstyle == HUD_CLASSIC || hudstyle == HUD_QUAKEWORLD))
 			Draw_Transform (320, 48, s, CANVAS_ALIGN_LEFT, CANVAS_ALIGN_BOTTOM, transform);
 		else
 			Draw_Transform (320, 48, s, CANVAS_ALIGN_CENTERX, CANVAS_ALIGN_BOTTOM, transform);
+		break;
+    case CANVAS_SBAR_QW_INV:
+		s = CLAMP(1.0f, scr_sbarscale.value, (float)vid.guiheight / 240.0f);
+        Draw_Transform (48, 48, s, CANVAS_ALIGN_RIGHT, CANVAS_ALIGN_BOTTOM, transform);
 		break;
 	case CANVAS_SBAR2:
 		s = q_min (vid.guiwidth / 400.0f, vid.guiheight / 225.0f);

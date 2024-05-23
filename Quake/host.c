@@ -63,7 +63,7 @@ cvar_t	host_speeds = {"host_speeds","0",CVAR_NONE};			// set for running times
 cvar_t	host_maxfps = {"host_maxfps", "250", CVAR_ARCHIVE}; //johnfitz
 cvar_t	host_timescale = {"host_timescale", "0", CVAR_NONE}; //johnfitz
 cvar_t	max_edicts = {"max_edicts", "16384", CVAR_NONE}; //johnfitz //ericw -- changed from 2048 to 8192, removed CVAR_ARCHIVE
-cvar_t	cl_nocsqc = {"cl_nocsqc", "0", CVAR_NONE};	//spike -- blocks the loading of any csqc modules
+cvar_t	cl_nocsqc = {"cl_nocsqc", "1", CVAR_NONE};	//spike -- blocks the loading of any csqc modules
 
 cvar_t	sys_ticrate = {"sys_ticrate","0.05",CVAR_NONE}; // dedicated server
 cvar_t	serverprofile = {"serverprofile","0",CVAR_NONE};
@@ -119,7 +119,7 @@ static void Max_Fps_f (cvar_t *var)
 	{
 		if (!host_netinterval)
 			Con_Printf ("Using renderer/network isolation.\n");
-		host_netinterval = 1.0/72;
+		host_netinterval = 1.0 / 72; // qs
 	}
 	else
 	{
@@ -613,6 +613,8 @@ not reinitialize anything.
 */
 void Host_ClearMemory (void)
 {
+	R_ClearBoundingBoxes ();
+
 	if (cl.qcvm.extfuncs.CSQC_Shutdown)
 	{
 		PR_SwitchQCVM(&cl.qcvm);
@@ -629,7 +631,7 @@ void Host_ClearMemory (void)
 	PR_ClearProgs(&cl.qcvm);
 /* host_hunklevel MUST be set at this point */
 	Hunk_FreeToLowMark (host_hunklevel);
-	CL_ClearSignons ();
+	cls.signon = 0; // not CL_ClearSignons()
 	memset (&sv, 0, sizeof(sv));
 
 	CL_FreeState ();

@@ -210,6 +210,11 @@ void Vec_Free (void **pvec)
 	}
 }
 
+void MultiString_Append (char **pvec, const char *str)
+{
+	Vec_Append ((void **)pvec, 1, str, strlen (str) + 1);
+}
+
 /*
 ============================================================================
 
@@ -220,8 +225,19 @@ void Vec_Free (void **pvec)
 
 int q_strnaturalcmp (const char *s1, const char *s2)
 {
+	qboolean neg1, neg2, sign1, sign2;
+
 	if (s1 == s2)
 		return 0;
+
+	neg1 = *s1 == '-';
+	neg2 = *s2 == '-';
+	sign1 = neg1 || *s1 == '+';
+	sign2 = neg2 || *s2 == '+';
+
+	// early out if strings start with different signs followed by digits
+	if (neg1 != neg2 && q_isdigit (s1[sign1]) && q_isdigit (s1[sign2]))
+		return neg2 - neg1;
 
 skip_prefix:
 	while (*s1 && !q_isdigit (*s1) && q_toupper (*s1) == q_toupper (*s2))
@@ -235,7 +251,7 @@ skip_prefix:
 	{
 		const char *begin1 = s1++;
 		const char *begin2 = s2++;
-		int diff;
+		int diff, sign;
 
 		while (*begin1 == '0')
 			begin1++;
@@ -247,16 +263,22 @@ skip_prefix:
 		while (q_isdigit (*s2))
 			s2++;
 
+		sign = neg1 ? -1 : 1;
+
 		diff = (s1 - begin1) - (s2 - begin2);
 		if (diff)
-			return diff;
+			return diff * sign;
 
 		while (begin1 != s1)
 		{
 			diff = *begin1++ - *begin2++;
 			if (diff)
-				return diff;
+				return diff * sign;
 		}
+
+		// We only support negative numbers at the beginning of strings so that
+		// "-2" is sorted before "-1", but "file-2345.ext" *after* "file-1234.ext".
+		neg1 = neg2 = false;
 
 		goto skip_prefix;
 	}
@@ -304,44 +326,22 @@ int q_strncasecmp(const char *s1, const char *s2, size_t n)
 	return (int)(c1 - c2);
 }
 
-//spike -- grabbed this from fte, because its useful to me
 char *q_strcasestr(const char *haystack, const char *needle)
 {
-	int c1, c2, c2f;
-	int i;
-	c2f = *needle;
-	if (c2f >= 'a' && c2f <= 'z')
-		c2f -= ('a' - 'A');
-	if (!c2f)
-		return (char*)haystack;
-	while (1)
+	const size_t len = strlen(needle);
+
+	if (!len)
+		return (char *)haystack;
+
+	while (*haystack)
 	{
-		c1 = *haystack;
-		if (!c1)
-			return NULL;
-		if (c1 >= 'a' && c1 <= 'z')
-			c1 -= ('a' - 'A');
-		if (c1 == c2f)
-		{
-			for (i = 1; ; i++)
-			{
-				c1 = haystack[i];
-				c2 = needle[i];
-				if (c1 >= 'a' && c1 <= 'z')
-					c1 -= ('a' - 'A');
-				if (c2 >= 'a' && c2 <= 'z')
-					c2 -= ('a' - 'A');
-				if (!c2)
-					return (char*)haystack;	//end of needle means we found a complete match
-				if (!c1)	//end of haystack means we can't possibly find needle in it any more
-					return NULL;
-				if (c1 != c2)	//mismatch means no match starting at haystack[0]
-					break;
-			}
-		}
-		haystack++;
+		if (!q_strncasecmp(haystack, needle, len))
+			return (char *)haystack;
+
+		++haystack;
 	}
-	return NULL;	//didn't find it
+
+	return NULL;
 }
 
 char *q_strlwr (char *str)
@@ -1345,7 +1345,7 @@ skipwhite:
 				com_token[len] = 0;
 				return data;
 			}
-			if (len < countof (com_token) - 1)
+			if (len < Q_COUNTOF(com_token) - 1)
 				com_token[len++] = c;
 			else if (mode == CPE_NOTRUNC)
 				return NULL;
@@ -1355,7 +1355,7 @@ skipwhite:
 // parse single characters
 	if (c == '{' || c == '}'|| c == '('|| c == ')' || c == '\'' || c == ':')
 	{
-		if (len < countof (com_token) - 1)
+		if (len < Q_COUNTOF(com_token) - 1)
 			com_token[len++] = c;
 		else if (mode == CPE_NOTRUNC)
 			return NULL;
@@ -1366,7 +1366,7 @@ skipwhite:
 // parse a regular word
 	do
 	{
-		if (len < countof (com_token) - 1)
+		if (len < Q_COUNTOF(com_token) - 1)
 			com_token[len++] = c;
 		else if (mode == CPE_NOTRUNC)
 			return NULL;
@@ -1455,13 +1455,17 @@ static void COM_CheckRegistered (void)
 		return;
 	}
 
-	Sys_FileRead (h, check, sizeof(check));
+	i = Sys_FileRead (h, check, sizeof(check));
 	COM_CloseFile (h);
+	if (i != (int) sizeof(check))
+		goto corrupt;
 
 	for (i = 0; i < 128; i++)
 	{
 		if (pop[i] != (unsigned short)BigShort (check[i]))
+		{ corrupt:
 			Sys_Error ("Corrupted data file.");
+		}
 	}
 
 	for (i = 0; com_cmdline[i]; i++)
@@ -1601,7 +1605,7 @@ QUAKE FILESYSTEM
 =============================================================================
 */
 
-THREAD_LOCAL int com_filesize;
+THREAD_LOCAL qfileofs_t com_filesize;
 
 
 //
@@ -1740,6 +1744,43 @@ char *COM_TempSuffix (unsigned seq)
 
 /*
 ============
+COM_DescribeDuration
+
+Describes the given duration, e.g. "3 minutes"
+============
+*/
+void COM_DescribeDuration (char *out, size_t outsize, double seconds)
+{
+	const double SECOND = 1;
+	const double MINUTE = 60 * SECOND;
+	const double HOUR = 60 * MINUTE;
+	const double DAY = 24 * HOUR;
+	const double WEEK = 7 * DAY;
+	const double MONTH = 30.436875 * DAY;
+	const double YEAR = 365.2425 * DAY;
+
+	seconds = fabs (seconds);
+
+	if (seconds < 1)
+		q_strlcpy (out, "moments", outsize);
+	else if (seconds < 60 * SECOND)
+		q_snprintf (out, outsize, "%i second%s", PLURAL (seconds));
+	else if (seconds < 90 * MINUTE)
+		q_snprintf (out, outsize, "%i minute%s", PLURAL (seconds / MINUTE));
+	else if (seconds < DAY)
+		q_snprintf (out, outsize, "%i hour%s", PLURAL (seconds / HOUR));
+	else if (seconds < WEEK)
+		q_snprintf (out, outsize, "%i day%s", PLURAL (seconds / DAY));
+	else if (seconds < MONTH)
+		q_snprintf (out, outsize, "%i week%s", PLURAL (seconds / WEEK));
+	else if (seconds < YEAR)
+		q_snprintf (out, outsize, "%i month%s", PLURAL (seconds / MONTH));
+	else
+		q_snprintf (out, outsize, "%i year%s", PLURAL (seconds / YEAR));
+}
+
+/*
+============
 COM_CreatePath
 ============
 */
@@ -1763,14 +1804,14 @@ void COM_CreatePath (char *path)
 COM_filelength
 ================
 */
-long COM_filelength (FILE *f)
+qfileofs_t COM_filelength (FILE *f)
 {
-	long		pos, end;
+	qfileofs_t	pos, end;
 
-	pos = ftell (f);
-	fseek (f, 0, SEEK_END);
-	end = ftell (f);
-	fseek (f, pos, SEEK_SET);
+	pos = Sys_ftell (f);
+	Sys_fseek (f, 0, SEEK_END);
+	end = Sys_ftell (f);
+	Sys_fseek (f, pos, SEEK_SET);
 
 	return end;
 }
@@ -1967,7 +2008,7 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 	int		h;
 	byte	*buf;
 	char	base[32];
-	int		len;
+	int	len, nread;
 
 	buf = NULL;	// quiet compiler warning
 
@@ -2011,8 +2052,10 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 
 	((byte *)buf)[len] = 0;
 
-	Sys_FileRead (h, buf, len);
+	nread = Sys_FileRead (h, buf, len);
 	COM_CloseFile (h);
+	if (nread != len)
+		Sys_Error ("COM_LoadFile: Error reading %s", path);
 
 	return buf;
 }
@@ -2187,8 +2230,8 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	if (Sys_FileOpenRead (packfile, &packhandle) == -1)
 		return NULL;
 
-	Sys_FileRead (packhandle, (void *)&header, sizeof(header));
-	if (header.id[0] != 'P' || header.id[1] != 'A' || header.id[2] != 'C' || header.id[3] != 'K')
+	if (Sys_FileRead(packhandle, &header, sizeof(header)) != (int) sizeof(header) ||
+	    header.id[0] != 'P' || header.id[1] != 'A' || header.id[2] != 'C' || header.id[3] != 'K')
 		Sys_Error ("%s is not a packfile", packfile);
 
 	header.dirofs = LittleLong (header.dirofs);
@@ -2216,7 +2259,8 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	newfiles = (packfile_t *) Z_Malloc(numpackfiles * sizeof(packfile_t));
 
 	Sys_FileSeek (packhandle, header.dirofs);
-	Sys_FileRead (packhandle, (void *)info, header.dirlen);
+	if (Sys_FileRead(packhandle, info, header.dirlen) != header.dirlen)
+		Sys_Error ("Error reading %s", packfile);
 
 	// crc the directory to check for modifications
 	if (!com_modified)
@@ -4033,6 +4077,31 @@ static const uint32_t qchar_to_unicode[256] =
 
 /*
 ==================
+UTF8_CodePointLength
+
+Returns the number of bytes needed to encode the codepoint
+using UTF-8 (max 4), or 0 for an invalid code point
+==================
+*/
+size_t UTF8_CodePointLength (uint32_t codepoint)
+{
+	if (codepoint < 0x80)
+		return 1;
+
+	if (codepoint < 0x800)
+		return 2;
+
+	if (codepoint < 0x10000)
+		return 3;
+
+	if (codepoint < 0x110000)
+		return 4;
+
+	return 0;
+}
+
+/*
+==================
 UTF8_WriteCodePoint
 
 Writes a single Unicode code point using UTF-8
@@ -4154,14 +4223,30 @@ uint32_t UTF8_ReadCodePoint (const char **src)
 UTF8_FromQuake
 
 Converts a string from Quake encoding to UTF-8
+
+Returns the number of written characters (including the NUL terminator)
+if a valid output buffer is provided (dst is non-NULL, maxbytes > 0),
+or the total amount of space necessary to encode the entire src string
+if dst is NULL and maxbytes is 0.
 ==================
 */
-void UTF8_FromQuake (char *dst, size_t maxbytes, const char *src)
+size_t UTF8_FromQuake (char *dst, size_t maxbytes, const char *src)
 {
 	size_t i, j, written;
 
 	if (!maxbytes)
-		return;
+	{
+		if (dst)
+			return 0; // error
+		for (i = 0, j = 0; src[i]; i++)
+		{
+			uint32_t codepoint = qchar_to_unicode[(unsigned char) src[i]];
+			if (codepoint)
+				j += UTF8_CodePointLength (codepoint);
+		}
+		return j + 1; // include terminator
+	}
+
 	--maxbytes;
 
 	for (i = 0, j = 0; j < maxbytes && src[i]; i++)
@@ -4175,7 +4260,9 @@ void UTF8_FromQuake (char *dst, size_t maxbytes, const char *src)
 		j += written;
 	}
 
-	dst[j] = '\0';
+	dst[j++] = '\0';
+
+	return j;
 }
 
 /*
@@ -4186,11 +4273,16 @@ Transliterates a string from UTF-8 to Quake encoding
 
 Note: only single-character transliterations are used for now,
 mainly to remove diacritics
+
+Returns the number of written characters (including the NUL terminator)
+if a valid output buffer is provided (dst is non-NULL, maxbytes > 0),
+or the total amount of space necessary to encode the entire src string
+if dst is NULL and maxbytes is 0.
 ==================
 */
-void UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
+size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 {
-	size_t i;
+	size_t i, j;
 
 	if (!unicode_translit_init)
 	{
@@ -4214,7 +4306,32 @@ void UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 	}
 
 	if (!maxbytes)
-		return;
+	{
+		if (dst)
+			return 0; // error
+
+		// Determine necessary output buffer size
+		for (i = 0, j = 0; *src; i++)
+		{
+			// ASCII fast path
+			while (*src && (byte)*src < 0x80)
+			{
+				src++;
+				j++;
+			}
+
+			if (!*src)
+				break;
+
+			// Every codepoint maps to a single Quake character
+			UTF8_ReadCodePoint (&src);
+
+			j++;
+		}
+
+		return j + 1; // include terminator
+	}
+
 	--maxbytes;
 
 	for (i = 0; i < maxbytes && *src; i++)
@@ -4242,4 +4359,6 @@ void UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 	}
 
 	dst[i++] = '\0';
+
+	return i;
 }

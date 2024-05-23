@@ -563,10 +563,10 @@ void() PutClientInServer =
 
 	self.phys_speed = 320;
 	self.phys_friction = 8;
-	self.phys_gravity = 720;
+	self.phys_gravity = 1; // 0.9
 	self.phys_acceleration = 13;
-	self.phys_airacceleration = 4;
-	self.phys_airfriction = 0.6;
+	self.phys_airacceleration = 10;
+	self.phys_airfriction = 0.1;
 
 	self.show_hostile = 0;
 	self.max_health = 100;
@@ -624,8 +624,9 @@ void() PutClientInServer =
 	
 //	centerprint(self, getMapname(mapname));	//gnounc --thought it would be fun. I was at odds about adding an unexpected feature. I may remove it later
 	//BAM removed it later. --gnounc
-
-
+	if (!grenade_handler)
+		grenade_handler = spawn();
+	grenade_handler.classname = "GrenadeHandler";
 };
 
 
@@ -822,6 +823,8 @@ void() PlayerJump =
 	local vector walljump_direction;
 	local float z;
 	local float jump_force;
+	local float speed_fatigue;
+	local float speed2d;
 	if (self.flags & FL_WATERJUMP)
 		return;
 	
@@ -865,20 +868,25 @@ void() PlayerJump =
 		if (self.wall_jumps > 2) 
 			return;
 		self.wall_jumps++;
+
+		speed2d = vlen([self.velocity_x, self.velocity_y, 0]);
+		
 		z = self.velocity_z;
 		jump_force = clamp(0, time - self.jump_timer, 1);
-		
-		walljump_direction = (self.wall_normal * 200) + v_forward * (100 + (1 - jump_force) * 75);
+		speed_fatigue = clamp(0.25, speed2d / 320, 1);
+		// magnitude of force away from the wall, and forward
+		walljump_direction = self.wall_normal * (125 + (1 - jump_force) * 100) + v_forward * (100 + (1 - jump_force) * 150) * speed_fatigue;
 		walljump_direction_z = 0;
 		self.velocity += walljump_direction;
-		self.velocity_z += 100 + 270 * jump_force;
+		speed_fatigue = 1 - clamp(0, self.velocity_z / 600, 1); // we won't let player fly upwards too fast with jump spam
+		self.velocity_z += (100 + 320 * jump_force) * speed_fatigue;
 		self.velocity_z = max(125, self.velocity_z);
 		//self.velocity_z = min(500, self.velocity_z);
 		self.jump_timer = time + 0.5;
 			// player jumping sound
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 	}
-	else
+	else // regular jump
 	{
 		self.velocity_z = self.velocity_z + 270;
 		self.jump_timer = time;
@@ -1019,7 +1027,7 @@ void() CheckWaterJump =
 void() SetMovementParams_Slide =
 {
 	self.phys_acceleration = 0;
-	self.phys_friction = 1;
+	self.phys_friction = 0.85;
 };
 
 void() SetMovementParams_Crouchwalk =
@@ -1058,7 +1066,51 @@ void() PlayerPreThink =
 
 	if (self.view_ofs == '0 0 0')
 		return;		// intermission or finale
+		
+	local float i;
+	local float delta;
+	local float progress;
+	local float punch_combined;
+	
+	if (self.punch_time)
+	{
+		progress = time - self.punch_time;
+		
+		for (i=0; i < 3; i++)
+		{
+			punch_combined = 0;
+		
+			delta = self.punch_slow[i] * min(1, progress * 0.5);
+			self.punch_slow[i] -= delta;
+			punch_combined += delta;
 
+			delta = self.punch_normal[i] * min(1, progress * 4);
+			self.punch_normal[i] -= delta;
+			punch_combined += delta;
+
+			delta = self.punch_fast[i] * min(1, progress * 10);
+			self.punch_fast[i] -= delta;
+			punch_combined += delta;
+			
+			self.punchangle[i] += punch_combined;
+			//self.punchangle[i] = clamp (-15, self.punchangle[i], 15);
+		}
+		
+		if (self.punch_time + 2.0 < time)
+		{
+			self.punch_fast = [0,0,0];
+			self.punch_normal = [0,0,0];
+			self.punch_slow = [0,0,0];
+			self.punch_time = 0;
+		}
+	}
+	
+	/*if (self.punchangle != '0 0 0')
+	{
+		if (self.punch_relaxtime < time)
+			self.punchangle = self.punchangle * (0.95 * frametime); 
+	}*/
+	
 	makevectors (self.v_angle);		// is this still used
 
 	if (deathmatch || coop)	// gb, this is a waste in SP
@@ -1132,8 +1184,7 @@ void() PlayerPreThink =
 	local float dspeed;
 
 	dspeed=vlen([self.velocity_x,self.velocity_y, 0]);
-	dprint3("speed = ", ftos(dspeed), "\n");
-	
+	//dprint3("speed = ", ftos(dspeed), "\r");
 	// Slide button pressed
 	if (self.b_slide)
 	{
@@ -1204,33 +1255,11 @@ void() PlayerPreThink =
 	else if (!(self.movementflags & MF_INSLIDE) && self.view_ofs_z < STANDART_OFFSET)
 		self.view_ofs_z = lerp( STANDART_OFFSET, SLIDE_OFFSET, (self.crouch_timer - time)*5);
 	/*
-	if (self.b_attack2)
-	{
-		dprint("Attack2\n");
-	}
-	if (self.b_melee)
-	{
-		dprint("Melee\n");
-	}
-	if (self.b_kick)
-	{
-		dprint("Kick\n");
-	}
-	if (self.b_adrenaline)
-	{
-		dprint("Adrenaline\n");
-	}
-	if (self.b_reload)
-	{
-		dprint("Reload\n");
-	}
 	if (self.button1)
 	{
 		dprint("Use\n");
 	}
 	*/
-
-
 
 	// teleporters can force a non-moving pause time	
 	if (time < self.pausetime)
@@ -1238,11 +1267,56 @@ void() PlayerPreThink =
 
 	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE)
 	{
-		self.weapon = W_BestWeapon ();
-		W_SetCurrentAmmo ();
+		W_DelpoyGun(W_BestWeapon());
 	}
 };
+
+/*================
+PlayerPostThink
+
+Called every frame after physics are run
+================*/
+void() PlayerPostThink =
+{
+	if (self.view_ofs == '0 0 0')
+		return;		// intermission or finale
+
+	if (self.deadflag)
+		return;
 	
+	if (self.sprawlflags & SFL_SEMIAUTO)
+	{
+		if (!self.button0)
+			self.sprawlflags -= self.sprawlflags & SFL_SEMIAUTO;
+	}
+
+	W_WeaponFrame (); // do weapon stuff
+
+	// check to see if player landed and play landing sound	
+	if ((self.jump_flag < -300) && (self.flags & FL_ONGROUND) && (self.health > 0))
+	{
+		if (self.watertype == CONTENT_WATER)
+			sound (self, CHAN_BODY, "player/h2ojump.wav", 1, ATTN_NORM);
+	
+		else if (self.jump_flag < -650)
+		{
+			//T_Damage (self, world, world, 5); // no fall damage in qsprawl
+			sound (self, CHAN_VOICE, "player/land2.wav", 1, ATTN_NORM);
+			self.deathtype = "falling";
+		}
+	
+		else
+			sound (self, CHAN_VOICE, "player/land.wav", 1, ATTN_NORM);
+
+		self.jump_flag = 0;
+	}
+
+	if (!(self.flags & FL_ONGROUND))
+		self.jump_flag = self.velocity_z;
+
+	CheckPowerups ();
+};
+
 /*================
 CheckPowerups
 
@@ -1397,48 +1471,6 @@ void() CheckPowerups =
 	}	
 
 };
-
-
-/*================
-PlayerPostThink
-
-Called every frame after physics are run
-================*/
-void() PlayerPostThink =
-{
-	if (self.view_ofs == '0 0 0')
-		return;		// intermission or finale
-
-	if (self.deadflag)
-		return;
-		
-	W_WeaponFrame (); // do weapon stuff
-
-	// check to see if player landed and play landing sound	
-	if ((self.jump_flag < -300) && (self.flags & FL_ONGROUND) && (self.health > 0))
-	{
-		if (self.watertype == CONTENT_WATER)
-			sound (self, CHAN_BODY, "player/h2ojump.wav", 1, ATTN_NORM);
-	
-		else if (self.jump_flag < -650)
-		{
-			T_Damage (self, world, world, 5); 
-			sound (self, CHAN_VOICE, "player/land2.wav", 1, ATTN_NORM);
-			self.deathtype = "falling";
-		}
-	
-		else
-			sound (self, CHAN_VOICE, "player/land.wav", 1, ATTN_NORM);
-
-		self.jump_flag = 0;
-	}
-
-	if (!(self.flags & FL_ONGROUND))
-		self.jump_flag = self.velocity_z;
-
-	CheckPowerups ();
-};
-
 
 /*===========
 ClientConnect

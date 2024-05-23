@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bgmusic.h"
 #include "q_ctype.h"
 
+#include <time.h>
+
 cvar_t ui_mouse	= {"ui_mouse", "1", CVAR_ARCHIVE};
 cvar_t ui_mouse_sound = {"ui_mouse_sound", "0", CVAR_ARCHIVE};
 cvar_t ui_sound_throttle = {"ui_sound_throttle", "0.1", CVAR_ARCHIVE};
@@ -53,8 +55,24 @@ extern cvar_t r_softemu;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oit;
 extern cvar_t r_alphasort;
+extern cvar_t r_md5;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
+extern cvar_t joy_deadzone_look;
+extern cvar_t joy_deadzone_move;
+extern cvar_t joy_deadzone_trigger;
+extern cvar_t joy_sensitivity_yaw;
+extern cvar_t joy_sensitivity_pitch;
+extern cvar_t joy_invert;
+extern cvar_t joy_exponent;
+extern cvar_t joy_exponent_move;
+extern cvar_t joy_swapmovelook;
+extern cvar_t gyro_enable;
+extern cvar_t gyro_mode;
+extern cvar_t gyro_turning_axis;
+extern cvar_t gyro_pitchsensitivity;
+extern cvar_t gyro_yawsensitivity;
+extern cvar_t gyro_noise_thresh;
 
 extern char crosshair_char;
 
@@ -63,6 +81,7 @@ extern qboolean quake64;
 enum m_state_e m_state;
 extern qboolean	keydown[256];
 int m_mousex, m_mousey;
+int m_lastkey = -1; // last key pressed
 qboolean m_ignoremouseframe;
 static int m_left, m_top, m_width, m_height;
 
@@ -84,6 +103,7 @@ void M_Menu_Main_f (void);
 	void M_Menu_Options_f (void);
 		void M_Menu_Keys_f (void);
 		void M_Menu_Video_f (void);
+		void M_Menu_Gamepad_f (void);
 	void M_Menu_Mods_f (void);
 		void M_Menu_ModInfo_f (const filelist_item_t *item);
 	void M_Menu_Help_f (void);
@@ -104,7 +124,8 @@ void M_Main_Draw (void);
 		void M_ServerList_Draw (void);
 	void M_Options_Draw (void);
 		void M_Keys_Draw (void);
-		void M_Video_Draw (void);
+		//void M_Video_Draw (void);
+		//void M_Gamepad_Draw (void);
 	void M_Mods_Draw (void);
 		void M_ModInfo_Draw (void);
 	void M_Help_Draw (void);
@@ -125,7 +146,8 @@ void M_Main_Key (int key);
 		void M_ServerList_Key (int key);
 	void M_Options_Key (int key);
 		void M_Keys_Key (int key);
-		void M_Video_Key (int key);
+		//void M_Video_Key (int key);
+		//void M_Gamepad_Key (int key);
 	void M_Mods_Key (int key);
 		void M_ModInfo_Key (int key);
 	void M_Help_Key (int key);
@@ -146,7 +168,8 @@ void M_Main_Mousemove (int cx, int cy);
 		void M_ServerList_Mousemove (int cx, int cy);
 	void M_Options_Mousemove (int cx, int cy);
 		void M_Keys_Mousemove (int cx, int cy);
-		void M_Video_Mousemove (int cx, int cy);
+		//void M_Video_Mousemove (int cx, int cy);
+		//void M_Gamepad_Mousemove (int cx, int cy);
 	void M_Mods_Mousemove (int cx, int cy);
 	//void M_Help_Mousemove (int cx, int cy);
 	//void M_Quit_Mousemove (int cx, int cy);
@@ -171,8 +194,6 @@ void M_ConfigureNetSubsystem(void);
 void M_SetSkillMenuMap (const char *name);
 void M_Options_SelectMods (void);
 void M_Options_Init (enum m_state_e state);
-
-#define DESCRIPTION_SCROLL_WAIT_TIME	1.0
 
 #define SEARCH_FADE_TIMEOUT				0.5
 #define SEARCH_TYPE_TIMEOUT				1.5
@@ -332,7 +353,7 @@ static int M_WordLength (const char *text)
 static int M_LineWrap (const char **text, int maxchars)
 {
 	const char *str = *text;
-	int i, lastspace = 0;
+	int i;
 
 	for (i = 0; i < maxchars && str[i]; /**/)
 	{
@@ -1044,6 +1065,50 @@ void M_List_Mousemove (menulist_t *list, int yrel)
 
 
 //=============================================================================
+/* Scrolling ticker */
+
+typedef struct
+{
+	double			scroll_time;
+	double			scroll_wait_time;
+} menuticker_t;
+
+static void M_Ticker_Init (menuticker_t *ticker)
+{
+	ticker->scroll_time = 0.0;
+	ticker->scroll_wait_time = 1.0;
+}
+
+static void M_Ticker_Update (menuticker_t *ticker)
+{
+	if (ticker->scroll_wait_time <= 0.0)
+		ticker->scroll_time += host_rawframetime;
+	else
+		ticker->scroll_wait_time = q_max (0.0, ticker->scroll_wait_time - host_rawframetime);
+}
+
+static qboolean M_Ticker_Key (menuticker_t *ticker, int key)
+{
+	switch (key)
+	{
+	case K_RIGHTARROW:
+		ticker->scroll_time += 0.25;
+		ticker->scroll_wait_time = 1.5;
+		M_ThrottledSound ("misc/menu3.wav");
+		return true;
+
+	case K_LEFTARROW:
+		ticker->scroll_time -= 0.25;
+		ticker->scroll_wait_time = 1.5;
+		M_ThrottledSound ("misc/menu3.wav");
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+//=============================================================================
 
 int m_save_demonum;
 
@@ -1298,7 +1363,7 @@ void M_SinglePlayer_Key (int key)
 		{
 		case 0:
 			if (sv.active)
-				if (!SCR_ModalMessage("Are you sure you want to\nstart a new game?\n", 0.0f))
+				if (!SCR_ModalMessage("Are you sure you want to\nstart a new game? (y/n)\n", 0.0f))
 					break;
 			if (quake64)
 			{
@@ -1317,15 +1382,15 @@ void M_SinglePlayer_Key (int key)
 			break;
 
 		case 1:
-			M_Menu_Load_f ();
+			Cbuf_AddText ("menu_load\n");
 			break;
 
 		case 2:
-			M_Menu_Save_f ();
+			Cbuf_AddText ("menu_save\n");
 			break;
 
 		case 3:
-			M_Menu_Maps_f ();
+			Cbuf_AddText ("menu_maps\n");
 			break;
 		}
 	}
@@ -1362,10 +1427,14 @@ void M_ScanSaves (void)
 		loadable[i] = false;
 		q_snprintf (name, sizeof(name), "%s/s%i.sav", com_gamedir, i);
 		f = Sys_fopen (name, "r");
-		if (!f)
+		if (!f) {
 			continue;
-		fscanf (f, "%i\n", &version);
-		fscanf (f, "%79s\n", name);
+		}
+		if (fscanf(f, "%i\n", &version) != 1 ||
+		    fscanf(f, "%79s\n", name)   != 1) {
+			fclose(f);
+			continue;
+		}
 		q_strlcpy (m_filenames[i], name, SAVEGAME_COMMENT_LENGTH+1);
 
 	// change _ back to space
@@ -1458,7 +1527,6 @@ void M_Load_Key (int k)
 		if (!loadable[load_cursor])
 			return;
 		m_state = m_none;
-		IN_Activate();
 		key_dest = key_game;
 
 	// issue the load command
@@ -1556,12 +1624,11 @@ typedef struct
 static struct
 {
 	menulist_t		list;
+	menuticker_t	ticker;
 	int				x, y, cols;
 	int				mapcount;			// not all items represent actual maps!
 	qboolean		scrollbar_grab;
 	int				prev_cursor;
-	double			scroll_time;
-	double			scroll_wait_time;
 	mapitem_t		*items;
 } mapsmenu;
 
@@ -1662,10 +1729,10 @@ static void M_Maps_Init (void)
 	mapsmenu.list.cursor = -1;
 	mapsmenu.list.scroll = 0;
 	mapsmenu.list.numitems = 0;
-	mapsmenu.scroll_time = 0;
-	mapsmenu.scroll_wait_time = DESCRIPTION_SCROLL_WAIT_TIME;
 	mapsmenu.mapcount = 0;
 	VEC_CLEAR (mapsmenu.items);
+
+	M_Ticker_Init (&mapsmenu.ticker);
 
 	for (i = 0, active = -1, prev_type = -1; extralevels_sorted[i]; i++)
 	{
@@ -1752,16 +1819,10 @@ void M_Maps_Draw (void)
 	if (mapsmenu.prev_cursor != mapsmenu.list.cursor)
 	{
 		mapsmenu.prev_cursor = mapsmenu.list.cursor;
-		mapsmenu.scroll_time = 0.0;
-		mapsmenu.scroll_wait_time = DESCRIPTION_SCROLL_WAIT_TIME;
+		M_Ticker_Init (&mapsmenu.ticker);
 	}
 	else
-	{
-		if (mapsmenu.scroll_wait_time <= 0.0)
-			mapsmenu.scroll_time += host_rawframetime;
-		else
-			mapsmenu.scroll_wait_time = q_max (0.0, mapsmenu.scroll_wait_time - host_rawframetime);
-	}
+		M_Ticker_Update (&mapsmenu.ticker);
 
 	x = mapsmenu.x;
 	y = mapsmenu.y;
@@ -1822,7 +1883,7 @@ void M_Maps_Draw (void)
 					GL_SetCanvasColor (1, 1, 1, 1);
 
 				M_PrintScroll (x + namecols*8, y + i*8, desccols*8, buf,
-					selected ? mapsmenu.scroll_time : 0.0, true);
+					selected ? mapsmenu.ticker.scroll_time : 0.0, true);
 				
 				if (!message)
 					GL_SetCanvasColor (1, 1, 1, 1);
@@ -1854,9 +1915,9 @@ void M_Maps_Char (int key)
 	M_List_Char (&mapsmenu.list, key);
 }
 
-qboolean M_Maps_TextEntry (void)
+textmode_t M_Maps_TextEntry (void)
 {
-	return !mapsmenu.scrollbar_grab;
+	return mapsmenu.scrollbar_grab ? TEXTMODE_OFF : TEXTMODE_NOPOPUP;
 }
 
 void M_Maps_Key (int key)
@@ -1880,6 +1941,12 @@ void M_Maps_Key (int key)
 	if (M_List_Key (&mapsmenu.list, key))
 		return;
 
+	if (M_Ticker_Key (&mapsmenu.ticker, key))
+	{
+		M_List_KeepSearchVisible (&mapsmenu.list, 1.0);
+		return;
+	}
+
 	switch (key)
 	{
 	case K_ESCAPE:
@@ -1888,19 +1955,6 @@ void M_Maps_Key (int key)
 	case K_MOUSE2:
 		M_List_ClearSearch (&mapsmenu.list);
 		M_Menu_SinglePlayer_f ();
-		break;
-
-	case K_RIGHTARROW:
-		mapsmenu.scroll_time += 0.25;
-		mapsmenu.scroll_wait_time = 1.5;
-		M_List_KeepSearchVisible (&mapsmenu.list, 1.0);
-		M_ThrottledSound ("misc/menu3.wav");
-		break;
-	case K_LEFTARROW:
-		mapsmenu.scroll_time -= 0.25;
-		mapsmenu.scroll_wait_time = 1.5;
-		M_List_KeepSearchVisible (&mapsmenu.list, 1.0);
-		M_ThrottledSound ("misc/menu3.wav");
 		break;
 
 	case K_ENTER:
@@ -1953,41 +2007,85 @@ void M_Maps_Mousemove (int cx, int cy)
 //=============================================================================
 /* SKILL MENU */
 
-int			m_skill_cursor;
-qboolean	m_skill_usegfx;
-qboolean	m_skill_usecustomtitle;
-char		m_skill_mapname[MAX_QPATH];
+int				m_skill_cursor;
+qboolean		m_skill_usegfx;
+qboolean		m_skill_usecustomtitle;
+qboolean		m_skill_canresume;
+time_t			m_skill_lastplayed;
+int				m_skill_numoptions;
+char			m_skill_mapname[MAX_QPATH];
+char			m_skill_maptitle[1024];
+menuticker_t	m_skill_ticker;
+
 enum m_state_e m_skill_prevmenu;
 
 void M_SetSkillMenuMap (const char *name)
 {
 	q_strlcpy (m_skill_mapname, name, sizeof (m_skill_mapname));
+	if (!Mod_LoadMapDescription (m_skill_maptitle, sizeof (m_skill_maptitle), name) || !m_skill_maptitle[0])
+		q_strlcpy (m_skill_maptitle, name, sizeof (m_skill_maptitle));
 }
 
 void M_Menu_Skill_f (void)
 {
+	char autosave[MAX_OSPATH];
+
+	m_skill_canresume = false;
+	m_skill_lastplayed = 0;
+	q_snprintf (autosave, sizeof (autosave), "%s/autosave/%s.sav", com_gamedir, m_skill_mapname);
+	if (Sys_FileExists (autosave))
+	{
+		time_t now, lastplayed;
+		m_skill_canresume = true;
+		time (&now);
+		if (Sys_GetFileTime (autosave, &lastplayed) && lastplayed <= now)
+			m_skill_lastplayed = lastplayed;
+	}
+
 	IN_DeactivateForMenu();
 	key_dest = key_menu;
 	m_skill_prevmenu = m_state;
 	m_state = m_skill;
 	m_entersound = true;
-	m_skill_cursor = (int)skill.value;
-	m_skill_cursor = CLAMP (0, m_skill_cursor, 3);
+	M_Ticker_Init (&m_skill_ticker);
+
+	if (m_skill_canresume)
+	{
+		// Select "Resume" option initially if available
+		m_skill_cursor = 4;
+	}
+	else
+	{
+		// Select current skill level initially if there's no autosave
+		m_skill_cursor = (int)skill.value;
+		m_skill_cursor = CLAMP (0, m_skill_cursor, 3);
+	}
+	m_skill_numoptions = 4 + m_skill_canresume;
 }
 
 void M_Skill_Draw (void)
 {
-	int		f;
+	int		x, y, f;
 	qpic_t	*p;
 
 	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic (m_skill_usecustomtitle ? "gfx/p_skill.lmp" : "gfx/ttl_sgl.lmp");
+	p = Draw_CachePic (m_skill_usecustomtitle && !m_skill_canresume ? "gfx/p_skill.lmp" : "gfx/ttl_sgl.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
+
+	x = 72;
+	y = 32;
+
+	M_Ticker_Update (&m_skill_ticker);
+	M_PrintScroll (x, 32, 30*8, m_skill_maptitle, m_skill_ticker.scroll_time, false);
+
+	y += 16;
 
 	if (m_skill_usegfx)
 	{
-		M_DrawTransPic (72, 32, Draw_CachePic ("gfx/skillmenu.lmp") );
-		M_DrawQuakeCursor (54, 32 + m_skill_cursor * 20);
+		M_DrawTransPic (x, y, Draw_CachePic ("gfx/skillmenu.lmp") );
+		if (m_skill_cursor < 4)
+			M_DrawQuakeCursor (x - 18, y + m_skill_cursor * 20);
+		y += 4 * 20;
 	}
 	else
 	{
@@ -2000,13 +2098,35 @@ void M_Skill_Draw (void)
 		};
 
 		for (f = 0; f < 4; f++)
-			M_Print (88, 44+4 + f*16, skills[f]);
-		M_DrawArrowCursor (72, 44+4 + m_skill_cursor*16);
+			M_PrintEx (x, y + f*16 + 2, 12, skills[f]);
+		if (m_skill_cursor < 4)
+			M_DrawArrowCursor (x - 16, y + m_skill_cursor*16 + 4);
+		y += 4 * 16;
+	}
+
+	if (m_skill_canresume)
+	{
+		y += 8;
+		M_Print (x, y, "Resume last game");
+		if (m_skill_lastplayed)
+		{
+			char	duration[32];
+			time_t	now;
+
+			time (&now);
+			COM_DescribeDuration (duration, sizeof (duration), difftime (m_skill_lastplayed, now));
+			M_Print (x, y + 8, va ("from %s ago", duration));
+		}
+		if (m_skill_cursor == 4)
+			M_DrawArrowCursor (x - 16, y);
 	}
 }
 
 void M_Skill_Key (int key)
 {
+	if (M_Ticker_Key (&m_skill_ticker, key))
+		return;
+
 	switch (key)
 	{
 	case K_ESCAPE:
@@ -2019,14 +2139,14 @@ void M_Skill_Key (int key)
 
 	case K_DOWNARROW:
 		M_ThrottledSound ("misc/menu1.wav");
-		if (++m_skill_cursor > 3)
+		if (++m_skill_cursor > m_skill_numoptions - 1)
 			m_skill_cursor = 0;
 		break;
 
 	case K_UPARROW:
 		M_ThrottledSound ("misc/menu1.wav");
 		if (--m_skill_cursor < 0)
-			m_skill_cursor = 3;
+			m_skill_cursor = m_skill_numoptions - 1;
 		break;
 
 	case K_ENTER:
@@ -2037,22 +2157,35 @@ void M_Skill_Key (int key)
 		key_dest = key_game;
 		if (sv.active)
 			Cbuf_AddText ("disconnect\n");
-		Cbuf_AddText (va ("skill %d\n", m_skill_cursor));
-		Cbuf_AddText ("maxplayers 1\n");
-		Cbuf_AddText ("deathmatch 0\n"); //johnfitz
-		Cbuf_AddText ("coop 0\n"); //johnfitz
-		Cbuf_AddText (va ("map \"%s\"\n", m_skill_mapname));
+		if (m_skill_cursor == 4)
+		{
+			// Resume autosave
+			Cbuf_AddText (va ("load \"autosave/%s\"\n", m_skill_mapname));
+		}
+		else
+		{
+			// Fresh start
+			Cbuf_AddText (va ("skill %d\n", m_skill_cursor));
+			Cbuf_AddText ("maxplayers 1\n");
+			Cbuf_AddText ("deathmatch 0\n"); //johnfitz
+			Cbuf_AddText ("coop 0\n"); //johnfitz
+			Cbuf_AddText (va ("map \"%s\"\n", m_skill_mapname));
+		}
 		break;
 	}
 }
 
 void M_Skill_Mousemove (int cx, int cy)
 {
+	int ybase = 48;
+	int itemheight = m_skill_usegfx ? 20 : 16;
 	int prev = m_skill_cursor;
-	if (m_skill_usegfx)
-		M_UpdateCursor (cy, 32, 20, 4, &m_skill_cursor);
+
+	if (m_skill_numoptions > 4 && cy > ybase + 4 * itemheight + 8/2)
+		m_skill_cursor = 4;
 	else
-		M_UpdateCursor (cy, 44, 16, 4, &m_skill_cursor);
+		M_UpdateCursor (cy, ybase, itemheight, 4, &m_skill_cursor);
+
 	if (m_skill_cursor != prev)
 		M_MouseSound ("misc/menu1.wav");
 }
@@ -2332,9 +2465,9 @@ void M_Setup_Char (int k)
 }
 
 
-qboolean M_Setup_TextEntry (void)
+textmode_t M_Setup_TextEntry (void)
 {
-	return (setup_cursor == 0 || setup_cursor == 1);
+	return (setup_cursor == 0 || setup_cursor == 1) ? TEXTMODE_ON : TEXTMODE_OFF;
 }
 
 
@@ -2940,12 +3073,121 @@ void M_Menu_Video_f (void)
 }
 
 //=============================================================================
+/* CALIBRATION SCREEN */
+
+static enum
+{
+	CALIBRATION_INTRO_TEXT,
+	CALIBRATION_IN_ROGRESS,
+	CALIBRATION_FINISHED,
+} calibration_state;
+
+static double calibration_finished_delay;
+
+void M_Menu_Calibration_f (void)
+{
+	IN_DeactivateForMenu();
+	m_state = m_calibration;
+	calibration_state = CALIBRATION_INTRO_TEXT;
+	calibration_finished_delay = 1.0;
+}
+
+void M_Calibration_Draw (void)
+{
+	int y = 72;
+
+	switch (calibration_state)
+	{
+	case CALIBRATION_INTRO_TEXT:
+		M_PrintAligned (160, y - 8,	ALIGN_CENTER, "Before calibration,");
+		M_PrintAligned (160, y,		ALIGN_CENTER, "place the controller");
+		M_PrintAligned (160, y + 8, ALIGN_CENTER, "on a flat, stable surface");
+		y += 24;
+		M_DrawTextBox (160 - 5*8, y, 8, 1);
+		M_DrawArrowCursor (160 - 6*8, y + 8);
+		M_PrintAligned (160, y + 8, ALIGN_CENTER, "Continue");
+		break;
+
+	case CALIBRATION_IN_ROGRESS:
+		M_PrintAligned (160, y, ALIGN_CENTER, "Calibrating, please wait...");
+		if (!IN_IsCalibratingGyro ())
+			calibration_state = CALIBRATION_FINISHED;
+		break;
+
+	case CALIBRATION_FINISHED:
+		M_PrintAligned (160, y, ALIGN_CENTER, "Calibration complete!");
+		calibration_finished_delay -= host_rawframetime;
+		if (calibration_finished_delay < 0.0)
+			M_Menu_Gamepad_f ();
+		break;
+
+	default:
+		break;
+	}
+}
+
+void M_Calibration_Key (int key)
+{
+	if (calibration_state != CALIBRATION_INTRO_TEXT)
+		return;
+
+	switch (key)
+	{
+	case K_ENTER:
+	case K_KP_ENTER:
+	case K_ABUTTON:
+	case K_MOUSE1:
+		calibration_state = CALIBRATION_IN_ROGRESS;
+		M_ThrottledSound ("misc/menu2.wav");
+		IN_StartGyroCalibration ();
+		break;
+
+	case K_ESCAPE:
+	case K_BBUTTON:
+	case K_MOUSE4:
+	case K_MOUSE2:
+		M_Menu_Gamepad_f ();
+		break;
+
+	default:
+		break;
+	}
+}
+
+//=============================================================================
+/* GAMEPAD MENU */
+
+#define MIN_JOY_SENS			60.f
+#define MAX_JOY_SENS			720.f
+#define MIN_JOY_EXPONENT		1.f
+#define MAX_JOY_EXPONENT		5.f
+#define MIN_STICK_DEADZONE		0.f
+#define MAX_STICK_DEADZONE		0.75f
+#define MIN_TRIGGER_DEADZONE	0.f
+#define MAX_TRIGGER_DEADZONE	0.75f
+#define MIN_GYRO_SENS			0.1f
+#define MAX_GYRO_SENS			8.f
+#define MIN_GYRO_NOISE_THRESH	0.f
+#define MAX_GYRO_NOISE_THRESH	5.f
+
+/*
+================
+M_Menu_Gamepad_f
+================
+*/
+void M_Menu_Gamepad_f (void)
+{
+	M_Options_Init (m_gamepad);
+}
+
+//=============================================================================
 /* OPTIONS MENU */
 
 ////////////////////////////////////////////////////
 #define OPTIONS_LIST(def)							\
 	def (OPT_VIDEO,			"Video Options")		\
 	def (OPT_CUSTOMIZE,		"Controls")				\
+	def (OPT_GAMEPAD,		"Gamepad")				\
 	def (OPT_MODS,			"Mods")					\
 	def (OPT_CONSOLE,		"Go To Console")		\
 	def (OPT_DEFAULTS,		"Reset Config")			\
@@ -2994,6 +3236,7 @@ void M_Menu_Video_f (void)
 	def (VID_OPT_SCALE,			"Render Scale")		\
 	def (VID_OPT_ANISO,			"Anisotropic")		\
 	def (VID_OPT_TEXFILTER,		"Textures")			\
+	def (VID_OPT_MD5,			"Models")			\
 	def (VID_OPT_ANIMLERP,		"Animations")		\
 	def (VID_OPT_PARTICLES,		"Particles")		\
 	def (VID_OPT_ALPHAMODE,		"Transparency")		\
@@ -3003,12 +3246,45 @@ void M_Menu_Video_f (void)
 	def (VID_OPT_FPSLIMIT,		"FPS Limit")		\
 	def (VID_OPT_SHOWFPS,		"Show FPS")			\
 ////////////////////////////////////////////////////
+#define GPAD_OPTIONS_LIST(def)						\
+	def(GPAD_OPT_DEVICE,		"Gamepad")			\
+													\
+	def(GPAD_OPT_SPACE1,		"")					\
+	def(GPAD_OPT_SPACE2,		"")					\
+													\
+	def(GPAD_OPT_SENSX,			"Yaw Speed")		\
+	def(GPAD_OPT_SENSY,			"Pitch Speed")		\
+	def(GPAD_OPT_INVERT,		"Invert Pitch")		\
+	def(GPAD_OPT_SWAP_MOVELOOK,	"Look Stick")		\
+													\
+	def(GPAD_OPT_SPACE3,		"")					\
+													\
+	def(GPAD_OPT_EXPONENT_LOOK,	"Look Accel")		\
+	def(GPAD_OPT_EXPONENT_MOVE,	"Move Accel")		\
+													\
+	def(GPAD_OPT_SPACE4,		"")					\
+													\
+	def(GPAD_OPT_DEADZONE_LOOK,	"Look Deadzone")	\
+	def(GPAD_OPT_DEADZONE_MOVE,	"Move Deadzone")	\
+	def(GPAD_OPT_DEADZONE_TRIG,	"Trigger Thresh")	\
+													\
+	def(GPAD_OPT_SPACE5,		"")					\
+													\
+	def(GPAD_OPT_GYROENABLE,	"Gyro")				\
+	def(GPAD_OPT_GYROMODE,		"Gyro Button")		\
+	def(GPAD_OPT_GYROAXIS,		"Gyro Axis")		\
+	def(GPAD_OPT_GYROSENSX,		"Gyro Yaw Speed")	\
+	def(GPAD_OPT_GYROSENSY,		"Gyro Pitch Speed")	\
+	def(GPAD_OPT_GYRONOISE,		"Gyro Noise Thresh")\
+	def(GPAD_OPT_CALIBRATE,		"Calibrate")		\
+////////////////////////////////////////////////////
 
 enum
 {
 	#define ADD_OPTION_ENUM(id, name) id,
 	OPTIONS_LIST (ADD_OPTION_ENUM)
 	VIDEO_OPTIONS_LIST(ADD_OPTION_ENUM)
+	GPAD_OPTIONS_LIST(ADD_OPTION_ENUM)
 	#undef ADD_OPTION_ENUM
 
 	#define COUNT_OPTION(id, name) +1
@@ -3016,14 +3292,25 @@ enum
 	OPTIONS_ITEMS			= OPTIONS_LIST (COUNT_OPTION),
 	VIDEO_OPTIONS_FIRST		= OPTIONS_ITEMS,
 	VIDEO_OPTIONS_ITEMS		= VIDEO_OPTIONS_LIST (COUNT_OPTION),
+	GPAD_OPTIONS_FIRST		= OPTIONS_ITEMS + VIDEO_OPTIONS_ITEMS,
+	GPAD_OPTIONS_ITEMS		= GPAD_OPTIONS_LIST (COUNT_OPTION),
 	#undef COUNT_OPTION
+
+	GYRO_OPTIONS_FIRST		= GPAD_OPT_GYROENABLE,
+	GYRO_OPTIONS_ITEMS		= GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS - GYRO_OPTIONS_FIRST,
 };
+
+static qboolean M_Options_IsGyroId (int id)
+{
+	return (unsigned int)(id - GYRO_OPTIONS_FIRST) < GYRO_OPTIONS_ITEMS;
+}
 
 static const char *const options_names[] =
 {
 	#define ADD_OPTION_NAME(id, name) name,
 	OPTIONS_LIST (ADD_OPTION_NAME)
 	VIDEO_OPTIONS_LIST(ADD_OPTION_NAME)
+	GPAD_OPTIONS_LIST(ADD_OPTION_NAME)
 	#undef ADD_OPTION_NAME
 };
 
@@ -3052,6 +3339,7 @@ struct
 	int				first_item;
 	int				options_cursor;
 	int				video_cursor;
+	int				gamepad_cursor;
 	int				*last_cursor;
 } optionsmenu;
 
@@ -3078,6 +3366,9 @@ static void M_Options_UpdateLayout (void)
 		optionsmenu.yofs = 0;
 
 	height = OPTIONS_LISTOFS + optionsmenu.yofs + optionsmenu.list.numitems * 8;
+	// Enforce a minimum height, so that if the number of items is relatively small
+	// the title pic doesn't get drawn below its usual position
+	height = q_max (height, 192);
 	if (height <= m_height)
 	{
 		optionsmenu.y = (m_top + (m_height - height) / 2) & ~7;
@@ -3098,13 +3389,31 @@ static int M_Options_GetSelected (void)
 	return optionsmenu.list.cursor + optionsmenu.first_item;
 }
 
+static qboolean M_Options_IsEnabled (int index)
+{
+	if ((unsigned int) index >= (unsigned int)optionsmenu.list.numitems)
+		return false;
+	index += optionsmenu.first_item;
+	if ((unsigned int) index >= countof (options_names))
+		return false;
+	if (index > GPAD_OPTIONS_FIRST && index < GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS && !IN_HasGamepad ())
+		return false;
+	if (M_Options_IsGyroId (index))
+	{
+		if (!IN_HasGyro ())
+			return false;
+		if (!gyro_enable.value && index > GYRO_OPTIONS_FIRST)
+			return false;
+	}
+	return true;
+}
+
 static qboolean M_Options_IsSelectable (int index)
 {
+	if (!M_Options_IsEnabled (index))
+		return false;
 	index += optionsmenu.first_item;
-	return
-		(unsigned int) index < countof (options_names) &&
-		options_names[index][0] != '\0'
-	;
+	return options_names[index][0] != '\0';
 }
 
 static qboolean M_Options_Match (int index)
@@ -3147,6 +3456,13 @@ void M_Options_Init (enum m_state_e state)
 		//set up rate list based on current cvars
 		VID_Menu_RebuildRateList ();
 	}
+	else if (state == m_gamepad)
+	{
+		optionsmenu.first_item = GPAD_OPTIONS_FIRST;
+		optionsmenu.list.numitems = GPAD_OPTIONS_ITEMS;
+		optionsmenu.last_cursor = &optionsmenu.gamepad_cursor;
+		optionsmenu.subtitle = "Gamepad Options";
+	}
 	else
 	{
 		Sys_Error ("M_Options_Init: invalid state %d", state);
@@ -3157,6 +3473,10 @@ void M_Options_Init (enum m_state_e state)
 	optionsmenu.list.search.match_fn = M_Options_Match;
 
 	M_List_ClearSearch (&optionsmenu.list);
+
+	// If the cursor is on an inactive item, move it to the next active one
+	if (!M_Options_IsSelectable (optionsmenu.list.cursor))
+		M_List_SelectNextActive (&optionsmenu.list, optionsmenu.list.cursor, 1, true);
 
 	M_Options_UpdateLayout ();
 }
@@ -3278,7 +3598,7 @@ void M_AdjustSliders (int dir)
 		break;
 
 	case OPT_HUDSTYLE:	// hud style
-		Cvar_SetValueQuick (&scr_hudstyle, ((int) q_max (scr_hudstyle.value, 0.f) + 3 + dir) % 3);
+		Cvar_SetValueQuick (&scr_hudstyle, ((int) q_max (scr_hudstyle.value, 0.f) + (int) HUD_COUNT + dir) % (int) HUD_COUNT);
 		break;
 
 	case OPT_ALWAYRUN:	// always run
@@ -3382,6 +3702,9 @@ void M_AdjustSliders (int dir)
 	case VID_OPT_TEXFILTER:
 		VID_Menu_ChooseNextTexFilter ();
 		break;
+	case VID_OPT_MD5:
+		Cbuf_AddText ("toggle r_md5\n");
+		break;
 	case VID_OPT_ANIMLERP:
 		Cvar_SetValueQuick (&r_lerpmodels, !r_lerpmove.value);
 		Cvar_SetValueQuick (&r_lerpmove, !r_lerpmove.value);
@@ -3406,6 +3729,63 @@ void M_AdjustSliders (int dir)
 		break;
 	case VID_OPT_SHOWFPS:
 		Cbuf_AddText ("toggle scr_showfps\n");
+		break;
+
+	//
+	// Gamepad Options
+	//
+	case GPAD_OPT_DEVICE:
+		// Skip "off" option when using a gamepad to avoid getting into an awkward state
+		// on systems where the gamepad is the primary input method, such as the Steam Deck.
+		IN_UseNextGamepad (dir, m_lastkey < (int)K_GAMEPAD_BEGIN || m_lastkey >= (int)K_GAMEPAD_END);
+		break;
+	case GPAD_OPT_SENSX:
+		Cvar_SetValueQuick (&joy_sensitivity_yaw, CLAMP (MIN_JOY_SENS, joy_sensitivity_yaw.value + dir * 10.f, MAX_JOY_SENS));
+		break;
+	case GPAD_OPT_SENSY:
+		Cvar_SetValueQuick (&joy_sensitivity_pitch, CLAMP (MIN_JOY_SENS, joy_sensitivity_pitch.value + dir * 10.f, MAX_JOY_SENS));
+		break;
+	case GPAD_OPT_INVERT:
+		Cvar_SetValueQuick (&joy_invert, !joy_invert.value);
+		break;
+	case GPAD_OPT_SWAP_MOVELOOK:
+		Cvar_SetValueQuick (&joy_swapmovelook, !joy_swapmovelook.value);
+		break;
+	case GPAD_OPT_EXPONENT_LOOK:
+		Cvar_SetValueQuick (&joy_exponent, CLAMP (MIN_JOY_EXPONENT, joy_exponent.value + dir * 0.5f, MAX_JOY_EXPONENT));
+		break;
+	case GPAD_OPT_EXPONENT_MOVE:
+		Cvar_SetValueQuick (&joy_exponent_move, CLAMP (MIN_JOY_EXPONENT, joy_exponent_move.value + dir * 0.5f, MAX_JOY_EXPONENT));
+		break;
+	case GPAD_OPT_DEADZONE_LOOK:
+		Cvar_SetValueQuick (&joy_deadzone_look, CLAMP (MIN_STICK_DEADZONE, joy_deadzone_look.value + dir * 0.05f, MAX_STICK_DEADZONE));
+		break;
+	case GPAD_OPT_DEADZONE_MOVE:
+		Cvar_SetValueQuick (&joy_deadzone_move, CLAMP (MIN_STICK_DEADZONE, joy_deadzone_move.value + dir * 0.05f, MAX_STICK_DEADZONE));
+		break;
+	case GPAD_OPT_DEADZONE_TRIG:
+		Cvar_SetValueQuick (&joy_deadzone_trigger, CLAMP (MIN_TRIGGER_DEADZONE, joy_deadzone_trigger.value + dir * 0.05f, MAX_TRIGGER_DEADZONE));
+		break;
+	case GPAD_OPT_GYROENABLE:
+		Cvar_SetValueQuick (&gyro_enable, !gyro_enable.value);
+		break;
+	case GPAD_OPT_GYROMODE:
+		Cvar_SetValueQuick (&gyro_mode, (int)(q_max (gyro_mode.value, 0.f) + GYRO_MODE_COUNT + dir) % GYRO_MODE_COUNT);
+		break;
+	case GPAD_OPT_GYROAXIS:
+		Cvar_SetValueQuick (&gyro_turning_axis, !gyro_turning_axis.value);
+		break;
+	case GPAD_OPT_GYROSENSX:
+		Cvar_SetValueQuick (&gyro_yawsensitivity, CLAMP (MIN_GYRO_SENS, gyro_yawsensitivity.value + dir * .1f, MAX_GYRO_SENS));
+		break;
+	case GPAD_OPT_GYROSENSY:
+		Cvar_SetValueQuick (&gyro_pitchsensitivity, CLAMP (MIN_GYRO_SENS, gyro_pitchsensitivity.value + dir * .1f, MAX_GYRO_SENS));
+		break;
+	case GPAD_OPT_GYRONOISE:
+		Cvar_SetValueQuick (&gyro_noise_thresh, CLAMP (MIN_GYRO_NOISE_THRESH, gyro_noise_thresh.value + dir * .5f, MAX_GYRO_NOISE_THRESH));
+		break;
+	case GPAD_OPT_CALIBRATE:
+		M_Menu_Calibration_f ();
 		break;
 
 	default:
@@ -3495,6 +3875,46 @@ qboolean M_SetSliderValue (int option, float f)
 	case OPT_FOVDISTORT:	// FOV distortion
 		Cvar_SetValue ("cl_gun_fovscale", 1.f - f);
 		return true;
+	case GPAD_OPT_SENSX:
+		f = LERP (MIN_JOY_SENS, MAX_JOY_SENS, f);
+		Cvar_SetValueQuick (&joy_sensitivity_yaw, f);
+		return true;
+	case GPAD_OPT_SENSY:
+		f = LERP (MIN_JOY_SENS, MAX_JOY_SENS, f);
+		Cvar_SetValueQuick (&joy_sensitivity_pitch, f);
+		return true;
+	case GPAD_OPT_EXPONENT_LOOK:
+		f = LERP (MIN_JOY_EXPONENT, MAX_JOY_EXPONENT, f);
+		Cvar_SetValueQuick (&joy_exponent, f);
+		return true;
+	case GPAD_OPT_EXPONENT_MOVE:
+		f = LERP (MIN_JOY_EXPONENT, MAX_JOY_EXPONENT, f);
+		Cvar_SetValueQuick (&joy_exponent_move, f);
+		return true;
+	case GPAD_OPT_DEADZONE_LOOK:
+		f = LERP (MIN_STICK_DEADZONE, MAX_STICK_DEADZONE, f);
+		Cvar_SetValueQuick (&joy_deadzone_look, f);
+		return true;
+	case GPAD_OPT_DEADZONE_MOVE:
+		f = LERP (MIN_STICK_DEADZONE, MAX_STICK_DEADZONE, f);
+		Cvar_SetValueQuick (&joy_deadzone_move, f);
+		return true;
+	case GPAD_OPT_DEADZONE_TRIG:
+		f = LERP (MIN_TRIGGER_DEADZONE, MAX_TRIGGER_DEADZONE, f);
+		Cvar_SetValueQuick (&joy_deadzone_trigger, f);
+		return true;
+	case GPAD_OPT_GYROSENSX:
+		f = LERP (MIN_GYRO_SENS, MAX_GYRO_SENS, f);
+		Cvar_SetValueQuick (&gyro_yawsensitivity, f);
+		return true;
+	case GPAD_OPT_GYROSENSY:
+		f = LERP (MIN_GYRO_SENS, MAX_GYRO_SENS, f);
+		Cvar_SetValueQuick (&gyro_pitchsensitivity, f);
+		return true;
+	case GPAD_OPT_GYRONOISE:
+		f = LERP (MIN_GYRO_NOISE_THRESH, MAX_GYRO_NOISE_THRESH, f);
+		Cvar_SetValueQuick (&gyro_noise_thresh, f);
+		return true;
 	default:
 		return false;
 	}
@@ -3542,6 +3962,7 @@ qboolean M_SliderClick (int cx, int cy)
 static void M_Options_DrawItem (int y, int item)
 {
 	char		buf[256];
+	const char	*str;
 	int			x = OPTIONS_MIDPOS;
 	float		r, l;
 
@@ -3555,7 +3976,9 @@ static void M_Options_DrawItem (int y, int item)
 	{
 	case OPT_VIDEO:
 	case OPT_CUSTOMIZE:
+	case OPT_GAMEPAD:
 	case OPT_MODS:
+	case GPAD_OPT_CALIBRATE:
 		M_Print (x - 4, y, "...");
 		break;
 
@@ -3616,12 +4039,14 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 
 	case OPT_HUDSTYLE:
-		if (scr_hudstyle.value < 1)
-			M_Print (x, y, "Classic");
-		else if (scr_hudstyle.value < 2)
-			M_Print (x, y, "Modern 1");
-		else
-			M_Print (x, y, "Modern 2");
+		switch (hudstyle)
+		{
+		case HUD_MODERN_CENTERAMMO:		M_Print (x, y, "Modern 1"); break;
+		case HUD_MODERN_SIDEAMMO:		M_Print (x, y, "Modern 2"); break;
+		case HUD_QUAKEWORLD:			M_Print (x, y, "QuakeWorld"); break;
+		default:
+		case HUD_CLASSIC:				M_Print (x, y, "Classic"); break;
+		}
 		break;
 
 	case OPT_SNDVOL:
@@ -3717,6 +4142,9 @@ static void M_Options_DrawItem (int y, int item)
 	case VID_OPT_TEXFILTER:
 		M_Print (x, y, VID_Menu_GetTexFilterDesc ());
 		break;
+	case VID_OPT_MD5:
+		M_Print (x, y, r_md5.value ? "Smooth" : "Classic");
+		break;
 	case VID_OPT_ANIMLERP:
 		M_Print (x, y, r_lerpmodels.value ? "Smooth" : "Classic");
 		break;
@@ -3742,6 +4170,80 @@ static void M_Options_DrawItem (int y, int item)
 		M_Print (x, y, scr_showfps.value ? "On" : "Off");
 		break;
 
+	//
+	// Gamepad Options
+	//
+	case GPAD_OPT_DEVICE:
+		str = IN_GetGamepadName ();
+		if (!str)
+			str = "Off";
+		M_PrintWordWrap (x, y, str, 320 - x, 16, true); // note: hijacking the empty line below this option
+		break;
+	case GPAD_OPT_SENSX:
+		r = (joy_sensitivity_yaw.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_SENSY:
+		r = (joy_sensitivity_pitch.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_INVERT:
+		M_DrawCheckbox (x, y, joy_invert.value);
+		break;
+	case GPAD_OPT_SWAP_MOVELOOK:
+		M_Print (x, y, joy_swapmovelook.value ? "Left" : "Right");
+		break;
+	case GPAD_OPT_EXPONENT_LOOK:
+		r = (joy_exponent.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_EXPONENT_MOVE:
+		r = (joy_exponent_move.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_DEADZONE_LOOK:
+		r = (joy_deadzone_look.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_DEADZONE_MOVE:
+		r = (joy_deadzone_move.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_DEADZONE_TRIG:
+		r = (joy_deadzone_trigger.value - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_GYROENABLE:
+		if (!IN_HasGyro ())
+			M_Print (x, y, "Unavailable");
+		else
+			M_DrawCheckbox (x, y, gyro_enable.value);
+		break;
+	case GPAD_OPT_GYROMODE:
+		switch ((int)gyro_mode.value)
+		{
+		case GYRO_BUTTON_ENABLES:		M_Print (x, y, "Enable gyro"); break;
+		case GYRO_BUTTON_DISABLES:		M_Print (x, y, "Disable gyro"); break;
+		case GYRO_BUTTON_INVERTS_DIR:	M_Print (x, y, "Invert dir"); break;
+		default:						M_Print (x, y, "Ignore"); break;
+		}
+		break;
+	case GPAD_OPT_GYROAXIS:
+		M_Print(x, y, gyro_turning_axis.value ? "roll (lean)" : "yaw (turn)");
+		break;
+	case GPAD_OPT_GYROSENSX:
+		r = (gyro_yawsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_GYROSENSY:
+		r = (gyro_pitchsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
+		M_DrawSlider (x, y, r);
+		break;
+	case GPAD_OPT_GYRONOISE:
+		r = (gyro_noise_thresh.value - MIN_GYRO_NOISE_THRESH) / (MAX_GYRO_NOISE_THRESH - MIN_GYRO_NOISE_THRESH);
+		M_DrawSlider (x, y, r);
+		break;
+
 	default:
 		break;
 	}
@@ -3749,6 +4251,7 @@ static void M_Options_DrawItem (int y, int item)
 
 void M_Options_Draw (void)
 {
+	qboolean enabled, wasenabled;
 	int firstvis, numvis;
 	int i, x, y, cols;
 	qpic_t	*p;
@@ -3781,10 +4284,18 @@ void M_Options_Draw (void)
 			M_DrawEllipsisBar (x, y + optionsmenu.list.viewsize*8, cols);
 	}
 
+	wasenabled = true;
 	M_List_GetVisibleRange (&optionsmenu.list, &firstvis, &numvis);
 	while (numvis-- > 0)
 	{
 		i = firstvis++;
+		enabled = M_Options_IsEnabled (i);
+		if (enabled != wasenabled)
+		{
+			float val = enabled ? 1.f : 0.375f;
+			GL_SetCanvasColor (val, val, val, 1.f);
+			wasenabled = enabled;
+		}
 		M_Options_DrawItem (y, optionsmenu.first_item + i);
 
 		// cursor
@@ -3793,6 +4304,9 @@ void M_Options_Draw (void)
 
 		y += 8;
 	}
+
+	if (!wasenabled)
+		GL_SetCanvasColor (1.f, 1.f, 1.f, 1.f);
 }
 
 void M_Options_Key (int k)
@@ -3860,6 +4374,9 @@ void M_Options_Key (int k)
 		case OPT_VIDEO:
 			M_Menu_Video_f ();
 			break;
+		case OPT_GAMEPAD:
+			M_Menu_Gamepad_f ();
+			break;
 
 		case VID_OPT_TEST:
 			Cbuf_AddText ("vid_test\n");
@@ -3896,9 +4413,9 @@ void M_Options_Key (int k)
 	}
 }
 
-qboolean M_Options_TextEntry (void)
+textmode_t M_Options_TextEntry (void)
 {
-	return !slider_grab;
+	return slider_grab ? TEXTMODE_OFF : TEXTMODE_NOPOPUP;
 }
 
 void M_Options_Char (int key)
@@ -3940,6 +4457,7 @@ static const char* const bindnames[][2] =
 	{"+movedown",		"Swim down"},
 	{"+speed",			"Run"},
 	{"+slide",			"Slide"},
+	{"+gyroaction",		"Gyro switch"},
 	{"",				""},
 	{"+attack",			"Attack"},
 	{"+attack2",		"Alternative attack"},
@@ -3960,7 +4478,7 @@ static const char* const bindnames[][2] =
 	{"impulse 8",		"Thunderbolt"},
 };
 
-#define	NUMCOMMANDS		(sizeof(bindnames)/sizeof(bindnames[0]))
+#define	NUMCOMMANDS		Q_COUNTOF(bindnames)
 #define KEYLIST_OFS		48
 
 static struct
@@ -4038,7 +4556,7 @@ extern qpic_t	*pic_up, *pic_down;
 void M_Keys_Draw (void)
 {
 	int		firstvis, numvis;
-	int		i, x, y, cols;
+	int		i, j, x, y, cols;
 	int		keys[3];
 	const char	*name;
 	qpic_t	*p;
@@ -4056,7 +4574,12 @@ void M_Keys_Draw (void)
 	if (bind_grab)
 		M_Print (12, y + 32, "Press a key or button for this action");
 	else
-		M_Print (18, y + 32, "Enter to change, backspace to clear");
+	{
+		const char *msg = IN_HasGamepad () ?
+			"Enter/A to change, backspace/Y to clear" :
+			"Enter to change, backspace to clear";
+		M_PrintAligned (160, y + 32, ALIGN_CENTER, msg);
+	}
 
 	y += KEYLIST_OFS;
 
@@ -4093,28 +4616,20 @@ void M_Keys_Draw (void)
 			if (i == keysmenu.list.cursor && bind_grab && keys[2] != -1)
 				keys[0] = -1;
 
-			if (keys[0] == -1)
+			for (j = 0, x = 136; j < 3 && keys[j] != -1; j++)
 			{
-				print_fn (136, y, "???");
-			}
-			else
-			{
-				name = Key_KeynumToString (keys[0]);
-				print_fn (136, y, name);
-				x = strlen(name) * 8;
-				if (keys[1] != -1)
+				if (j)
 				{
-					name = Key_KeynumToString (keys[1]);
-					print_fn (136 + x + 8, y, "or");
-					print_fn (136 + x + 32, y, name);
-					x = x + 32 + strlen(name) * 8;
-					if (keys[2] != -1)
-					{
-						print_fn (136 + x + 8, y, "or");
-						print_fn (136 + x + 32, y, Key_KeynumToString (keys[2]));
-					}
+					print_fn (x + 8, y, "or");
+					x += 32;
 				}
+				name = Key_KeynumToString (keys[j]);
+				print_fn (x, y, name);
+				x += strlen (name) * 8;
 			}
+
+			if (j == 0)
+				print_fn (x, y, "???");
 		}
 
 		if (i == keysmenu.list.cursor)
@@ -4181,6 +4696,7 @@ void M_Keys_Key (int k)
 			break;
 		/* fall-through */
 	case K_DEL:
+	case K_YBUTTON:
 		M_ThrottledSound ("misc/menu2.wav");
 		M_UnbindCommand (bindnames[keysmenu.list.cursor][0]);
 		break;
@@ -4193,9 +4709,9 @@ void M_Keys_Mousemove (int cx, int cy)
 	M_List_Mousemove (&keysmenu.list, cy - keysmenu.y - KEYLIST_OFS);
 }
 
-qboolean M_Keys_TextEntry (void)
+textmode_t M_Keys_TextEntry (void)
 {
-	return !bind_grab;
+	return bind_grab ? TEXTMODE_OFF : TEXTMODE_NOPOPUP;
 }
 
 void M_Keys_Char (int key)
@@ -4331,10 +4847,12 @@ void M_Menu_Quit_f (void)
 
 void M_Quit_Key (int key)
 {
-	if (key == K_ESCAPE ||
-		key == K_MOUSE2 ||
-		key == K_MOUSE4)
+	switch (key)
 	{
+	case K_ESCAPE:
+	case K_BBUTTON:
+	case K_MOUSE4:
+	case K_MOUSE2:
 		if (wasInMenus)
 		{
 			m_state = m_quit_prevstate;
@@ -4346,6 +4864,16 @@ void M_Quit_Key (int key)
 			key_dest = key_game;
 			m_state = m_none;
 		}
+		break;
+
+	case K_ABUTTON:
+		IN_DeactivateForConsole();
+		key_dest = key_console;
+		Host_Quit_f ();
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -4383,9 +4911,9 @@ void M_Quit_Char (int key)
 }
 
 
-qboolean M_Quit_TextEntry (void)
+textmode_t M_Quit_TextEntry (void)
 {
-	return true;
+	return TEXTMODE_NOPOPUP;
 }
 
 
@@ -4635,9 +5163,9 @@ void M_LanConfig_Char (int key)
 }
 
 
-qboolean M_LanConfig_TextEntry (void)
+textmode_t M_LanConfig_TextEntry (void)
 {
-	return (lanConfig_cursor == 0 || lanConfig_cursor == 2);
+	return (lanConfig_cursor == 0 || lanConfig_cursor == 2) ? TEXTMODE_ON : TEXTMODE_OFF;
 }
 
 
@@ -5298,11 +5826,10 @@ typedef struct
 static struct
 {
 	menulist_t			list;
+	menuticker_t		ticker;
 	int					x, y, cols;
 	int					modcount;
 	int					prev_cursor;
-	double				scroll_time;
-	double				scroll_wait_time;
 	double				download_flash_time;
 	enum m_state_e		prev;
 	qboolean			scrollbar_grab;
@@ -5434,6 +5961,8 @@ static void M_Mods_Init (void)
 	modsmenu.modcount = 0;
 	VEC_CLEAR (modsmenu.items);
 
+	M_Ticker_Init (&modsmenu.ticker);
+
 	for (pass = 0; pass < 2; pass++)
 	{
 		count = 0;
@@ -5493,16 +6022,10 @@ void M_Mods_Draw (void)
 	if (modsmenu.prev_cursor != modsmenu.list.cursor)
 	{
 		modsmenu.prev_cursor = modsmenu.list.cursor;
-		modsmenu.scroll_time = 0.0;
-		modsmenu.scroll_wait_time = 1.0;
+		M_Ticker_Init (&modsmenu.ticker);
 	}
 	else
-	{
-		if (modsmenu.scroll_wait_time <= 0.0)
-			modsmenu.scroll_time += host_rawframetime;
-		else
-			modsmenu.scroll_wait_time = q_max (0.0, modsmenu.scroll_wait_time - host_rawframetime);
-	}
+		M_Ticker_Update (&modsmenu.ticker);
 
 	modsmenu.download_flash_time = q_max (0.0, modsmenu.download_flash_time - host_rawframetime);
 	flash = (int)(modsmenu.download_flash_time * 8.0) & 1;
@@ -5570,7 +6093,7 @@ void M_Mods_Draw (void)
 					GL_SetCanvasColor (1, 1, 1, 1);
 
 				M_PrintScroll (x + namecols*8, y + i*8, desccols*8, buf,
-					selected ? modsmenu.scroll_time : 0.0, true);
+					selected ? modsmenu.ticker.scroll_time : 0.0, true);
 
 				if (!message)
 					GL_SetCanvasColor (1, 1, 1, 1);
@@ -5603,9 +6126,9 @@ void M_Mods_Char (int key)
 	M_List_Char (&modsmenu.list, key);
 }
 
-qboolean M_Mods_TextEntry (void)
+textmode_t M_Mods_TextEntry (void)
 {
-	return !modsmenu.scrollbar_grab;
+	return modsmenu.scrollbar_grab ? TEXTMODE_OFF : TEXTMODE_NOPOPUP;
 }
 
 void M_Mods_Key (int key)
@@ -5629,6 +6152,12 @@ void M_Mods_Key (int key)
 
 	if (M_List_Key (&modsmenu.list, key))
 		return;
+
+	if (M_Ticker_Key (&modsmenu.ticker, key))
+	{
+		M_List_KeepSearchVisible (&modsmenu.list, 1.0);
+		return;
+	}
 
 	switch (key)
 	{
@@ -5665,19 +6194,6 @@ void M_Mods_Key (int key)
 			goto enter;
 		modsmenu.scrollbar_grab = true;
 		M_Mods_Mousemove (m_mousex, m_mousey);
-		break;
-
-	case K_RIGHTARROW:
-		modsmenu.scroll_time += 0.25;
-		modsmenu.scroll_wait_time = 1.5;
-		M_List_KeepSearchVisible (&modsmenu.list, 1.0);
-		M_ThrottledSound ("misc/menu3.wav");
-		break;
-	case K_LEFTARROW:
-		modsmenu.scroll_time -= 0.25;
-		modsmenu.scroll_wait_time = 1.5;
-		M_List_KeepSearchVisible (&modsmenu.list, 1.0);
-		M_ThrottledSound ("misc/menu3.wav");
 		break;
 
 	default:
@@ -5962,6 +6478,7 @@ void M_Init (void)
 	Cmd_AddCommand ("menu_options", M_Menu_Options_f);
 	Cmd_AddCommand ("menu_keys", M_Menu_Keys_f);
 	Cmd_AddCommand ("menu_video", M_Menu_Video_f);
+	Cmd_AddCommand ("menu_gamepad", M_Menu_Gamepad_f);
 	Cmd_AddCommand ("help", M_Menu_Help_f);
 	Cmd_AddCommand ("menu_quit", M_Menu_Quit_f);
 	Cmd_AddCommand ("menu_credits", M_Menu_Credits_f); // needed by the 2021 re-release
@@ -6064,8 +6581,13 @@ void M_Draw (void)
 		M_Net_Draw ();
 		break;
 
+	case m_calibration:
+		M_Calibration_Draw ();
+		break;
+
 	case m_options:
 	case m_video:
+	case m_gamepad:
 		M_Options_Draw ();
 		break;
 
@@ -6127,6 +6649,20 @@ void M_Keydown (int key)
 	if (!bind_grab && !ui_mouse.value && M_IsMouseKey (key))
 		return;
 
+	m_lastkey = key;
+	if (!bind_grab)
+	{
+		switch (key)
+		{
+			case K_DPAD_UP:		key = K_UPARROW; break;
+			case K_DPAD_DOWN:	key = K_DOWNARROW; break;
+			case K_DPAD_LEFT:	key = K_LEFTARROW; break;
+			case K_DPAD_RIGHT:	key = K_RIGHTARROW; break;
+			default:
+				break;
+		}
+	}
+
 	switch (m_state)
 	{
 	case m_none:
@@ -6168,8 +6704,13 @@ void M_Keydown (int key)
 		M_Net_Key (key);
 		return;
 
+	case m_calibration:
+		M_Calibration_Key (key);
+		break;
+
 	case m_options:
 	case m_video:
+	case m_gamepad:
 		M_Options_Key (key);
 		return;
 
@@ -6278,6 +6819,7 @@ void M_Mousemove (int x, int y)
 
 	case m_options:
 	case m_video:
+	case m_gamepad:
 		M_Options_Mousemove (x, y);
 		return;
 
@@ -6337,6 +6879,7 @@ void M_Charinput (int key)
 		return;
 	case m_options:
 	case m_video:
+	case m_gamepad:
 		M_Options_Char (key);
 		return;
 	case m_keys:
@@ -6348,7 +6891,7 @@ void M_Charinput (int key)
 }
 
 
-qboolean M_TextEntry (void)
+textmode_t M_TextEntry (void)
 {
 	switch (m_state)
 	{
@@ -6364,11 +6907,12 @@ qboolean M_TextEntry (void)
 		return M_Mods_TextEntry ();
 	case m_options:
 	case m_video:
+	case m_gamepad:
 		return M_Options_TextEntry ();
 	case m_keys:
 		return M_Keys_TextEntry ();
 	default:
-		return false;
+		return TEXTMODE_OFF;
 	}
 }
 

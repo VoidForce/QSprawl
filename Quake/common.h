@@ -154,6 +154,8 @@ typedef struct vec_header_t {
 #define VEC_HEADER(v)			(((vec_header_t*)(v))[-1])
 
 #define VEC_PUSH(v,n)			do { Vec_Grow((void**)&(v), sizeof((v)[0]), 1); (v)[VEC_HEADER(v).size++] = (n); } while (0)
+#define VEC_POP(v)				do { SDL_assert(v && VEC_HEADER(v).size >= 1); VEC_HEADER(v).size--; } while (0)
+#define VEC_POP_N(v,n)			do { SDL_assert(v && VEC_HEADER(v).size >= (n)); VEC_HEADER(v).size -= (n); } while (0)
 #define VEC_SIZE(v)				((v) ? VEC_HEADER(v).size : 0)
 #define VEC_FREE(v)				Vec_Free((void**)&(v))
 #define VEC_CLEAR(v)			Vec_Clear((void**)&(v))
@@ -162,6 +164,8 @@ void Vec_Grow (void **pvec, size_t element_size, size_t count);
 void Vec_Append (void **pvec, size_t element_size, const void *data, size_t count);
 void Vec_Clear (void **pvec);
 void Vec_Free (void **pvec);
+
+void MultiString_Append (char **pvec, const char *str);
 
 //============================================================================
 
@@ -263,7 +267,7 @@ extern char *q_strupr (char *str);
 extern int q_snprintf (char *str, size_t size, const char *format, ...) FUNC_PRINTF(3,4);
 extern int q_vsnprintf(char *str, size_t size, const char *format, va_list args) FUNC_PRINTF(3,0);
 
-#define PLURAL(count)	(&"s"[(count)==1])
+#define PLURAL(count)	((int)(count)), (&"s"[((int)(count))==1])
 
 //============================================================================
 
@@ -312,6 +316,9 @@ void COM_ExtractExtension (const char *in, char *out, size_t outsize);
 char *COM_TempSuffix (unsigned seq);
 void COM_CreatePath (char *path);
 
+// Describes the given duration, e.g. "3 minutes"
+void COM_DescribeDuration (char *out, size_t outsize, double seconds);
+
 char *va (const char *format, ...) FUNC_PRINTF(1,2);
 // does a varargs printf into a temp buffer
 
@@ -332,8 +339,8 @@ size_t LOC_Format (const char *format, const char* (*getarg_fn)(int idx, void* u
 // Unicode
 size_t UTF8_WriteCodePoint (char *dst, size_t maxbytes, uint32_t codepoint);
 uint32_t UTF8_ReadCodePoint (const char **src);
-void UTF8_FromQuake (char *dst, size_t maxbytes, const char *src);
-void UTF8_ToQuake (char *dst, size_t maxbytes, const char *src);
+size_t UTF8_FromQuake (char *dst, size_t maxbytes, const char *src);
+size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src);
 
 #define UNICODE_UNKNOWN		0xFFFD
 #define UNICODE_MAX			0x10FFFF
@@ -370,7 +377,7 @@ typedef struct searchpath_s
 extern searchpath_t *com_searchpaths;
 extern searchpath_t *com_base_searchpaths;
 
-extern THREAD_LOCAL int com_filesize;
+extern THREAD_LOCAL qfileofs_t com_filesize;
 struct cache_user_s;
 
 #define MAX_BASEDIRS 64

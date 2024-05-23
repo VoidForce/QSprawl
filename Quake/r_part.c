@@ -28,9 +28,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ABSOLUTE_MIN_PARTICLES	512		// no fewer than this no matter what's
 										//  on the command line
 
-int		ramp1[8] = {0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61};
-int		ramp2[8] = {0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66};
-int		ramp3[8] = {0x6d, 0x6b, 6, 5, 4, 3};
+static int	ramp1[8] = {0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61};
+static int	ramp2[8] = {0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66};
+static int	ramp3[8] = {0x6d, 0x6b, 6, 5, 4, 3};
 
 particle_t	*particles;
 int			r_numparticles, r_numactiveparticles;
@@ -76,7 +76,11 @@ R_AllocParticle
 particle_t *R_AllocParticle (void)
 {
 	if (r_numactiveparticles < r_numparticles)
-		return &particles[r_numactiveparticles++];
+	{
+		particle_t *p = &particles[r_numactiveparticles++];
+		p->spawn = cl.time - 0.001;
+		return p;
+	}
 	return NULL;
 }
 
@@ -91,9 +95,9 @@ void R_InitParticles (void)
 
 	i = COM_CheckParm ("-particles");
 
-	if (i)
+	if (i && i < com_argc - 1)
 	{
-		r_numparticles = (int)(Q_atoi(com_argv[i+1]));
+		r_numparticles = atoi(com_argv[i + 1]);
 		if (r_numparticles < ABSOLUTE_MIN_PARTICLES)
 			r_numparticles = ABSOLUTE_MIN_PARTICLES;
 	}
@@ -116,13 +120,8 @@ void R_InitParticles (void)
 R_EntityParticles
 ===============
 */
-#define NUMVERTEXNORMALS	162
-extern	float	r_avertexnormals[NUMVERTEXNORMALS][3];
-vec3_t	avelocities[NUMVERTEXNORMALS];
-float	beamlength = 16;
-vec3_t	avelocity = {23, 7, 3};
-float	partstep = 0.01;
-float	timescale = 0.01;
+static vec3_t	avelocities[NUMVERTEXNORMALS];
+static float	beamlength = 16;
 
 void R_EntityParticles (entity_t *ent)
 {
@@ -633,7 +632,7 @@ void CL_RunParticles (void)
 
 	for (cur = active = 0, p = particles; cur < r_numactiveparticles; cur++, p++)
 	{
-		if (p->die < cl.time)
+		if (p->die < cl.time || p->spawn > cl.time)
 			continue;
 
 		p->org[0] += p->vel[0]*frametime;
