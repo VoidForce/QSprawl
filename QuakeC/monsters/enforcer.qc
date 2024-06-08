@@ -28,7 +28,29 @@ $cd /raid/quake/id1/models/enforcer
 $origin 0 -6 24
 $base base		
 $skin skin
+/*
+// #define enf_0_7 '-4 2 29'
+self.head_offset = '-4 2 29';
+self.head_offset = '-3 0 27' //8
+self.head_offset = '-2 0 28'
+self.head_offset = '-1 1 29'
+self.head_offset = '-2 1 29.5'
+self.head_offset = '-2 2 30.5'
+self.head_offset = '-2 2 30'
+self.head_offset = '-2 2.5 29'
+self.head_offset = '-2 2.5 28'
+self.head_offset = '-2 3 28'
+self.head_offset = '-2 3 28'
+self.head_offset = '-1.5 2.5 28.5'
+self.head_offset = '-1.5 2 29.5'
+self.head_offset = '-2 1.5 30.5'
+self.head_offset = '-2 1 30.5'
+self.head_offset = '-2 0.5 29.5'
+self.head_offset = '-2 0.5 28.5' //22
 
+23
+*/
+//1-7 '-4 2 29'
 $frame stand1 stand2 stand3 stand4 stand5 stand6 stand7
 
 $frame walk1 walk2 walk3 walk4 walk5 walk6 walk7 walk8 walk9 walk10
@@ -56,182 +78,128 @@ $frame paind9 paind10 paind11 paind12 paind13 paind14 paind15 paind16
 $frame paind17 paind18 paind19
 
 
-void() Laser_Touch =
-{
-	local vector org;
-	
-	if (other == self.owner)
-		return;		// don't explode on owner
-
-	if (pointcontents(self.origin) == CONTENT_SKY)
-	{
-		remove(self);
-		return;
-	}
-	
-	sound (self, CHAN_WEAPON, "enforcer/enfstop.wav", 1, ATTN_STATIC);
-	org = self.origin - 8*normalize(self.velocity);
-
-	if (other.health)
-	{
-		SpawnBlood (org, self.velocity*0.2, 15);
-		T_Damage (other, self, self.owner, 15);
-	}
-	else
-	{
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
-	}
-	
-	remove(self);	
-};
-
-void(vector org, vector vec) LaunchLaser =
-{		
-	if (self.classname == "monster_enforcer")
-		sound (self, CHAN_WEAPON, "enforcer/enfire.wav", 1, ATTN_NORM);
-
-	vec = normalize(vec);
-	
-	newmis = spawn();
-	newmis.classname = "enforcer_laser";	//gnounc
-	newmis.owner = self;
-	newmis.movetype = MOVETYPE_FLY;
-	newmis.solid = SOLID_BBOX;
-	newmis.effects = EF_DIMLIGHT;
-
-	setmodel (newmis, "progs/laser.mdl");
-	setsize (newmis, '0 0 0', '0 0 0');		
-
-	setorigin (newmis, org);
-
-	newmis.velocity = vec * 600;
-	newmis.angles = vectoangles(newmis.velocity);
-
-	newmis.nextthink = time + 5;
-	newmis.think = SUB_Remove;
-	newmis.touch = Laser_Touch;
-};
-
-
-
 void() enforcer_fire =
 {
-	local vector org;
-
-	self.effects = self.effects | EF_MUZZLEFLASH;
-	makevectors2 (self.angles);
+	local	vector	dir;
+	local	entity	en;
 	
-	org = self.origin + v_forward * 30 + v_right * 8.5 + '0 0 16';
+	ai_face();
+	
+	sound (self, CHAN_WEAPON, "soldier/sattck1.wav", 1, ATTN_NORM);	
 
-	LaunchLaser(org, self.enemy.origin - self.origin);
+	// fire somewhat behind the player, so a dodging player is harder to hit
+	en = self.enemy;
+	
+	dir = en.origin - en.velocity*0.2;
+	dir = normalize (dir - self.origin);
+	
+	FireBullets (4, dir, '0.1 0.1 0', 4);
 };
 
 //============================================================================
 
-void()	enf_stand1	=[	$stand1,	enf_stand2	] {ai_stand();};
-void()	enf_stand2	=[	$stand2,	enf_stand3	] {ai_stand();};
-void()	enf_stand3	=[	$stand3,	enf_stand4	] {ai_stand();};
-void()	enf_stand4	=[	$stand4,	enf_stand5	] {ai_stand();};
-void()	enf_stand5	=[	$stand5,	enf_stand6	] {ai_stand();};
-void()	enf_stand6	=[	$stand6,	enf_stand7	] {ai_stand();};
-void()	enf_stand7	=[	$stand7,	enf_stand1	] {ai_stand();};
+void()	enf_stand1	=[	$stand1,	enf_stand2	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand2	=[	$stand2,	enf_stand3	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand3	=[	$stand3,	enf_stand4	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand4	=[	$stand4,	enf_stand5	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand5	=[	$stand5,	enf_stand6	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand6	=[	$stand6,	enf_stand7	] {ai_stand();setHead('-4 2 29');};
+void()	enf_stand7	=[	$stand7,	enf_stand1	] {ai_stand();setHead('-4 2 29');};
 
 void()	enf_walk1	=[	$walk1 ,	enf_walk2	]
 {
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "enforcer/idle1.wav", 1, ATTN_IDLE);
 	ai_walk(2);
+	self.head_offset = '-3 0 27'; //8
 };
 
-void()	enf_walk2	=[	$walk2 ,	enf_walk3	] {ai_walk(4);};
-void()	enf_walk3	=[	$walk3 ,	enf_walk4	] {ai_walk(4);};
-void()	enf_walk4	=[	$walk4 ,	enf_walk5	] {ai_walk(3);};
-void()	enf_walk5	=[	$walk5 ,	enf_walk6	] {ai_walk(1);};
-void()	enf_walk6	=[	$walk6 ,	enf_walk7	] {ai_walk(2);};
-void()	enf_walk7	=[	$walk7 ,	enf_walk8	] {ai_walk(2);};
-void()	enf_walk8	=[	$walk8 ,	enf_walk9	] {ai_walk(1);};
-void()	enf_walk9	=[	$walk9 ,	enf_walk10	] {ai_walk(2);};
-void()	enf_walk10	=[	$walk10,	enf_walk11	] {ai_walk(4);};
-void()	enf_walk11	=[	$walk11,	enf_walk12	] {ai_walk(4);};
-void()	enf_walk12	=[	$walk12,	enf_walk13	] {ai_walk(1);};
-void()	enf_walk13	=[	$walk13,	enf_walk14	] {ai_walk(2);};
-void()	enf_walk14	=[	$walk14,	enf_walk15	] {ai_walk(3);};
-void()	enf_walk15	=[	$walk15,	enf_walk16	] {ai_walk(4);};
-void()	enf_walk16	=[	$walk16,	enf_walk1	] {ai_walk(2);};
+void()	enf_walk2	=[	$walk2 ,	enf_walk3	] {ai_walk(4);setHead('-2 0 28'); };
+void()	enf_walk3	=[	$walk3 ,	enf_walk4	] {ai_walk(4);setHead('-1 1 29');};
+void()	enf_walk4	=[	$walk4 ,	enf_walk5	] {ai_walk(3);setHead('-2 1 29.5');};
+void()	enf_walk5	=[	$walk5 ,	enf_walk6	] {ai_walk(1);setHead('-2 2 30.5');};
+void()	enf_walk6	=[	$walk6 ,	enf_walk7	] {ai_walk(2);setHead('-2 2 30');};
+void()	enf_walk7	=[	$walk7 ,	enf_walk8	] {ai_walk(2);setHead('-2 2.5 29');};
+void()	enf_walk8	=[	$walk8 ,	enf_walk9	] {ai_walk(1);setHead('-2 2.5 28');};
+void()	enf_walk9	=[	$walk9 ,	enf_walk10	] {ai_walk(2);setHead('-2 3 28');};
+void()	enf_walk10	=[	$walk10,	enf_walk11	] {ai_walk(4);setHead('-2 3 28');};
+void()	enf_walk11	=[	$walk11,	enf_walk12	] {ai_walk(4);setHead('-1.5 2.5 28.5');};
+void()	enf_walk12	=[	$walk12,	enf_walk13	] {ai_walk(1);setHead('-1.5 2 29.5');};
+void()	enf_walk13	=[	$walk13,	enf_walk14	] {ai_walk(2);setHead('-2 1.5 30.5');};
+void()	enf_walk14	=[	$walk14,	enf_walk15	] {ai_walk(3);setHead('-2 1 30.5');};
+void()	enf_walk15	=[	$walk15,	enf_walk16	] {ai_walk(4);setHead('-2 0.5 29.5');};
+void()	enf_walk16	=[	$walk16,	enf_walk1	] {ai_walk(2);setHead('-2 0.5 28.5');};
 
 void()	enf_run1	=[	$run1  ,	enf_run2	] 
 {
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "enforcer/idle1.wav", 1, ATTN_IDLE);
 	ai_run(18);
+	self.head_offset = '3 -1 29';
 };
 
-void()	enf_run2	=[	$run2  ,	enf_run3	] {ai_run(14);};
-void()	enf_run3	=[	$run3  ,	enf_run4	] {ai_run(7);};
-void()	enf_run4	=[	$run4  ,	enf_run5	] {ai_run(12);};
-void()	enf_run5	=[	$run5  ,	enf_run6	] {ai_run(14);};
-void()	enf_run6	=[	$run6  ,	enf_run7	] {ai_run(14);};
-void()	enf_run7	=[	$run7  ,	enf_run8	] {ai_run(7);};
-void()	enf_run8	=[	$run8  ,	enf_run1	] {ai_run(11);};
+void()	enf_run2	=[	$run2  ,	enf_run3	] {ai_run(14);setHead('3 -1 27');};
+void()	enf_run3	=[	$run3  ,	enf_run4	] {ai_run(7); setHead('4 -1 26');}; //26;
+void()	enf_run4	=[	$run4  ,	enf_run5	] {ai_run(12);setHead('3 1.5 26.5');};
+void()	enf_run5	=[	$run5  ,	enf_run6	] {ai_run(14);setHead('2.5 3 28');};
+void()	enf_run6	=[	$run6  ,	enf_run7	] {ai_run(14);setHead('3 3 27');};
+void()	enf_run7	=[	$run7  ,	enf_run8	] {ai_run(7); setHead('5 3 26');};
+void()	enf_run8	=[	$run8  ,	enf_run1	] {ai_run(11);setHead('3 1 27');};
 
-void()	enf_atk1	=[	$attack1,	enf_atk2	] {ai_face();};
-void()	enf_atk2	=[	$attack2,	enf_atk3	] {ai_face();};
-void()	enf_atk3	=[	$attack3,	enf_atk4	] {ai_face();};
-void()	enf_atk4	=[	$attack4,	enf_atk5	] {ai_face();};
-void()	enf_atk5	=[	$attack5,	enf_atk6	] {ai_face();};
-void()	enf_atk6	=[	$attack6,	enf_atk7	] {enforcer_fire();};
-void()	enf_atk7	=[	$attack7,	enf_atk8	] {ai_face();};
-void()	enf_atk8	=[	$attack8,	enf_atk9	] {ai_face();};
-void()	enf_atk9	=[	$attack5,	enf_atk10	] {ai_face();};
-void()	enf_atk10	=[	$attack6,	enf_atk11	] {enforcer_fire();};
-void()	enf_atk11	=[	$attack7,	enf_atk12	] {ai_face();};
-void()	enf_atk12	=[	$attack8,	enf_atk13	] {ai_face();};
-void()	enf_atk13	=[	$attack9,	enf_atk14	] {ai_face();};
-void()	enf_atk14	=[	$attack10,	enf_run1	] {ai_face();SUB_CheckRefire (enf_atk1);};
+void()	enf_atk1	=[	$attack1,	enf_atk2	] {ai_face();setHead('-9 4 29');};
+void()	enf_atk2	=[	$attack2,	enf_atk3	] {ai_face();setHead('-9 3 27');}; //33
+void()	enf_atk3	=[	$attack3,	enf_atk4	] {ai_face();setHead('-9 2 26');};
+void()	enf_atk4	=[	$attack4,	enf_atk5	] {ai_face();setHead('-8 2 26');};
+void()	enf_atk5	=[	$attack5,	enf_atk6	] {ai_face();setHead('-6 2 26');}; //36
+void()	enf_atk6	=[	$attack6,	enf_atk7	] {enforcer_fire();setHead('-5 1 26');};
+void()	enf_atk7	=[	$attack7,	enf_atk8	] {ai_face();setHead('-15 1 23');};
+void()	enf_atk8	=[	$attack8,	enf_atk9	] {ai_face();setHead('-15 1 23');}; // 39
+void()	enf_atk9	=[	$attack5,	enf_atk10	] {ai_face();setHead('-6 2 26');}; // frame 36 repeats
+void()	enf_atk10	=[	$attack6,	enf_atk11	] {enforcer_fire();setHead('-5 1 26');};
+void()	enf_atk11	=[	$attack7,	enf_atk12	] {ai_face();setHead('-15 1 23');};
+void()	enf_atk12	=[	$attack8,	enf_atk13	] {ai_face();setHead('-15 1 23');};
+void()	enf_atk13	=[	$attack9,	enf_atk14	] {ai_face();setHead('-11.5 1.5 24');}; //40
+void()	enf_atk14	=[	$attack10,	enf_run1	] {ai_face();setHead('-8 2 25');SUB_CheckRefire (enf_atk1);}; //41
+// 42- 66 death
+void()	enf_paina1	=[	$paina1,	enf_paina2	] {setHead('-15 5 27');}; //67
+void()	enf_paina2	=[	$paina2,	enf_paina3	] {setHead('-17 5 27');};
+void()	enf_paina3	=[	$paina3,	enf_paina4	] {setHead('-15 5 28');};
+void()	enf_paina4	=[	$paina4,	enf_run1	] {setHead('-10 3 29');}; //70
 
-void()	enf_paina1	=[	$paina1,	enf_paina2	] {};
-void()	enf_paina2	=[	$paina2,	enf_paina3	] {};
-void()	enf_paina3	=[	$paina3,	enf_paina4	] {};
-void()	enf_paina4	=[	$paina4,	enf_run1	] {};
+void()	enf_painb1	=[	$painb1,	enf_painb2	] {setHead('-13 6 24');}; //71
+void()	enf_painb2	=[	$painb2,	enf_painb3	] {setHead('-15 7 22');};
+void()	enf_painb3	=[	$painb3,	enf_painb4	] {setHead('-14 7 22');}; //73
+void()	enf_painb4	=[	$painb4,	enf_painb5	] {setHead('-15 7 22');};
+void()	enf_painb5	=[	$painb5,	enf_run1	] {setHead('-11 5 26');}; //75
 
-void()	enf_painb1	=[	$painb1,	enf_painb2	] {};
-void()	enf_painb2	=[	$painb2,	enf_painb3	] {};
-void()	enf_painb3	=[	$painb3,	enf_painb4	] {};
-void()	enf_painb4	=[	$painb4,	enf_painb5	] {};
-void()	enf_painb5	=[	$painb5,	enf_run1	] {};
+void()	enf_painc1	=[	$painc1,	enf_painc2	] {setHead('-11 -11 23');}; //77
+void()	enf_painc2	=[	$painc2,	enf_painc3	] {setHead('-11 -11 23');};
+void()	enf_painc3	=[	$painc3,	enf_painc4	] {setHead('-8 -8 27');};
+void()	enf_painc4	=[	$painc4,	enf_painc5	] {setHead('-5 -5 28');};
+void()	enf_painc5	=[	$painc5,	enf_painc6	] {setHead('-5 -3 29');}; //81
+void()	enf_painc6	=[	$painc6,	enf_painc7	] {setHead('-5 -1 29');};
+void()	enf_painc7	=[	$painc7,	enf_painc8	] {setHead('-5 1 29');};
+void()	enf_painc8	=[	$painc8,	enf_run1	] {setHead('-5 1 29');};
 
-void()	enf_painc1	=[	$painc1,	enf_painc2	] {};
-void()	enf_painc2	=[	$painc2,	enf_painc3	] {};
-void()	enf_painc3	=[	$painc3,	enf_painc4	] {};
-void()	enf_painc4	=[	$painc4,	enf_painc5	] {};
-void()	enf_painc5	=[	$painc5,	enf_painc6	] {};
-void()	enf_painc6	=[	$painc6,	enf_painc7	] {};
-void()	enf_painc7	=[	$painc7,	enf_painc8	] {};
-void()	enf_painc8	=[	$painc8,	enf_run1	] {};
-
-void()	enf_paind1	=[	$paind1,	enf_paind2	] {};
-void()	enf_paind2	=[	$paind2,	enf_paind3	] {};
-void()	enf_paind3	=[	$paind3,	enf_paind4	] {};
-void()	enf_paind4	=[	$paind4,	enf_paind5	] {ai_painforward(2);};
-void()	enf_paind5	=[	$paind5,	enf_paind6	] {ai_painforward(1);};
-void()	enf_paind6	=[	$paind6,	enf_paind7	] {};
-void()	enf_paind7	=[	$paind7,	enf_paind8	] {};
-void()	enf_paind8	=[	$paind8,	enf_paind9	] {};
-void()	enf_paind9	=[	$paind9,	enf_paind10	] {};
-void()	enf_paind10	=[	$paind10,	enf_paind11	] {};
-void()	enf_paind11	=[	$paind11,	enf_paind12	] {ai_painforward(1);};
-void()	enf_paind12	=[	$paind12,	enf_paind13	] {ai_painforward(1);};
-void()	enf_paind13	=[	$paind13,	enf_paind14	] {ai_painforward(1);};
-void()	enf_paind14	=[	$paind14,	enf_paind15	] {};
-void()	enf_paind15	=[	$paind15,	enf_paind16	] {};
-void()	enf_paind16	=[	$paind16,	enf_paind17	] {ai_pain(1);};
-void()	enf_paind17	=[	$paind17,	enf_paind18	] {ai_pain(1);};
-void()	enf_paind18	=[	$paind18,	enf_paind19	] {};
-void()	enf_paind19	=[	$paind19,	enf_run1	] {};
+void()	enf_paind1	=[	$paind1,	enf_paind2	] {setHead('-16 1 27');}; //84
+void()	enf_paind2	=[	$paind2,	enf_paind3	] {setHead('-9 -1 30');};
+void()	enf_paind3	=[	$paind3,	enf_paind4	] {setHead('-3 -1 28');};
+void()	enf_paind4	=[	$paind4,	enf_paind5	] {setHead('8 -1 23');ai_painforward(2);}; //87
+void()	enf_paind5	=[	$paind5,	enf_paind6	] {setHead('11 -1 18');ai_painforward(1);};
+void()	enf_paind6	=[	$paind6,	enf_paind7	] {setHead('15 -3 6');};
+void()	enf_paind7	=[	$paind7,	enf_paind8	] {setHead('15 3 1');};
+void()	enf_paind8	=[	$paind8,	enf_paind9	] {setHead('15 2 -1');}; // ouch
+void()	enf_paind9	=[	$paind9,	enf_paind10	] {setHead('15 2 0');}; //92
+void()	enf_paind10	=[	$paind10,	enf_paind11	] {setHead('15 3 2');};
+void()	enf_paind11	=[	$paind11,	enf_paind12	] {setHead('15 3 4');ai_painforward(1);};
+void()	enf_paind12	=[	$paind12,	enf_paind13	] {setHead('15 3 6');ai_painforward(1);};
+void()	enf_paind13	=[	$paind13,	enf_paind14	] {setHead('15 3 7');ai_painforward(1);};
+void()	enf_paind14	=[	$paind14,	enf_paind15	] {setHead('15 3 8');}; //97
+void()	enf_paind15	=[	$paind15,	enf_paind16	] {setHead('14 3 12');};
+void()	enf_paind16	=[	$paind16,	enf_paind17	] {setHead('11 2 19');ai_pain(1);};
+void()	enf_paind17	=[	$paind17,	enf_paind18	] {setHead('1 1 27');ai_pain(1);};
+void()	enf_paind18	=[	$paind18,	enf_paind19	] {setHead('-6 1 28');};
+void()	enf_paind19	=[	$paind19,	enf_run1	] {setHead('-5 3 29');};
 
 void(entity attacker, float damage)	enf_pain =
 {
@@ -318,6 +286,7 @@ void()	enf_fdie11	=[	$fdeath11,	enf_fdie11	] {};
 
 void() enf_die =
 {
+	setHead('0 0 0');
 	// check for gib
 	if (self.health < -35)
 	{
@@ -342,6 +311,7 @@ void() enf_die =
 
 
 /*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
+
 void() monster_enforcer =
 {
 	if (deathmatch)
@@ -352,11 +322,12 @@ void() monster_enforcer =
 	
 	precache_model2 ("progs/enforcer.mdl");
 	precache_model2 ("progs/h_mega.mdl");
-	precache_model2 ("progs/laser.mdl");
+	//precache_model2 ("progs/laser.mdl");
+	precache_sound ("soldier/sattck1.wav");
 
 	precache_sound2 ("enforcer/death1.wav");
-	precache_sound2 ("enforcer/enfire.wav");
-	precache_sound2 ("enforcer/enfstop.wav");
+	//precache_sound2 ("enforcer/enfire.wav");
+	//precache_sound2 ("enforcer/enfstop.wav");
 	precache_sound2 ("enforcer/idle1.wav");
 	precache_sound2 ("enforcer/pain1.wav");
 	precache_sound2 ("enforcer/pain2.wav");
@@ -378,9 +349,11 @@ void() monster_enforcer =
 	self.noise2 = "enforcer/sight3.wav";	//gnounc
 	self.noise3 = "enforcer/sight4.wav";	//gnounc
 
-	setsize (self, '-16 -16 -24', '16 16 40');
-	self.health = 80;
-	self.max_health = 80;
+	setsize (self, '-16 -16 -24', '16 16 34');//40
+	self.head_offset = '-4 2 29';//'-4 2 29';
+	self.head_size = 10;
+	self.health = 120;
+	self.max_health = 120;
 
 	self.th_stand = enf_stand1;
 	self.th_walk = enf_walk1;

@@ -537,7 +537,9 @@ void() monster_ogre =
 	self.netname = "Ogre";
 	self.killstring = " was destroyed by an Ogre\n";
 
-	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
+	setsize (self, '-32 -32 -24', '32 32 48');
+	self.head_offset = '13 3 27';
+	self.head_size = 8;
 	self.health = 200;
 	self.max_health = 200;
 

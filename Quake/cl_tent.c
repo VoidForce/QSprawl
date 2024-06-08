@@ -59,9 +59,10 @@ CL_ParseBeam
 void CL_ParseBeam (qmodel_t *m, float staytime)
 {
 	int		ent;
-	vec3_t	start, end;
+	vec3_t	start, end, offset;
 	beam_t	*b;
 	int		i;
+	short flag;
 
 	ent = MSG_ReadShort ();
 
@@ -73,6 +74,15 @@ void CL_ParseBeam (qmodel_t *m, float staytime)
 	end[1] = MSG_ReadCoord (cl.protocolflags);
 	end[2] = MSG_ReadCoord (cl.protocolflags);
 
+	// qSprawl: extra data, v_angle of player, to offset lightning gun lightning model
+	flag = MSG_ReadByte();
+	if (flag)
+	{
+		offset[0] = MSG_ReadCoord(cl.protocolflags);
+		offset[1] = MSG_ReadCoord(cl.protocolflags);
+		offset[2] = MSG_ReadCoord(cl.protocolflags);
+	}
+
 // override any beam with the same entity
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
@@ -83,6 +93,7 @@ void CL_ParseBeam (qmodel_t *m, float staytime)
 			b->endtime = cl.time + staytime;
 			VectorCopy(start, b->start);
 			VectorCopy (end, b->end);
+			VectorCopy(offset, b->offset);
 			return;
 		}
 
@@ -97,6 +108,7 @@ void CL_ParseBeam (qmodel_t *m, float staytime)
 			b->endtime = cl.time + staytime;
 			VectorCopy (start, b->start);
 			VectorCopy (end, b->end);
+			VectorCopy(offset, b->offset);
 			return;
 		}
 	}
@@ -118,7 +130,8 @@ CL_ParseTEnt
 void CL_ParseTEnt (void)
 {
 	int		type;
-	vec3_t	pos;
+	int		flag;
+	vec3_t	pos, pos2, pos3;
 	dlight_t	*dl;
 	int		rnd;
 	int		colorStart, colorLength;
@@ -234,6 +247,56 @@ void CL_ParseTEnt (void)
 		staytime = MSG_ReadCoord(cl.protocolflags);
 		CL_ParseBeam(Mod_ForName(str, true), staytime);
 		break;
+	case TE_GAUSSTRACE:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		pos2[0] = MSG_ReadCoord(cl.protocolflags);
+		pos2[1] = MSG_ReadCoord(cl.protocolflags);
+		pos2[2] = MSG_ReadCoord(cl.protocolflags);
+		R_GaussTrail(pos, pos2);
+		break;
+		
+	case TE_BULLETTRACE:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		pos2[0] = MSG_ReadCoord(cl.protocolflags);
+		pos2[1] = MSG_ReadCoord(cl.protocolflags);
+		pos2[2] = MSG_ReadCoord(cl.protocolflags);
+		flag = MSG_ReadByte();
+		R_BulletTrail(pos, pos2, flag);
+		break;
+
+	case TE_IMPACT:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		pos2[0] = MSG_ReadCoord(cl.protocolflags);
+		pos2[1] = MSG_ReadCoord(cl.protocolflags);
+		pos2[2] = MSG_ReadCoord(cl.protocolflags);
+		flag = MSG_ReadByte();
+		if (flag && flag < 4)
+		{
+			pos3[0] = MSG_ReadCoord(cl.protocolflags);
+			pos3[1] = MSG_ReadCoord(cl.protocolflags);
+			pos3[2] = MSG_ReadCoord(cl.protocolflags);
+			R_GaussImpact(pos, pos2, pos3, flag);
+		}
+		else
+			R_Impact(pos, pos2, flag);
+		break;
+
+	case TE_MUZZLE:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		pos2[0] = MSG_ReadCoord(cl.protocolflags);
+		pos2[1] = MSG_ReadCoord(cl.protocolflags);
+		pos2[2] = MSG_ReadCoord(cl.protocolflags);
+		flag = MSG_ReadByte();
+		R_Muzzle(pos, pos2, flag);
+		break;
 
 	case TE_LAVASPLASH:
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
@@ -308,6 +371,8 @@ void CL_UpdateTEnts (void)
 	entity_t	*ent;
 	float		yaw, pitch;
 	float		forward;
+	// qsprawl
+	//vec3_t		fwd, right, up, offset;
 
 	num_temp_entities = 0;
 
@@ -320,10 +385,17 @@ void CL_UpdateTEnts (void)
 			continue;
 
 	// if coming from the player, update the start position
+		/*
 		if (b->entity == cl.viewentity)
 		{
-			//VectorCopy (cl_entities[cl.viewentity].origin, b->start); // qSprawl fix this to use offset
+			AngleVectors(cl_entities[cl.viewentity].angles, fwd, right, up);
+			VectorCopy (cl_entities[cl.viewentity].origin, offset ); // qSprawl fix this to use offset
+			for (j = 0; j < 3; j++)
+				offset[j] += fwd[j] * 24 + right[j] * 8;
+			offset[2] += 16;
+			VectorCopy(offset, b->start);
 		}
+		*/
 
 	// calculate pitch and yaw
 		VectorSubtract (b->end, b->start, dist);

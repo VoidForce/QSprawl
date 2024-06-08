@@ -443,7 +443,7 @@ void(float old, float new) Deathmatch_Weapon =
 	nr = RankForWeapon (new);
 
 	if ( nr < or )
-		W_DelpoyGun(new);
+		delpoyGun(new);
 };
 
 /*=============
@@ -555,7 +555,7 @@ void() weapon_touch =
 	self = other;
 	
 	if (!deathmatch)
-		W_DelpoyGun(new);
+		delpoyGun(new);
 	else
 		Deathmatch_Weapon (old, new);
 
@@ -741,7 +741,7 @@ void() ammo_touch =
 	{
 		stemp = self;
 		self = other;
-		W_DelpoyGun(W_BestWeapon());
+		delpoyGun(W_BestWeapon());
 		W_SetCurrentAmmo ();
 		self = stemp;
 	}

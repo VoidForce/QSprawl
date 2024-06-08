@@ -1042,11 +1042,52 @@ SCR_DrawCrosshair -- johnfitz
 */
 void SCR_DrawCrosshair (void)
 {
-	if (!crosshair.value || scr_viewsize.value >= 130)
-		return;
+	int lwidth;
+	int lheight;
+	int crosshair_length;
+	int crosshair_width;
+	int half_width;
+	int gap;
+	int color;
 
-	GL_SetCanvas (CANVAS_CROSSHAIR);
-	Draw_Character(-4, -4, crosshair_char);
+	lwidth = (int)glwidth * 0.5;
+	lheight = (int)glheight * 0.5;
+	crosshair_width = (int)glheight / 250;
+	crosshair_width = crosshair_width - (crosshair_width % 2); // should split at half
+	crosshair_length = crosshair_width * 20;
+	half_width = crosshair_width / 2;
+	gap = crosshair_width * 4;
+
+	if (cl.hitmarker)
+	{
+		color = 251;
+		/*
+		GL_SetCanvas(CANVAS_DEFAULT);
+		Draw_Fill(lwidth - gap * 4, lheight + gap * 4,  4, -4, 144, 255); // left top
+		Draw_Fill(lwidth - gap * 4, lheight - gap * 4,  4,  4, 144, 255); // left bottom
+		Draw_Fill(lwidth + gap * 4, lheight - gap * 4, -4,  4, 144, 255); // right bottom
+		Draw_Fill(lwidth + gap * 4, lheight + gap * 4, -4, -4, 144, 255); // right top
+		*/
+		//Draw_Fill(lwidth + 10, lheight - 1, 4, 2, 242, 255);
+		//Draw_Fill(lwidth - 10, lheight - 1, -4, 2, 242, 255);
+		//Draw_Fill(lwidth - 1, lheight + 10, 2, 4, 242, 255);
+		//Draw_Fill(lwidth - 1, lheight - 10, 2, -4, 242, 255);
+	}
+	else
+		color = 244;
+
+	if (!crosshair.value)// || scr_viewsize.value >= 130)
+		return;
+	
+	GL_SetCanvas(CANVAS_DEFAULT);
+	Draw_Fill(lwidth + gap, lheight - half_width, crosshair_length, crosshair_width, color, 255);
+	//Draw_Fill(lwidth - gap, lheight - 1, -4, 2, 242, 255);
+	Draw_Fill(lwidth - half_width, lheight + gap, crosshair_width, crosshair_length, color, 255);
+	Draw_Fill(lwidth - half_width, lheight - half_width, crosshair_width, crosshair_width, 244, 255);
+	//Draw_Fill(lwidth - 1, lheight - gap, 2, -4, 242, 255);
+
+	//GL_SetCanvas (CANVAS_CROSSHAIR);
+	//Draw_Character(-4, -4, crosshair_char);
 }
 
 typedef struct

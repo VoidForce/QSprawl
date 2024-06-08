@@ -354,6 +354,7 @@ void() lightning_fire =
 	WriteCoord (MSG_ALL, p2_x);
 	WriteCoord (MSG_ALL, p2_y);
 	WriteCoord (MSG_ALL, p2_z);
+	WriteByte (MSG_ALL, 0);
 };
 
 void() lightning_use =

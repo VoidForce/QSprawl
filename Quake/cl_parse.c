@@ -713,12 +713,14 @@ void CL_ParseClientdata (void)
 
 	bits = (unsigned short)MSG_ReadShort (); //johnfitz -- read bits here isntead of in CL_ParseServerMessage()
 
+	/*
 	//johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & SU_EXTEND1)
 		bits |= (MSG_ReadByte() << 16);
 	if (bits & SU_EXTEND2)
 		bits |= (MSG_ReadByte() << 24);
 	//johnfitz
+	*/
 
 	if (bits & SU_VIEWHEIGHT)
 		cl.viewheight = MSG_ReadChar ();
@@ -737,28 +739,39 @@ void CL_ParseClientdata (void)
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
 	for (i = 0; i < 3; i++)
 	{
-		if (bits & (SU_PUNCH1<<i) )
-			cl.punchangle[i] = MSG_ReadFloat()*16;
+		if (bits & (SU_PUNCH1 << i))
+		{
+			cl.punchangle[i] = MSG_ReadFloat();
+			cl.punchvelocity[i] = MSG_ReadFloat();
+		}
 		else
+		{
 			cl.punchangle[i] = 0;
+			cl.punchvelocity[i] = 0;
+		}
 
 		if (bits & (SU_VELOCITY1<<i) )
 			cl.mvelocity[0][i] = MSG_ReadChar()*16;
 		else
 			cl.mvelocity[0][i] = 0;
+
+		if (bits & SU_VIEWMODEL) // for now like this, split up into 6 checks later
+		{
+			cl.viewmodeloffset_angles[i] = MSG_ReadFloat();
+			cl.viewmodeloffset_origin[i] = MSG_ReadShort();
+		}
 	}
 
 	//johnfitz -- update v_punchangles
 	if (v_punchangles[0][0] != cl.punchangle[0] || v_punchangles[0][1] != cl.punchangle[1] || v_punchangles[0][2] != cl.punchangle[2])
 	{
-		VectorCopy (v_punchangles[0], v_punchangles[1]);
-		VectorCopy (cl.punchangle, v_punchangles[0]);
+		VectorCopy (v_punchangles[0], v_punchangles[1]); // stor current as old
+		VectorCopy (cl.punchangle, v_punchangles[0]); // set current from data we just read
 		cl.punchtime = cl.time;
 	}
 	//johnfitz
 
-// [always sent]	if (bits & SU_ITEMS)
-		i = MSG_ReadLong ();
+	i = MSG_ReadLong (); // items
 
 	if (cl.items != i)
 	{	// set flash times
@@ -774,7 +787,7 @@ void CL_ParseClientdata (void)
 	cl.inwater = (bits & SU_INWATER) != 0;
 
 	if (bits & SU_WEAPONFRAME)
-		cl.stats[STAT_WEAPONFRAME] = MSG_ReadByte ();
+		cl.stats[STAT_WEAPONFRAME] = MSG_ReadShort ();
 	else
 		cl.stats[STAT_WEAPONFRAME] = 0;
 
@@ -812,14 +825,39 @@ void CL_ParseClientdata (void)
 		Sbar_Changed ();
 	}
 
-	for (i = 0; i < 4; i++)
+	i = MSG_ReadByte ();
+	if (cl.stats[STAT_SHELLS] != i)
 	{
-		j = MSG_ReadByte ();
-		if (cl.stats[STAT_SHELLS+i] != j)
-		{
-			cl.stats[STAT_SHELLS+i] = j;
-			Sbar_Changed ();
-		}
+		cl.stats[STAT_SHELLS] = i;
+		Sbar_Changed ();
+	}
+
+	i = MSG_ReadByte();
+	if (cl.stats[STAT_NAILS] != i)
+	{
+		cl.stats[STAT_NAILS] = i;
+		Sbar_Changed();
+	}
+
+	i = MSG_ReadByte();
+	if (cl.stats[STAT_ROCKETS] != i)
+	{
+		cl.stats[STAT_ROCKETS] = i;
+		Sbar_Changed();
+	}
+
+	i = MSG_ReadByte();
+	if (cl.stats[STAT_CELLS] != i)
+	{
+		cl.stats[STAT_CELLS] = i;
+		Sbar_Changed();
+	}
+// i need more boolets
+	i = MSG_ReadByte();
+	if (cl.stats[STAT_BULLETS] != i)
+	{
+		cl.stats[STAT_BULLETS] = i;
+		Sbar_Changed();
 	}
 
 	i = MSG_ReadByte ();
@@ -834,6 +872,7 @@ void CL_ParseClientdata (void)
 	}
 	else
 	{
+	// thanks for leaving comment about what the hell is this for
 		if (cl.stats[STAT_ACTIVEWEAPON] != (1<<i))
 		{
 			cl.stats[STAT_ACTIVEWEAPON] = (1<<i);
@@ -841,23 +880,6 @@ void CL_ParseClientdata (void)
 		}
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
-	if (bits & SU_WEAPON2)
-		cl.stats[STAT_WEAPON] |= (MSG_ReadByte() << 8);
-	if (bits & SU_ARMOR2)
-		cl.stats[STAT_ARMOR] |= (MSG_ReadByte() << 8);
-	if (bits & SU_AMMO2)
-		cl.stats[STAT_AMMO] |= (MSG_ReadByte() << 8);
-	if (bits & SU_SHELLS2)
-		cl.stats[STAT_SHELLS] |= (MSG_ReadByte() << 8);
-	if (bits & SU_NAILS2)
-		cl.stats[STAT_NAILS] |= (MSG_ReadByte() << 8);
-	if (bits & SU_ROCKETS2)
-		cl.stats[STAT_ROCKETS] |= (MSG_ReadByte() << 8);
-	if (bits & SU_CELLS2)
-		cl.stats[STAT_CELLS] |= (MSG_ReadByte() << 8);
-	if (bits & SU_WEAPONFRAME2)
-		cl.stats[STAT_WEAPONFRAME] |= (MSG_ReadByte() << 8);
 	if (bits & SU_WEAPONALPHA)
 		cl.viewent.alpha = MSG_ReadByte();
 	else
@@ -874,6 +896,13 @@ void CL_ParseClientdata (void)
 	CL_SetHudStat (STAT_NAILS);
 	CL_SetHudStat (STAT_ROCKETS);
 	CL_SetHudStat (STAT_CELLS);
+	CL_SetHudStat (STAT_BULLETS);
+
+	//qsprawl
+	if (bits & SU_HITMARKER)
+		cl.hitmarker = 1;
+	else
+		cl.hitmarker = 0;
 
 	//johnfitz -- lerping
 	//ericw -- this was done before the upper 8 bits of cl.stats[STAT_WEAPON] were filled in, breaking on large maps like zendar.bsp

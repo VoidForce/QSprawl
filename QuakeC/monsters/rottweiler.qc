@@ -216,11 +216,19 @@ void() dog_painb16	=[	$painb16 ,	dog_run1	] {};
 
 void(entity attacker, float damage) dog_pain =
 {
+	if (self.pain_finished > time)
+		return;
+	
+	if (random() > 0.5)
+	{
+		self.pain_finished = time + 2;
+		return;
+	}
+	
 	sound (self, CHAN_VOICE, "dog/dpain1.wav", 1, ATTN_NORM);
 
 	if (random() > 0.5)
 		dog_pain1 ();
-
 	else
 		dog_painb1 ();
 };
@@ -366,9 +374,11 @@ void() monster_dog =
 	self.netname = "Rottweiler";
 	self.killstring = " was mauled by a Rottweiler\n";
 
-	setsize (self, '-32 -32 -24', '32 32 40');
-	self.health = 25;
-	self.max_health = 25;
+	setsize (self, '-32 -32 -24', '32 32 20');//40
+	self.head_offset = '19 1 0';
+	self.head_size = 8;
+	self.health = 100;
+	self.max_health = 100;
 
 	self.th_stand = dog_stand1;
 	self.th_walk = dog_walk1;

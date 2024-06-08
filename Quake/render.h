@@ -135,6 +135,12 @@ void R_ParticleExplosion (vec3_t org);
 void R_ParticleExplosion2 (vec3_t org, int colorStart, int colorLength);
 void R_LavaSplash (vec3_t org);
 void R_TeleportSplash (vec3_t org);
+void R_BulletTrail (vec3_t start, vec3_t end, int type);
+void R_GaussTrail(vec3_t start, vec3_t end);
+void R_Muzzle(vec3_t org, vec3_t dir, int type);
+void R_Impact(vec3_t org, vec3_t dir, int type);
+void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type);
+
 
 void R_PushDlights (void);
 

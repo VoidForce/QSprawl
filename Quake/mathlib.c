@@ -87,7 +87,17 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 //johnfitz -- removed RotatePointAroundVector() becuase it's no longer used and my compiler fucked it up anyway
 
 /*-----------------------------------------------------------------*/
-
+void VectorPerpendicular(vec3_t A, vec3_t B)
+{
+	if (A[0] != 0)
+		B[0] = -(A[1] / A[0]) * B[1] - (A[2] / A[0]) * B[2];
+	else if (A[1] != 0)
+		B[1] = -(A[0] / A[1]) * B[0] - (A[2] / A[1]) * B[2];
+	else if (A[2] != 0)
+		B[2] = -(A[0] / A[2]) * B[0] - (A[1] / A[2]) * B[1];
+	else
+		Con_DPrintf("PANIC! VectorPerpendicular is all 0\n");
+};
 
 float	anglemod(float a)
 {

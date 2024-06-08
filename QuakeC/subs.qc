@@ -512,7 +512,7 @@ float getAmmotypeByWeapon(float it_num)
 		case IT_AXE:
 			return 0;
 		case IT_SHOTGUN:
-			return IT_SHELLS;
+			return IT_NAILS;
 		case IT_SUPER_SHOTGUN:
 			return IT_SHELLS;
 		case IT_NAILGUN:
@@ -522,7 +522,7 @@ float getAmmotypeByWeapon(float it_num)
 		case IT_GRENADE_LAUNCHER:
 			return IT_ROCKETS;
 		case IT_ROCKET_LAUNCHER:
-			return IT_ROCKETS;
+			return IT_CELLS;
 		case IT_LIGHTNING:
 			return IT_CELLS;
 		default:
@@ -614,3 +614,88 @@ void(string s1, string s2, string s3, string s4, string s5, string s6) dprint6 =
 	{ dprint(s1); dprint(s2); dprint(s3); dprint(s4); dprint(s5); dprint(s6); dprint("\n"); }
 void() endl =
 	{ dprint("\n");}
+	
+void(vector a, vector b, float flag, vector c) sendMessageImpact =
+{
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, TE_IMPACT);
+	WriteCoord (MSG_BROADCAST, a_x);
+	WriteCoord (MSG_BROADCAST, a_y);
+	WriteCoord (MSG_BROADCAST, a_z);
+	WriteCoord (MSG_BROADCAST, b_x);
+	WriteCoord (MSG_BROADCAST, b_y);
+	WriteCoord (MSG_BROADCAST, b_z);
+	WriteByte (MSG_BROADCAST, flag);
+	if (flag && flag < 4)
+	{
+		WriteCoord (MSG_BROADCAST, c_x);
+		WriteCoord (MSG_BROADCAST, c_y);
+		WriteCoord (MSG_BROADCAST, c_z);
+	}
+};
+
+void(vector a, vector b, float flag, float type) sendMessageVecVecFlag =
+{
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, type);
+	WriteCoord (MSG_BROADCAST, a_x);
+	WriteCoord (MSG_BROADCAST, a_y);
+	WriteCoord (MSG_BROADCAST, a_z);
+	WriteCoord (MSG_BROADCAST, b_x);
+	WriteCoord (MSG_BROADCAST, b_y);
+	WriteCoord (MSG_BROADCAST, b_z);
+	WriteByte (MSG_BROADCAST, flag);
+};
+
+void(vector a, vector b, float type) sendMessageVecVec =
+{
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, type);
+	WriteCoord (MSG_BROADCAST, a_x);
+	WriteCoord (MSG_BROADCAST, a_y);
+	WriteCoord (MSG_BROADCAST, a_z);
+	WriteCoord (MSG_BROADCAST, b_x);
+	WriteCoord (MSG_BROADCAST, b_y);
+	WriteCoord (MSG_BROADCAST, b_z);
+};
+
+void(vector a, float type) sendMessageVec =
+{
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, type);
+	WriteCoord (MSG_BROADCAST, a_x);
+	WriteCoord (MSG_BROADCAST, a_y);
+	WriteCoord (MSG_BROADCAST, a_z);
+};
+
+void(vector offset) setHead =
+{
+	//self.origin_old = self.origin;
+	//self.lasttick_time = time;
+	//self.head_offset_old = self.head_offset;
+	self.head_offset = offset;
+};
+
+vector(entity target) findHeadPosition =
+{
+	vector result;
+	/*
+	vector old_pos, new_pos, result;
+	
+	makevectors2(target.angles_old); // fucking inverted x in makevectors, always forgeting about it, cost me half of the day
+	old_pos = target.origin_old + v_forward * target.head_offset_old_x + v_right * target.head_offset_old_y;
+	old_pos_z += target.head_offset_old_z;
+	
+	makevectors2(target.angles);
+	new_pos = target.origin + v_forward * target.head_offset_x + v_right * target.head_offset_y;
+	new_pos_z += target.head_offset_z;
+	result = new_pos;
+	result = lerpVector(old_pos, new_pos, (0.1 - (time - target.lasttick_time)) * 10);
+	*/
+	
+	makevectors2(target.angles);
+	result = target.origin + v_forward * target.head_offset_x + v_right * target.head_offset_y;
+	result_z += target.head_offset_z;
+	
+	return result;
+};

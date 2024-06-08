@@ -79,6 +79,7 @@ void() SetChangeParms =
 	parm7 = self.ammo_cells;
 	parm8 = self.weapon;
 	parm9 = self.armortype * 100;
+	parm10 = self.ammo_bullets;
 };
 
 void() SetNewParms =
@@ -86,12 +87,13 @@ void() SetNewParms =
 	parm1 = IT_SHOTGUN | IT_AXE;
 	parm2 = 100;
 	parm3 = 0;
-	parm4 = 25;
-	parm5 = 0;
+	parm4 = 0;
+	parm5 = 30;
 	parm6 = 0;
 	parm7 = 0;
 	parm8 = 1;
 	parm9 = 0;
+	parm10 = 0;
 };
 
 void() DecodeLevelParms =
@@ -111,6 +113,7 @@ void() DecodeLevelParms =
 	self.ammo_cells = parm7;
 	self.weapon = parm8;
 	self.armortype = parm9 * 0.01;
+	self.ammo_bullets = parm10;
 };
 
 /*============
@@ -273,6 +276,8 @@ When the player presses attack or jump, change to the next level
 ============*/
 void() IntermissionThink =
 {
+	if (slowmotion)
+		ResetSlowmotion();
 	if (time < intermission_exittime)
 		return;
 
@@ -546,9 +551,6 @@ PutClientInServer
 
 called each time a player is spawned
 ============*/
-void() DecodeLevelParms;
-void() PlayerDie;
-
 
 void() PutClientInServer =
 {
@@ -627,6 +629,9 @@ void() PutClientInServer =
 	if (!grenade_handler)
 		grenade_handler = spawn();
 	grenade_handler.classname = "GrenadeHandler";
+	
+	if (!self.weapon_director)
+		self.weapon_director = spawn();
 };
 
 
@@ -878,6 +883,8 @@ void() PlayerJump =
 		walljump_direction = self.wall_normal * (125 + (1 - jump_force) * 100) + v_forward * (100 + (1 - jump_force) * 150) * speed_fatigue;
 		walljump_direction_z = 0;
 		self.velocity += walljump_direction;
+		addPunchVelocity(-100 * (1 - jump_force) - 50, crandom() * 80 * (1 - jump_force), 40  * (1 - jump_force)); // punch before speedfatigue override
+		
 		speed_fatigue = 1 - clamp(0, self.velocity_z / 600, 1); // we won't let player fly upwards too fast with jump spam
 		self.velocity_z += (100 + 320 * jump_force) * speed_fatigue;
 		self.velocity_z = max(125, self.velocity_z);
@@ -888,6 +895,7 @@ void() PlayerJump =
 	}
 	else // regular jump
 	{
+		addPunchVelocity(-50,crandom()*50, 0);
 		self.velocity_z = self.velocity_z + 270;
 		self.jump_timer = time;
 		self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
@@ -1070,7 +1078,8 @@ void() PlayerPreThink =
 	local float i;
 	local float delta;
 	local float progress;
-	local float punch_combined;
+	local float angle_combined;
+	local float velocity_combined;
 	
 	if (self.punch_time)
 	{
@@ -1078,21 +1087,23 @@ void() PlayerPreThink =
 		
 		for (i=0; i < 3; i++)
 		{
-			punch_combined = 0;
+			velocity_combined = 0;
+			angle_combined = 0;
 		
-			delta = self.punch_slow[i] * min(1, progress * 0.5);
+			delta = self.punch_slow[i] * min(1, progress * 4);
 			self.punch_slow[i] -= delta;
-			punch_combined += delta;
+			velocity_combined += delta;
 
-			delta = self.punch_normal[i] * min(1, progress * 4);
+			delta = self.punch_normal[i] * min(1, progress * 10);
 			self.punch_normal[i] -= delta;
-			punch_combined += delta;
+			velocity_combined += delta;
 
 			delta = self.punch_fast[i] * min(1, progress * 10);
 			self.punch_fast[i] -= delta;
-			punch_combined += delta;
+			angle_combined += delta;
 			
-			self.punchangle[i] += punch_combined;
+			self.punchvelocity[i] += velocity_combined * 10;
+			self.punchangle[i] += angle_combined;
 			//self.punchangle[i] = clamp (-15, self.punchangle[i], 15);
 		}
 		
@@ -1104,12 +1115,6 @@ void() PlayerPreThink =
 			self.punch_time = 0;
 		}
 	}
-	
-	/*if (self.punchangle != '0 0 0')
-	{
-		if (self.punch_relaxtime < time)
-			self.punchangle = self.punchangle * (0.95 * frametime); 
-	}*/
 	
 	makevectors (self.v_angle);		// is this still used
 
@@ -1210,12 +1215,14 @@ void() PlayerPreThink =
 						// ground boost
 						self.velocity_x += velocity2d_x * 270;
 						self.velocity_y += velocity2d_y * 270;
+						addPunchVelocity(-60,0,0);
 					}
 					else
 					{
 						//boost after we land while holding crouch
 						self.velocity_x += velocity2d_x * 150;
 						self.velocity_y += velocity2d_y * 150;
+						//already have viewpunch from landing
 					}
 				}
 			}
@@ -1267,7 +1274,7 @@ void() PlayerPreThink =
 
 	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE)
 	{
-		W_DelpoyGun(W_BestWeapon());
+		delpoyGun(W_BestWeapon());
 	}
 };
 
@@ -1283,6 +1290,28 @@ void() PlayerPostThink =
 
 	if (self.deadflag)
 		return;
+
+	if (self.sprawlflags & SFL_VMOFFSET)
+	{
+		float progress;
+		
+		progress = clamp(0, (time - self.deploy_time) * 4, 1); // 0.4 sec
+		self.viewmodeloffset_angles_x= lerp(-60, 0, progress);
+		self.viewmodeloffset_angles_z= lerp(-30, 0, progress);
+
+		if (progress == 1)
+		{
+			self.viewmodeloffset_angles_x = 0;
+			self.deploy_time = 0;
+			self.sprawlflags -= self.sprawlflags & SFL_VMOFFSET;
+		}
+	}
+	
+	if (self.hitmarker)
+	{
+		if (self.hitmarker_time < time )
+			self.hitmarker = 0;
+	}
 	
 	if (self.sprawlflags & SFL_SEMIAUTO)
 	{
@@ -1293,20 +1322,24 @@ void() PlayerPostThink =
 	W_WeaponFrame (); // do weapon stuff
 
 	// check to see if player landed and play landing sound	
-	if ((self.jump_flag < -300) && (self.flags & FL_ONGROUND) && (self.health > 0))
+	if ((self.jump_flag < -100) && (self.flags & FL_ONGROUND) && (self.health > 0))
 	{
 		if (self.watertype == CONTENT_WATER)
 			sound (self, CHAN_BODY, "player/h2ojump.wav", 1, ATTN_NORM);
-	
 		else if (self.jump_flag < -650)
 		{
 			//T_Damage (self, world, world, 5); // no fall damage in qsprawl
+			addPunchVelocity(-150,-40,0);
 			sound (self, CHAN_VOICE, "player/land2.wav", 1, ATTN_NORM);
 			self.deathtype = "falling";
 		}
-	
-		else
+		else if (self.jump_flag < -300)
+		{
+			addPunchVelocity(-50,-10,0);
 			sound (self, CHAN_VOICE, "player/land.wav", 1, ATTN_NORM);
+		}
+		else
+			addPunchVelocity(0,0,-20);
 
 		self.jump_flag = 0;
 	}

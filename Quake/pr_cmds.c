@@ -1015,6 +1015,35 @@ static void PF_findradius (void)
 }
 
 /*
+=================
+PF_DistanceToRay
+
+Returns distance from point to the ray
+ray is defined by direction vector and "point on the ray" coordinates
+
+distancetoray (vector raypoint, vector direction, vector point)
+=================
+*/
+static void PF_distancetoray(void)
+{
+	float * raypoint,* b,* org;
+	vec3_t c,a;
+
+	raypoint = G_VECTOR(OFS_PARM0); // point on the ray, usually a start point of a trace: player's origin + view offset
+	b = G_VECTOR(OFS_PARM1); // direction of the ray
+	org = G_VECTOR(OFS_PARM2); // entity that we want to find distance to
+
+	// formula: vlen(CrossProduct( point - raypoint, direction )) / vlen(direction);
+	VectorSubtract(org, raypoint, a);
+	//cross product 
+	c[0] = a[1] * b[2] - a[2] * b[1];
+	c[1] = a[2] * b[0] - a[0] * b[2];
+	c[2] = a[0] * b[1] - a[1] * b[0];
+
+	G_FLOAT(OFS_RETURN) = VectorLength(c) / VectorLength(b);
+}
+
+/*
 =========
 PF_dprint
 =========
@@ -3680,7 +3709,8 @@ builtindef_t pr_builtindefs[] =
 
 	{"sprintf",					PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF},					// string(string fmt, ...)
 	{"findfloat",				PF_SSQC(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
-	{"change_timescale",		PF_BOTH(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
+	{"change_timescale",		PF_SSQC(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
+	{"distancetoray",			PF_SSQC(PF_distancetoray),		702 },	// float(vector raypoint, vector direction, vector point) PF_distancetoray
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

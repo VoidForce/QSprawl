@@ -143,7 +143,6 @@ void() walkmonster_start_go =
 
 void() walkmonster_start =
 {
-	self.sprawlflags |= SFL_MONSTER;
 	// delay drop to floor to make sure all doors have been spawned
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + random()*0.5;
@@ -203,7 +202,6 @@ void() flymonster_start_go =
 
 void() flymonster_start =
 {
-	self.sprawlflags |= SFL_MONSTER;
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + random()*0.5;
 	self.think = flymonster_start_go;
@@ -260,7 +258,6 @@ void() swimmonster_start_go =
 
 void() swimmonster_start =
 {
-	self.sprawlflags |= SFL_MONSTER;
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + random()*0.5;
 	self.think = swimmonster_start_go;

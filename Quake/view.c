@@ -46,7 +46,7 @@ cvar_t	cl_bobup = {"cl_bobup","0.5", CVAR_NONE};
 cvar_t	v_kicktime = {"v_kicktime", "0.5", CVAR_NONE};
 cvar_t	v_kickroll = {"v_kickroll", "0.6", CVAR_NONE};
 cvar_t	v_kickpitch = {"v_kickpitch", "0.6", CVAR_NONE};
-cvar_t	v_gunkick = {"v_gunkick", "2", CVAR_ARCHIVE}; //johnfitz
+//cvar_t	v_gunkick = {"v_gunkick", "2", CVAR_ARCHIVE}; //johnfitz
 
 cvar_t	v_iyaw_cycle = {"v_iyaw_cycle", "2", CVAR_NONE};
 cvar_t	v_iroll_cycle = {"v_iroll_cycle", "0.5", CVAR_NONE};
@@ -284,9 +284,9 @@ void V_ParseDamage (void)
 	int		armor, blood;
 	vec3_t	from;
 	int		i;
-	vec3_t	forward, right, up;
-	entity_t	*ent;
-	float	side;
+	//vec3_t	forward, right, up;
+	//entity_t	*ent;
+	//float	side;
 	float	count;
 
 	armor = MSG_ReadByte ();
@@ -328,6 +328,7 @@ void V_ParseDamage (void)
 //
 // calculate view angle kicks
 //
+	/* qSprawl - disable to see if it's really needed
 	ent = &cl_entities[cl.viewentity];
 
 	VectorSubtract (from, ent->origin, from);
@@ -342,6 +343,7 @@ void V_ParseDamage (void)
 	v_dmg_pitch = count*side*v_kickpitch.value;
 
 	v_dmg_time = v_kicktime.value;
+	*/
 }
 
 
@@ -801,6 +803,8 @@ void V_CalcRefdef (void)
 	vec3_t		angles;
 	float		bob;
 	static float oldz = 0;
+	static vec3_t vm_oldangles,vm_oldorigin;
+	vec3_t		blend;
 
 	V_DriftPitch ();
 
@@ -857,6 +861,8 @@ void V_CalcRefdef (void)
 	view->origin[2] += bob;
 
 	View_ModelDrift(view->origin, view->angles);
+	VectorAdd(view->origin, cl.viewmodeloffset_origin, view->origin);
+	VectorAdd(view->angles, cl.viewmodeloffset_angles, view->angles);
 
 	//johnfitz -- removed all gun position fudging code (was used to keep gun from getting covered by sbar)
 	//MarkV -- restored this with r_viewmodel_quake cvar
@@ -884,21 +890,19 @@ void V_CalcRefdef (void)
 	view->frame = cl.stats[STAT_WEAPONFRAME];
 	view->colormap = vid.colormap;
 	view->scale = ENTSCALE_DEFAULT;
-	
-	//johnfitz -- v_gunkick
-	if (v_gunkick.value == 1) //original quake kick
-		VectorAdd(r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
-	if (v_gunkick.value == 2) //lerped kick
-	{
-		float punchblend = (cl.time - cl.punchtime) / 0.1f;
 
-		if (punchblend < 0.0f) punchblend = 0.0f;
-		if (punchblend > 1.0f) punchblend = 1.0f;
+	float punchblend = (cl.time - cl.punchtime) / 0.1f;
 
-		r_refdef.viewangles[0] += v_punchangles[1][0] + (v_punchangles[0][0] - v_punchangles[1][0]) * punchblend;
-		r_refdef.viewangles[1] += v_punchangles[1][1] + (v_punchangles[0][1] - v_punchangles[1][1]) * punchblend;
-		r_refdef.viewangles[2] += v_punchangles[1][2] + (v_punchangles[0][2] - v_punchangles[1][2]) * punchblend;
-	}
+	if (punchblend < 0.0f) punchblend = 0.0f;
+	if (punchblend > 1.0f) punchblend = 1.0f;
+
+	blend[0] = v_punchangles[1][0] + (v_punchangles[0][0] - v_punchangles[1][0]) * punchblend;
+	blend[1] = v_punchangles[1][1] + (v_punchangles[0][1] - v_punchangles[1][1]) * punchblend;
+	blend[2] = v_punchangles[1][2] + (v_punchangles[0][2] - v_punchangles[1][2]) * punchblend;
+	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
+	blend[0] *= -1;
+	VectorAdd(view->angles, blend, view->angles);
+
 //johnfitz
 
 // smooth out stair step ups
@@ -1044,7 +1048,7 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_kicktime);
 	Cvar_RegisterVariable (&v_kickroll);
 	Cvar_RegisterVariable (&v_kickpitch);
-	Cvar_RegisterVariable (&v_gunkick); //johnfitz
+	//Cvar_RegisterVariable (&v_gunkick); //johnfitz
 
 	Cvar_RegisterVariable (&r_viewmodel_quake); //MarkV
 }

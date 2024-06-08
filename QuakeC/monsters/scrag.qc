@@ -426,7 +426,9 @@ void() monster_wizard =
 	self.netname = "Scrag";
 	self.killstring = " was scragged by a Scrag\n";
 
-	setsize (self, '-16 -16 -24', '16 16 40');
+	setsize (self, '-16 -16 -24', '16 16 48');//
+	self.head_offset = '0 0 28';
+	self.head_size = 8;
 	self.health = 80;
 	self.max_health = 80;
 

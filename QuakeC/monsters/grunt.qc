@@ -63,113 +63,109 @@ SOLDIER CODE
 
 void() army_fire;
 
-void()	army_stand1	=[	$stand1,	army_stand2	] {ai_stand();};
-void()	army_stand2	=[	$stand2,	army_stand3	] {ai_stand();};
-void()	army_stand3	=[	$stand3,	army_stand4	] {ai_stand();};
-void()	army_stand4	=[	$stand4,	army_stand5	] {ai_stand();};
-void()	army_stand5	=[	$stand5,	army_stand6	] {ai_stand();};
-void()	army_stand6	=[	$stand6,	army_stand7	] {ai_stand();};
-void()	army_stand7	=[	$stand7,	army_stand8	] {ai_stand();};
-void()	army_stand8	=[	$stand8,	army_stand1	] {ai_stand();};
+void()	army_stand1	=[	$stand1,	army_stand2	] {setHead('7 0 20');ai_stand();}; // 1
+void()	army_stand2	=[	$stand2,	army_stand3	] {setHead('7 0 20');ai_stand();}; // 2
+void()	army_stand3	=[	$stand3,	army_stand4	] {setHead('7 0 20');ai_stand();}; // 3
+void()	army_stand4	=[	$stand4,	army_stand5	] {setHead('7 0 20');ai_stand();}; // 4
+void()	army_stand5	=[	$stand5,	army_stand6	] {setHead('7 0 20');ai_stand();}; // 5
+void()	army_stand6	=[	$stand6,	army_stand7	] {setHead('7 0 20');ai_stand();}; // 6
+void()	army_stand7	=[	$stand7,	army_stand8	] {setHead('7 0 20');ai_stand();}; // 7
+void()	army_stand8	=[	$stand8,	army_stand1	] {setHead('7 0 20');ai_stand();}; // 8
 
-void()	army_walk1	=[	$prowl_1,	army_walk2	] 
-{
+void()	army_walk1	=[	$prowl_1,	army_walk2	] {setHead('7 0 20'); // 91
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "soldier/idle.wav", 1, ATTN_IDLE);
 	ai_walk(1);
 };
 
-void()	army_walk2	=[	$prowl_2,	army_walk3	] {ai_walk(1);};
-void()	army_walk3	=[	$prowl_3,	army_walk4	] {ai_walk(1);};
-void()	army_walk4	=[	$prowl_4,	army_walk5	] {ai_walk(1);};
-void()	army_walk5	=[	$prowl_5,	army_walk6	] {ai_walk(2);};
-void()	army_walk6	=[	$prowl_6,	army_walk7	] {ai_walk(3);};
-void()	army_walk7	=[	$prowl_7,	army_walk8	] {ai_walk(4);};
-void()	army_walk8	=[	$prowl_8,	army_walk9	] {ai_walk(4);};
-void()	army_walk9	=[	$prowl_9,	army_walk10	] {ai_walk(2);};
-void()	army_walk10	=[	$prowl_10,	army_walk11	] {ai_walk(2);};
-void()	army_walk11	=[	$prowl_11,	army_walk12	] {ai_walk(2);};
-void()	army_walk12	=[	$prowl_12,	army_walk13	] {ai_walk(1);};
-void()	army_walk13	=[	$prowl_13,	army_walk14	] {ai_walk(0);};
-void()	army_walk14	=[	$prowl_14,	army_walk15	] {ai_walk(1);};
-void()	army_walk15	=[	$prowl_15,	army_walk16	] {ai_walk(1);};
-void()	army_walk16	=[	$prowl_16,	army_walk17	] {ai_walk(1);};
-void()	army_walk17	=[	$prowl_17,	army_walk18	] {ai_walk(3);};
-void()	army_walk18	=[	$prowl_18,	army_walk19	] {ai_walk(3);};
-void()	army_walk19	=[	$prowl_19,	army_walk20	] {ai_walk(3);};
-void()	army_walk20	=[	$prowl_20,	army_walk21	] {ai_walk(3);};
-void()	army_walk21	=[	$prowl_21,	army_walk22	] {ai_walk(2);};
-void()	army_walk22	=[	$prowl_22,	army_walk23	] {ai_walk(1);};
-void()	army_walk23	=[	$prowl_23,	army_walk24	] {ai_walk(1);};
-void()	army_walk24	=[	$prowl_24,	army_walk1	] {ai_walk(1);};
+void()	army_walk2	=[	$prowl_2,	army_walk3	] {setHead('7 0 18');ai_walk(1);}; // 92
+void()	army_walk3	=[	$prowl_3,	army_walk4	] {setHead('9 0 17');ai_walk(1);}; // 93
+void()	army_walk4	=[	$prowl_4,	army_walk5	] {setHead('9 0 17');ai_walk(1);}; // 94
+void()	army_walk5	=[	$prowl_5,	army_walk6	] {setHead('10 0 18');ai_walk(2);}; // 95
+void()	army_walk6	=[	$prowl_6,	army_walk7	] {setHead('10 1 21');ai_walk(3);}; // 96
+void()	army_walk7	=[	$prowl_7,	army_walk8	] {setHead('9 1 22');ai_walk(4);}; // 97
+void()	army_walk8	=[	$prowl_8,	army_walk9	] {setHead('8 1 23');ai_walk(4);}; // 98 
+void()	army_walk9	=[	$prowl_9,	army_walk10	] {setHead('6 0 23');ai_walk(2);}; // 99
+void()	army_walk10	=[	$prowl_10,	army_walk11	] {setHead('5 0 22');ai_walk(2);}; // 100
+void()	army_walk11	=[	$prowl_11,	army_walk12	] {setHead('5 0 22');ai_walk(2);}; // 101
+void()	army_walk12	=[	$prowl_12,	army_walk13	] {setHead('5 0 21');ai_walk(1);}; // 102
+void()	army_walk13	=[	$prowl_13,	army_walk14	] {setHead('6 0 20');ai_walk(0);}; // 103
+void()	army_walk14	=[	$prowl_14,	army_walk15	] {setHead('6 0 19');ai_walk(1);}; // 104
+void()	army_walk15	=[	$prowl_15,	army_walk16	] {setHead('7 0 18');ai_walk(1);}; // 105
+void()	army_walk16	=[	$prowl_16,	army_walk17	] {setHead('9 0 17');ai_walk(1);}; // 106
+void()	army_walk17	=[	$prowl_17,	army_walk18	] {setHead('9 0 17');ai_walk(3);}; // 107
+void()	army_walk18	=[	$prowl_18,	army_walk19	] {setHead('11 1 19');ai_walk(3);}; // 108
+void()	army_walk19	=[	$prowl_19,	army_walk20	] {setHead('11 1 20');ai_walk(3);}; // 109
+void()	army_walk20	=[	$prowl_20,	army_walk21	] {setHead('10 1 21');ai_walk(3);}; // 110
+void()	army_walk21	=[	$prowl_21,	army_walk22	] {setHead('8 1 22');ai_walk(2);}; // 111
+void()	army_walk22	=[	$prowl_22,	army_walk23	] {setHead('7 1 22');ai_walk(1);}; // 112
+void()	army_walk23	=[	$prowl_23,	army_walk24	] {setHead('7 1 22');ai_walk(1);}; // 113
+void()	army_walk24	=[	$prowl_24,	army_walk1	] {setHead('7 1 21');ai_walk(1);}; // 114
 
-void()	army_run1	=[	$run1,		army_run2	] 
-{
+void()	army_run1	=[	$run1,		army_run2	] {setHead('7 1 21'); // 74
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "soldier/idle.wav", 1, ATTN_IDLE);
 	ai_run(11);
 };
 
-void()	army_run2	=[	$run2,		army_run3	] {ai_run(15);};
-void()	army_run3	=[	$run3,		army_run4	] {ai_run(10);};
-void()	army_run4	=[	$run4,		army_run5	] {ai_run(10);};
-void()	army_run5	=[	$run5,		army_run6	] {ai_run(8);};
-void()	army_run6	=[	$run6,		army_run7	] {ai_run(15);};
-void()	army_run7	=[	$run7,		army_run8	] {ai_run(10);};
-void()	army_run8	=[	$run8,		army_run1	] {ai_run(8);};
+void()	army_run2	=[	$run2,		army_run3	] {setHead('6 0 22');ai_run(15);}; // 75
+void()	army_run3	=[	$run3,		army_run4	] {setHead('6 0 21');ai_run(10);}; // 76
+void()	army_run4	=[	$run4,		army_run5	] {setHead('6 0 21');ai_run(10);}; // 77
+void()	army_run5	=[	$run5,		army_run6	] {setHead('6 0 21');ai_run( 8);}; // 78
+void()	army_run6	=[	$run6,		army_run7	] {setHead('6 1 22');ai_run(15);}; // 79
+void()	army_run7	=[	$run7,		army_run8	] {setHead('6 1 21');ai_run(10);}; // 80
+void()	army_run8	=[	$run8,		army_run1	] {setHead('6 1 20');ai_run( 8);}; // 81
 
-void()	army_atk1	=[	$shoot1,	army_atk2	] {ai_face();};
-void()	army_atk2	=[	$shoot2,	army_atk3	] {ai_face();};
-void()	army_atk3	=[	$shoot3,	army_atk4	] {ai_face();};
-void()	army_atk4	=[	$shoot4,	army_atk5	] {ai_face();};
-void()	army_atk5	=[	$shoot5,	army_atk6	] 
-{
+void()	army_atk1	=[	$shoot1,	army_atk2	] {setHead('5 0 24');ai_face();};  // 82
+void()	army_atk2	=[	$shoot2,	army_atk3	] {setHead('2 1 24');ai_face();};  // 83
+void()	army_atk3	=[	$shoot3,	army_atk4	] {setHead('-1 1 24');ai_face();}; // 84
+void()	army_atk4	=[	$shoot4,	army_atk5	] {setHead('-2 1 24');ai_face();}; // 85
+void()	army_atk5	=[	$shoot5,	army_atk6	] {setHead('-2 1 24');			   // 86
 	ai_face();
 	army_fire();
 	self.effects = self.effects | EF_MUZZLEFLASH;
 };
+void()	army_atk6	=[	$shoot6,	army_atk7	] {setHead('-12 2 21');ai_face();}; // 87
+void()	army_atk7	=[	$shoot7,	army_atk8	] {setHead('-11 2 22');ai_face(); SUB_CheckRefire (army_atk1);}; // 88
+void()	army_atk8	=[	$shoot8,	army_atk9	] {setHead('-7 2 23');ai_face();}; //89
+void()	army_atk9	=[	$shoot9,	army_run1	] {setHead('-3 2 24');ai_face();}; //90
 
-void()	army_atk6	=[	$shoot6,	army_atk7	] {ai_face();};
-void()	army_atk7	=[	$shoot7,	army_atk8	] {ai_face(); SUB_CheckRefire (army_atk1);};
-void()	army_atk8	=[	$shoot8,	army_atk9	] {ai_face();};
-void()	army_atk9	=[	$shoot9,	army_run1	] {ai_face();};
 
+void()	army_pain1	=[	$pain1,		army_pain2	] {setHead('0 1 20');}; // 41
+void()	army_pain2	=[	$pain2,		army_pain3	] {setHead('-16 -1 23');}; // 42 
+void()	army_pain3	=[	$pain3,		army_pain4	] {setHead('-23 4 21');}; // 43 
+void()	army_pain4	=[	$pain4,		army_pain5	] {setHead('-12 0 25');}; // 44 
+void()	army_pain5	=[	$pain5,		army_pain6	] {setHead('-1 1 25');}; // 45
+void()	army_pain6	=[	$pain6,		army_run1	] {setHead('5 0 22');ai_pain(1);}; // 46
 
-void()	army_pain1	=[	$pain1,		army_pain2	] {};
-void()	army_pain2	=[	$pain2,		army_pain3	] {};
-void()	army_pain3	=[	$pain3,		army_pain4	] {};
-void()	army_pain4	=[	$pain4,		army_pain5	] {};
-void()	army_pain5	=[	$pain5,		army_pain6	] {};
-void()	army_pain6	=[	$pain6,		army_run1	] {ai_pain(1);};
+void()	army_painb1	=[	$painb1,	army_painb2	] {setHead('-1 -2 25');}; // 47
+void()	army_painb2	=[	$painb2,	army_painb3	] {setHead('-1 -1 18');ai_painforward(13);}; // 48
+void()	army_painb3	=[	$painb3,	army_painb4	] {setHead('-5 -1 15');ai_painforward(9);}; // 49
+void()	army_painb4	=[	$painb4,	army_painb5	] {setHead('2 -1 14');}; // 50
+void()	army_painb5	=[	$painb5,	army_painb6	] {setHead('15 -3 5');}; // 51
+void()	army_painb6	=[	$painb6,	army_painb7	] {setHead('18 -3 -5');}; // 52
+void()	army_painb7	=[	$painb7,	army_painb8	] {setHead('14 -2 -11');}; // 53
+void()	army_painb8	=[	$painb8,	army_painb9	] {setHead('13 -2 -11');}; // 54
+void()	army_painb9	=[	$painb9,	army_painb10] {setHead('14 -2 -9');}; // 55
+void()	army_painb10=[	$painb10,	army_painb11] {setHead('14 -2 -7');}; // 56
+void()	army_painb11=[	$painb11,	army_painb12] {setHead('14 -2 1');}; // 57
+void()	army_painb12=[	$painb12,	army_painb13] {setHead('14 0 5');ai_pain(2);}; // 58
+void()	army_painb13=[	$painb13,	army_painb14] {setHead('14 0 11');}; // 59
+void()	army_painb14=[	$painb14,	army_run1	] {setHead('11 0 17');}; // 60
 
-void()	army_painb1	=[	$painb1,	army_painb2	] {};
-void()	army_painb2	=[	$painb2,	army_painb3	] {ai_painforward(13);};
-void()	army_painb3	=[	$painb3,	army_painb4	] {ai_painforward(9);};
-void()	army_painb4	=[	$painb4,	army_painb5	] {};
-void()	army_painb5	=[	$painb5,	army_painb6	] {};
-void()	army_painb6	=[	$painb6,	army_painb7	] {};
-void()	army_painb7	=[	$painb7,	army_painb8	] {};
-void()	army_painb8	=[	$painb8,	army_painb9	] {};
-void()	army_painb9	=[	$painb9,	army_painb10] {};
-void()	army_painb10=[	$painb10,	army_painb11] {};
-void()	army_painb11=[	$painb11,	army_painb12] {};
-void()	army_painb12=[	$painb12,	army_painb13] {ai_pain(2);};
-void()	army_painb13=[	$painb13,	army_painb14] {};
-void()	army_painb14=[	$painb14,	army_run1	] {};
-
-void()	army_painc1	=[	$painc1,	army_painc2	] {};
-void()	army_painc2	=[	$painc2,	army_painc3	] {ai_pain(1);};
-void()	army_painc3	=[	$painc3,	army_painc4	] {};
-void()	army_painc4	=[	$painc4,	army_painc5	] {};
-void()	army_painc5	=[	$painc5,	army_painc6	] {ai_painforward(1);};
-void()	army_painc6	=[	$painc6,	army_painc7	] {ai_painforward(1);};
-void()	army_painc7	=[	$painc7,	army_painc8	] {};
-void()	army_painc8	=[	$painc8,	army_painc9	] {ai_pain(1);};
-void()	army_painc9	=[	$painc9,	army_painc10] {ai_painforward(4);};
-void()	army_painc10=[	$painc10,	army_painc11] {ai_painforward(3);};
-void()	army_painc11=[	$painc11,	army_painc12] {ai_painforward(6);};
-void()	army_painc12=[	$painc12,	army_painc13] {ai_painforward(8);};
-void()	army_painc13=[	$painc13,	army_run1] {};
+void()	army_painc1	=[	$painc1,	army_painc2	] {setHead('2 0 22');}; // 61
+void()	army_painc2	=[	$painc2,	army_painc3	] {setHead('-17 1 24');ai_pain(1);}; // 62
+void()	army_painc3	=[	$painc3,	army_painc4	] {setHead('-13 1 25');}; // 63
+void()	army_painc4	=[	$painc4,	army_painc5	] {setHead('-4 -1 24');}; // 64
+void()	army_painc5	=[	$painc5,	army_painc6	] {setHead('7 -1 19');ai_painforward(1);}; // 65
+void()	army_painc6	=[	$painc6,	army_painc7	] {setHead('13 1 12');ai_painforward(1);}; // 66
+void()	army_painc7	=[	$painc7,	army_painc8	] {setHead('15 2 9');}; // 67
+void()	army_painc8	=[	$painc8,	army_painc9	] {setHead('15 2 13');ai_pain(1);}; // 68
+void()	army_painc9	=[	$painc9,	army_painc10] {setHead('15 1 14');ai_painforward(4);}; // 69 nice
+void()	army_painc10=[	$painc10,	army_painc11] {setHead('15 1 14');ai_painforward(3);}; // 70 
+void()	army_painc11=[	$painc11,	army_painc12] {setHead('14 1 17');ai_painforward(6);}; // 71
+void()	army_painc12=[	$painc12,	army_painc13] {setHead('11 1 18');ai_painforward(8);}; // 72
+void()	army_painc13=[	$painc13,	army_run1] 	  {setHead('9 0 20');}; // 73
 
 void(entity attacker, float damage)	army_pain =
 {
@@ -202,26 +198,77 @@ void(entity attacker, float damage)	army_pain =
 	}
 };
 
+void() Laser_Touch =
+{
+	local vector org;
+	
+	if (other == self.owner)
+		return;		// don't explode on owner
+
+	if (pointcontents(self.origin) == CONTENT_SKY)
+	{
+		remove(self);
+		return;
+	}
+	
+	sound (self, CHAN_WEAPON, "enforcer/enfstop.wav", 1, ATTN_STATIC);
+	org = self.origin - 8*normalize(self.velocity);
+
+	if (other.health)
+	{
+		SpawnBlood (org, self.velocity*0.2, 15);
+		T_Damage (other, self, self.owner, 15);
+	}
+	else
+	{
+		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
+		WriteCoord (MSG_BROADCAST, org_x);
+		WriteCoord (MSG_BROADCAST, org_y);
+		WriteCoord (MSG_BROADCAST, org_z);
+	}
+	
+	remove(self);	
+};
+
+void(vector org, vector vec) LaunchLaser =
+{		
+	if (self.classname == "monster_army")
+		sound (self, CHAN_WEAPON, "enforcer/enfire.wav", 1, ATTN_NORM);
+
+	vec = normalize(vec);
+	
+	newmis = spawn();
+	newmis.classname = "army_laser";	//gnounc
+	newmis.owner = self;
+	newmis.movetype = MOVETYPE_FLY;
+	newmis.solid = SOLID_BBOX;
+	newmis.effects = EF_DIMLIGHT;
+
+	setmodel (newmis, "progs/laser.mdl");
+	setsize (newmis, '0 0 0', '0 0 0');		
+
+	setorigin (newmis, org);
+
+	newmis.velocity = vec * 600;
+	newmis.angles = vectoangles(newmis.velocity);
+
+	newmis.nextthink = time + 5;
+	newmis.think = SUB_Remove;
+	newmis.touch = Laser_Touch;
+};
 
 void() army_fire =
 {
-	local	vector	dir;
-	local	entity	en;
-	
-	ai_face();
-	
-	sound (self, CHAN_WEAPON, "soldier/sattck1.wav", 1, ATTN_NORM);	
+	local vector org;
 
-	// fire somewhat behind the player, so a dodging player is harder to hit
-	en = self.enemy;
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	makevectors2 (self.angles);
 	
-	dir = en.origin - en.velocity*0.2;
-	dir = normalize (dir - self.origin);
-	
-	FireBullets (4, dir, '0.1 0.1 0', 4);
+	org = self.origin + v_forward * 30 + v_right * 8.5 + '0 0 16';
+
+	LaunchLaser(org, self.enemy.origin - self.origin);
 };
-
-
 
 void()	army_die1	=[	$death1,	army_die2	] {};
 void()	army_die2	=[	$death2,	army_die3	] {};
@@ -292,6 +339,10 @@ void() monster_army =
 		return;
 	}
 	
+	precache_sound2 ("enforcer/enfire.wav");
+	precache_sound2 ("enforcer/enfstop.wav");
+	precache_model2 ("progs/laser.mdl");
+	
 	precache_model ("progs/soldier.mdl");
 	precache_model ("progs/h_guard.mdl");
 	precache_model ("progs/gib1.mdl");
@@ -318,9 +369,11 @@ void() monster_army =
 	self.netname = "Grunt";
 	self.killstring = " was shot by a Grunt\n";
 
-	setsize (self, '-16 -16 -24', '16 16 40');
-	self.health = 30;
-	self.max_health = 30;
+	setsize (self, '-16 -16 -24', '16 16 30');//40
+	self.head_offset = '7 0 20';
+	self.head_size = 8;
+	self.health = 60;
+	self.max_health = 60;
 
 	self.th_stand = army_stand1;
 	self.th_walk = army_walk1;

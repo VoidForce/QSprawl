@@ -72,7 +72,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //johnfitz -- PROTOCOL_NEHAHRA transparency
 #define U_TRANS			(1<<15)
 //johnfitz
-
 #define	SU_VIEWHEIGHT	(1<<0)
 #define	SU_IDEALPITCH	(1<<1)
 #define	SU_PUNCH1		(1<<2)
@@ -81,7 +80,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_VELOCITY1	(1<<5)
 #define	SU_VELOCITY2	(1<<6)
 #define	SU_VELOCITY3	(1<<7)
-#define	SU_UNUSED8		(1<<8)  //AVAILABLE BIT
+#define	SU_HITMARKER	(1<<8)  // qSprawl Hitmarker, the bit is it
+#define	SU_ONGROUND		(1<<9)	// no data follows, the bit is it
+#define	SU_INWATER		(1<<10)	// no data follows, the bit is it
+#define	SU_WEAPONFRAME	(1<<11)
+#define	SU_ARMOR		(1<<12)
+#define	SU_WEAPON		(1<<13)
+#define SU_WEAPONALPHA	(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
+#define SU_VIEWMODEL	(1<<15)
+
+//#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
+/*
+#define	SU_VIEWHEIGHT	(1<<0)
+#define	SU_IDEALPITCH	(1<<1)
+#define	SU_PUNCH1		(1<<2)
+#define	SU_PUNCH2		(1<<3)
+#define	SU_PUNCH3		(1<<4)
+#define	SU_VELOCITY1	(1<<5)
+#define	SU_VELOCITY2	(1<<6)
+#define	SU_VELOCITY3	(1<<7)
+#define	SU_HITMARKER	(1<<8)  //qSprawl Hitmarker
 #define	SU_ITEMS		(1<<9)
 #define	SU_ONGROUND		(1<<10)	// no data follows, the bit is it
 #define	SU_INWATER		(1<<11)	// no data follows, the bit is it
@@ -106,6 +124,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SU_UNUSED29		(1<<29)
 #define SU_UNUSED30		(1<<30)
 #define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
+*/
 //johnfitz
 
 // a sound with no channel is a local only sound
@@ -255,6 +274,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // PGM 01/21/97
 // qsprawl
 #define TE_BEAMBYNAME		14
+#define TE_BULLETTRACE		15
+#define TE_GAUSSTRACE		16
+#define TE_IMPACT			17
+#define TE_MUZZLE			18
 
 typedef struct
 {

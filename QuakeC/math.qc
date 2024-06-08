@@ -59,7 +59,14 @@ vector(vector a, vector b) CrossProduct =
 	return c;
 }
 
-float(vector pointonline, vector direction, vector point) DistanceToLine =
+float() crandom =
 {
-	return vlen(CrossProduct( point - pointonline, direction )) / vlen(direction);
+	return 2*(random() - 0.5);
 };
+/*
+use entity(vector raypoint, vector direction, vector point) distancetoray = #702; instead;
+float(vector raypoint, vector direction, vector point) DistanceToLine =
+{
+	return vlen(CrossProduct( point - raypoint, direction )) / vlen(direction);
+};
+*/

@@ -17,13 +17,6 @@
     See file, 'COPYING', for details.
 */
 
-void (entity targ, entity inflictor, entity attacker, float damage) T_Damage;
-void () player_run;
-void(entity bomb, entity attacker, float rad, entity ignore) T_RadiusDamage;
-void(vector org, vector vel, float damage) SpawnBlood;
-void() SuperDamageSound;
-
-
 // called by worldspawn
 void() W_Precache =
 {
@@ -41,18 +34,47 @@ void() W_Precache =
 	precache_sound ("weapons/shotgn2.wav");	// super shotgun
 };
 
-float() crandom =
-{
-	return 2*(random() - 0.5);
-};
-
-void(vector x, vector y, vector z, float relax) makePunch =
+void(vector x, vector y, vector z) makePunch =
 {
 	self.punch_fast += [-x_x, y_x, z_x];
 	self.punch_normal += [-x_y, y_y, z_y];
 	self.punch_slow += [-x_z, y_z, z_z];
 	self.punch_time = time;
-	self.punch_relaxtime = time + relax;
+};
+
+void(float x, float y, float z) addPunchVelocity =
+{
+	self.punchvelocity_x += x;
+	self.punchvelocity_y += y;
+	self.punchvelocity_z += z;
+};
+
+vector(float fwd, float right, float vertical) offsetWeapon =
+{
+	local vector offset;
+	makevectors(self.v_angle + self.punchangle);
+	offset = self.origin + v_forward * fwd + v_right * right;
+	offset_z += self.view_ofs_z + vertical;
+	return offset;
+};
+
+void() resetFlags =
+{
+	self.sprawlflags -= self.sprawlflags & (SFL_SEMIAUTO | SFL_LEFTHAND | SFL_INQUICKMELEE | SFL_STOPMELEE | SFL_HOLD);
+};
+
+void(float gun) delpoyGun =
+{
+	self.deploy_time = time;
+	self.viewmodeloffset_angles_x = -60;
+	self.viewmodeloffset_angles_z = -30;
+	self.attack_finished = time + 0.25;
+	if (self.shotgun_finished > time)
+		self.shotgun_finished = time + 0.4;
+	self.sprawlflags |= SFL_RESETWEAPONFRAME | SFL_VMOFFSET;
+	resetFlags();
+	self.weapon = gun;
+	W_SetCurrentAmmo ();
 };
 
 /*void() initGrenadeList =
@@ -103,7 +125,7 @@ void(entity who) removeFromList =
 	who.isgrenade = 0; // don't let it back again with list init search
 };
 
-void(vector direction, float hitdistance) checkCollision
+void(vector direction, float hitdistance) checkGrenadeCollision
 {
 	entity head;
 	entity next;
@@ -117,7 +139,7 @@ void(vector direction, float hitdistance) checkCollision
 	head = grenade_handler.list_next;
 	while (head)
 	{
-		distance = DistanceToLine(gunpoint, direction, head.origin);
+		distance = distancetoray(gunpoint, direction, head.origin);
 		next = head.list_next;// we will remove head in case of success so, keep the chain
 		if (distance < hitdistance)
 		{
@@ -136,49 +158,36 @@ void(vector direction, float hitdistance) checkCollision
 		head = next;
 	}
 };
+
 vector(entity who) getGunPoint =
 {
 	return [who.origin_x, who.origin_y, who.origin_z + who.view_ofs_z];
 };
-/*
-================
-W_FireAxe
-================
-*/
-void() W_FireAxe =
+
+void(vector porigin, vector poffset, float ptype) launchCasing =
 {
-	local	vector	source;
-	local	vector	org;
-
-	makevectors	(self.v_angle + self.punchangle);
-	source = self.origin + '0 0 16';
-	traceline (source, source + v_forward*96, FALSE, self);
-	if (trace_fraction == 1.0)
-		return;
-	
-	org = trace_endpos - v_forward*4;
-
-	if (trace_ent.takedamage)
-	{
-		trace_ent.axhitme = 1;
-		SpawnBlood (org, '0 0 0', 20);
-		T_Damage (trace_ent, self, self, 30);
-	}
-
+	newmis = spawn ();
+	newmis.owner = self;
+	newmis.movetype = MOVETYPE_BOUNCE;
+	newmis.solid = SOLID_NOT;
+	newmis.angles = [random()*360, random()*360, random()*360];
+	newmis.avelocity = [random()*100, random()*100, random()*100];
+	newmis.touch = SUB_Null;
+	newmis.classname = "casing";
+	newmis.think = SUB_Remove;
+	newmis.nextthink = time + 2;
+	if (ptype)
+		setmodel (newmis, "progs/case_shell.mdl");
 	else
-	{	// hit wall
-		sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
-	}
+		setmodel (newmis, "progs/case_pistol.mdl");
+
+	setsize (newmis, VEC_ORIGIN, VEC_ORIGIN); // 0 0 0		
+	setorigin (newmis, porigin + poffset);
+	if (!ptype)
+		newmis.velocity = v_forward * crandom() * 5 + v_right * (200 + crandom()*50) + v_up * (200 + crandom()*100);
+	else
+		newmis.velocity = v_forward * random() * 20 + v_right * (100 + random()*50) + v_up * (300 + crandom()*100);
 };
-
-
-//============================================================================
-
 
 vector() wall_velocity =
 {
@@ -192,12 +201,6 @@ vector() wall_velocity =
 	return vel;
 };
 
-
-/*
-================
-SpawnMeatSpray
-================
-*/
 void(vector org, vector vel) SpawnMeatSpray =
 {
 	local	entity missile;
@@ -223,21 +226,11 @@ void(vector org, vector vel) SpawnMeatSpray =
 	setorigin (missile, org);
 };
 
-/*
-================
-SpawnBlood
-================
-*/
 void(vector org, vector vel, float damage) SpawnBlood =
 {
 	particle (org, vel*0.1, 73, damage*2);
 };
 
-/*
-================
-spawn_touchblood
-================
-*/
 void(float damage) spawn_touchblood =
 {
 	local vector	vel;
@@ -246,29 +239,10 @@ void(float damage) spawn_touchblood =
 	SpawnBlood (self.origin + vel*0.01, vel, damage);
 };
 
-
-/*
-================
-SpawnChunk
-================
-*/
 void(vector org, vector vel) SpawnChunk =
 {
 	particle (org, vel*0.02, 0, 10);
 };
-
-/*
-==============================================================================
-
-MULTI-DAMAGE
-
-Collects multiple small damages into a single damage
-
-==============================================================================
-*/
-
-entity	multi_ent;
-float	multi_damage;
 
 void() ClearMultiDamage =
 {
@@ -282,6 +256,7 @@ void() ApplyMultiDamage =
 		return;
 
 	T_Damage (multi_ent, self, self, multi_damage);
+	ClearMultiDamage ();
 };
 
 void(entity hit, float damage) AddMultiDamage =
@@ -299,19 +274,6 @@ void(entity hit, float damage) AddMultiDamage =
 		multi_damage = multi_damage + damage;
 };
 
-/*
-==============================================================================
-
-BULLETS
-
-==============================================================================
-*/
-
-/*
-================
-TraceAttack
-================
-*/
 void(float damage, vector dir) TraceAttack =
 {
 	local	vector	vel, org;
@@ -327,25 +289,12 @@ void(float damage, vector dir) TraceAttack =
 		SpawnBlood (org, vel*0.2, damage);
 		AddMultiDamage (trace_ent, damage);
 	}
-
 	else
 	{
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
+		sendMessageVec(org, TE_GUNSHOT);
 	}
 };
 
-/*
-================
-FireBullets
-
-Used by shotgun, super shotgun, and enemy soldier firing
-Go to the trouble of combining multiple pellets into a single damage call.
-================
-*/
 void(float shotcount, vector dir, vector spread, float damage) FireBullets =
 {
 	local	vector direction;
@@ -373,83 +322,147 @@ void(float shotcount, vector dir, vector spread, float damage) FireBullets =
 void(vector dir, float offset_x, float offset_y, float damage) FireBulletAim =
 {
 	local	vector direction;
-	local	vector	src;
+	local	vector	src, head_origin;
+	local float dmg;
 	
 	makevectors	(self.v_angle + self.punchangle);
-
+	
+// offset of source point
 	src = self.origin + v_forward*10;
 	src_z = self.origin_z + self.view_ofs_z;
-
+// offset for shotgun
 	direction = dir + offset_x*v_right + offset_y*v_up;
-
+// random offset
+//	direction = dir + crandom()*spread_x*v_right + crandom()*spread_y*v_up;
+// trace
 	traceline (src, src + direction*2048, FALSE, self);
+	
 	if (trace_fraction != 1.0)
-		TraceAttack (damage, direction);
+	{
+		local	vector	vel, org;
+	// blood sprite velocity
+		vel = normalize(dir + v_up*crandom() + v_right*crandom());
+		vel = vel + 2*trace_plane_normal;
+		vel = vel * 200;
+	// blood spray or wall sparks point 
+		org = trace_endpos - dir*4;
+	//decide what we hit
+		if (trace_ent.takedamage)
+		{
+		// something that takes damage
+			dmg = damage;
+		// check if it was a headshot
+			if (trace_ent.flags & FL_MONSTER)
+			{
+				head_origin = findHeadPosition(trace_ent);
+				//dprint2(ftos(distancetoray(src, direction, head_origin)), "\n");
+				//sendMessageVecVecFlag(head_origin, trace_ent.origin, 0, TE_IMPACT);
+				
+				if (distancetoray(src, direction, head_origin) < trace_ent.head_size)
+				{
+					self.hitmarker = 1;
+					self.hitmarker_time = time + 0.2;
+					if (self.weapon == IT_SHOTGUN)
+						dmg *= 3;
+					else
+						dmg *= 1.25;
+				}
+			}
+		// make blood
+			SpawnBlood (org, vel*0.2, dmg);
+		// add damage
+			AddMultiDamage (trace_ent, dmg);
+		}
+		else
+		{
+		// hit solid, make particle fx
+			sendMessageVec(org, TE_GUNSHOT);
+		}
+	}
 };
 
-/*
-================
-W_FireShotgun
-================
-*/
-void() W_FireShotgun =
+void() W_FireAxe =
 {
-	local vector dir;
+	local	vector	source;
+	local	vector	org;
 
-	sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);	
-
-	self.punchangle_x -= 10;
+	makevectors	(self.v_angle + self.punchangle);
+	source = self.origin + '0 0 16';
+	traceline (source, source + v_forward*96, FALSE, self);
+	if (trace_fraction == 1.0)
+		return;
 	
-	self.currentammo = self.ammo_shells = self.ammo_shells - 1;
-	dir = aim (self, 100000);
-	FireBullets (6, dir, '0.04 0.04 0', 4);
+	org = trace_endpos - v_forward*4;
+
+	if (trace_ent.takedamage)
+	{
+		trace_ent.axhitme = 1;
+		SpawnBlood (org, '0 0 0', 20);
+		T_Damage (trace_ent, self, self, 30);
+	}
+
+	else
+	{	// hit wall
+		sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
+		sendMessageVec(org, TE_GUNSHOT);
+	}
 };
 
 void() W_FirePistol =
 {
 	local vector dir;
 
+// play sound
 	sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);	
-	
-	self.currentammo = self.ammo_shells = self.ammo_shells - 1;
+// ammo
+	self.currentammo = self.ammo_nails = self.ammo_nails - 1;
+// find shot direction
+	makevectors(self.v_angle + self.punchangle);
 	dir = aim (self, 100000);
-	FireBullets (1, dir, '0 0 0', 40);
-	checkCollision(dir, 32);
-	makePunch([4,6,2],[crandom()*2,crandom()*3,0],[0,0,0],0.0);
+//
+	FireBulletAim (dir, 0, 0, 30);
+	ApplyMultiDamage ();
+// particle fx trace and muzzle flash
+	sendMessageVecVecFlag(offsetWeapon(24,6,-4), trace_endpos, MF_PISTOL, TE_BULLETTRACE);
+// blow up grenades
+	checkGrenadeCollision(dir, 32);
+
+	//sendMessageVecVecFlag(start, dir, MF_PISTOL, TE_MUZZLE);
+// recoil
+	makePunch([8,0,0], [0,-4 + crandom()*2,0],[0,0,0]);
 };
 
-/*
-================
-W_FireSuperShotgun
-================
-*/
 void() W_FireSuperShotgun =
 {
-	local vector dir;
+	local vector dir, start;
 	local float i;
-	if (self.currentammo == 1)
-	{
-		W_FireShotgun ();
-		return;
-	}
 		
 	sound (self ,CHAN_WEAPON, "weapons/shotgn2.wav", 1, ATTN_NORM);	
 	
-	self.currentammo = self.ammo_shells = self.ammo_shells - 2;
+	self.currentammo = self.ammo_shells = self.ammo_shells - 1;
 	dir = aim (self, 100000);
+	
+	start = offsetWeapon(24,6,-4); // do this once, instead of doing it in the cycle below
 	
 	ClearMultiDamage ();
 	for (i = 0; i < 14; i++)
+	{
 		FireBulletAim (dir, SSGX[i]*0.2, SSGY[i]*0.2, 10);
+		if (i == 2 || i == 6 || i == 11)
+			sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE); // 3 messages in total
+	}
 	ApplyMultiDamage ();
-	checkCollision(dir, 48);
-	makePunch([8,2,1],[1+random()*2,-3*random()*3,3],[crandom()*3,0,0],0.2);
+	
+	//sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE);
+	checkGrenadeCollision(dir, 48);
+	makePunch([8,2,1],[1+random()*2,-3*random()*3,3],[crandom()*3,0,0]);
 };
 
 void(float leftgun) W_FireSMG =
 {
 	local vector dir;
 	local float seedx,seedy;
+	local vector start;
 	
 	if (self.ammo_nails < 1)
 	{
@@ -464,76 +477,255 @@ void(float leftgun) W_FireSMG =
 	//case_shell.mdl
 	sound (self, CHAN_WEAPON, "weapons/rocket1i.wav", 1, ATTN_NORM);
 	self.currentammo = self.ammo_nails = self.ammo_nails - 1;
+	
 	dir = aim (self, 100000);
-	FireBullets (1, dir, '0.02 0.02 0', 10);
-	checkCollision(dir, 16);
+	FireBulletAim (dir, crandom()*0.02, crandom()*0.02, 10);
+	ApplyMultiDamage ();
+	
+	if (leftgun)
+		start = offsetWeapon(34,-8,-4);
+	else
+		start = offsetWeapon(34,8,-4);
 
+	sendMessageVecVecFlag(start, trace_endpos, MF_SMG, TE_BULLETTRACE);
+	//sendMessageVecVecFlag(start, dir, MF_SMG, TE_MUZZLE);
+	//FireBullets (1, dir, '0.02 0.02 0', 10);
+	checkGrenadeCollision(dir, 16);
+
+	seedx = rint(random()*15);
+	seedy = CIRCLEY[seedx];
+	seedx = CIRCLEX[seedx];
+	//punch_relaxtime
+	makePunch([4+random()*2, 1, 0], [crandom(), crandom() * crandom() * 4, 0], [0, 0, 0]);
+};
+
+#define GAUSS_DAMAGE 190
+#define GAUSS_HEAD_DAMAGE 300
+
+// sendMessageImpact is: impact coordinates, shooter coordinates, type flag, impact plane normal vector
+void() W_FireGauss =
+{
+	float damage, power, penetration_depth;
+	vector start, direction, destination, startposition_loop, impact, wall_normal;
+	entity current_ignored;
+	
+// misc stuff
+	sound (self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM);
+	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
+	
+// preparations before trace
+	start = getGunPoint(self);  // start position should be saved unchanged for all the non-trace checks
+	makevectors(self.v_angle + self.punchangle);
+	direction = v_forward;
+	destination = start + (direction * 4096);
+		
+	startposition_loop = start; // this would be moved along direction ray to perfrom next trace after hiting something
+	current_ignored = self;
+	
+	// apply recoil	
+	makePunch([10, -20, 0], [rint(crandom() * 2) * 4, -4, 0], [0, 0, 0]);
+	power = 1;
+	while (1) // walls
+	{
+		while (1) 	// monsters
+		{
+		// reset damage
+			damage = GAUSS_DAMAGE * power;
+		// cast new trace with updated position
+			traceline (startposition_loop, destination, ALLOWMONSTERS, current_ignored);
+		
+		// no collisions with anything, abort both loops	
+			if (trace_fraction == 1.0)
+			{
+				// main trail effect message
+				sendMessageVecVec(offsetWeapon(16,6,-8), trace_endpos, TE_GAUSSTRACE);
+				return;
+			}
+		
+		// hit untriggerable solid, break monsters cycle
+			if (!trace_ent.takedamage)
+				break;
+			
+		// hit monster
+			if (trace_ent.flags & FL_MONSTER)
+			{
+				// check for head collision
+				if (distancetoray(start, direction, findHeadPosition(trace_ent)) < trace_ent.head_size) 
+				{
+				// hit head
+					self.hitmarker = 1; // tell HUD
+					self.hitmarker_time = time + 0.2;
+					damage += GAUSS_HEAD_DAMAGE * power; // modify damage
+					if ( trace_ent.bodytype == BT_ROBOT)
+						sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_ROBOT_HEADSHOT, VEC_ORIGIN); 
+					else 
+						sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+				}
+				else
+				{
+				// hit body, send particle effect message
+					if ( trace_ent.bodytype == BT_ROBOT)
+						sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_ROBOT, VEC_ORIGIN); 
+					else 
+						sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_FLESH, VEC_ORIGIN); 
+				}
+				
+				T_Damage (trace_ent, self, self, damage);
+				current_ignored = trace_ent;
+				startposition_loop = trace_endpos + (direction * 4);
+			}
+		//hit shootable solid, break monsters cycle
+			else 
+			{
+				T_Damage (trace_ent, self, self, GAUSS_DAMAGE); // buttons etc
+				break;
+			}
+		}
+// end of monsters loop
+		
+	// we hit solid, now we need to decide what to do
+	// first of all, save current state
+		impact = trace_endpos;
+		wall_normal = trace_plane_normal;
+	
+	// already run out of gas, finish
+		if (power < 0)
+			goto final;
+	// let's see if our solid object is penetratable
+		penetration_depth = 0;
+		while(1)
+		{
+		// ok, this is a weird ass fuckery, but it works
+			penetration_depth += 24;
+			if (penetration_depth > 128)
+				break;
+			
+			if (!(pointcontents(impact + direction * penetration_depth) == CONTENT_SOLID)) 
+			{
+			// in the better world this would be enough, but pointcontents doesn't check for any entity, solid or point type
+			// so to check if we inside of such we use trace, max 5 traces per shot, and only if it's deep enough solid entity
+				traceline (impact + direction * penetration_depth, destination, IGNOREMONSTERS, world);
+				if (!trace_startsolid)
+					break;
+			}
+		}
+		
+		if (penetration_depth < 128)
+		{
+		// we punch through the wall and there is air here, trace back to find an exit hole
+			traceline (impact + direction * penetration_depth, impact, IGNOREMONSTERS, world);
+			sendMessageImpact(impact, start, IMPACT_GAUSS_ENTRANCE, wall_normal); // entrance hole particle effect
+			sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_EXIT, trace_plane_normal); // exit hole particle effect
+			power -= (penetration_depth / 128) * 0.5;
+			startposition_loop = trace_endpos + direction * 4;
+		}
+		else 
+		{
+		// end of line, send final impact and trail messages, 
+		final:
+			sendMessageImpact(impact, start, IMPACT_GAUSS_FINAL, wall_normal); 
+			sendMessageVecVec(offsetWeapon(16,6,-8), impact, TE_GAUSSTRACE); // trail
+			return;
+		}
+	}
+};
+
+void() W_FireChaingun =
+{
+	local vector dir;
+	local float seedx,seedy;
+
+	sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);	
+	
+	self.currentammo = self.ammo_nails = self.ammo_nails - 1;
+	makevectors(self.v_angle + self.punchangle);
+	dir = aim (self, 100000);
+	//FireBullets (1, dir, '0 0 0', 40);
+	FireBulletAim (dir, crandom()*0.02, crandom()*0.02, 50);
+	ApplyMultiDamage ();
+
+	sendMessageVecVecFlag(offsetWeapon(48,4,-10), trace_endpos, MF_CHAINGUN, TE_BULLETTRACE);
+	
+	checkGrenadeCollision(dir, 32);
 	seedx = rint(random()*8);
 	seedy = CIRCLEY[seedx];
 	seedx = CIRCLEX[seedx];
-	makePunch([seedx,seedx*2,0.5],[seedy,seedy*1.5,0],[0,crandom()*0.5,0],0.1);
+	makePunch([seedx,seedx*2,0.5],[seedy,seedy*1.5,0],[0,crandom()*0.5,0]);
 };
 
-void() W_FireGauss =
+void() GrenadeExplode =
 {
-	local float timetoend;
-	local	vector	vel, org, dir, src,  destination, loopsrc;
-	local entity thedude;
+	removeFromList(self);
+	T_RadiusDamage (self, self.owner, 120, world);
 
-	makevectors(self.v_angle);
-	
-	sound (self, CHAN_WEAPON, "weapons/lhit.wav", 1, ATTN_NORM);
-	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
-	
-	org = self.origin + '0 0 16';
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
+	WriteCoord (MSG_BROADCAST, self.origin_x);
+	WriteCoord (MSG_BROADCAST, self.origin_y);
+	WriteCoord (MSG_BROADCAST, self.origin_z);
 
-	dir = v_forward;
-	src = self.origin + v_forward * 10;
-	src_z = self.origin_z + self.view_ofs_z;
-	destination = src + (dir * 1536);
-		
-	loopsrc = src;
-	thedude = self;
-	
-	while ( !timetoend )
-	{
-		traceline (loopsrc, destination, FALSE, thedude);
-		if (trace_fraction != 1.0)
-		{
-			vel = normalize(dir);
-			vel = vel + 2 * trace_plane_normal;
-			vel = vel * 200;
-
-			org = trace_endpos - dir*4;
-
-			if (trace_ent.takedamage && trace_ent.sprawlflags & SFL_MONSTER)
-			{
-				thedude = trace_ent;
-				SpawnBlood (org, vel*0.2, 200);
-				T_Damage (trace_ent, self, self, 240);
-				loopsrc = trace_endpos + (dir * 2);
-			}
-			else
-			{
-				if (trace_ent.takedamage)
-					T_Damage (trace_ent, self, self, 100); // buttons etc
-					particle (org, trace_plane_normal * 300, 8, 50);
-				
-				timetoend = 1;
-			}
-		}
-		else 
-			timetoend = 1;
-	}
-	makePunch([4,6,2],[crandom()*2,crandom()*3,0],[0,0,0],0.0);
+	BecomeExplosion ();
 };
-/*
-==============================================================================
 
-ROCKETS
+void() GrenadeTouch =
+{
+	if (other == self.owner)
+		return;		// don't explode on owner
+	if (other.takedamage == DAMAGE_AIM)
+	{
+		GrenadeExplode();
+		return;
+	}
 
-==============================================================================
-*/
+	sound (self, CHAN_WEAPON, "weapons/bounce.wav", 1, ATTN_NORM);	// bounce sound
+
+	if (self.velocity == '0 0 0')
+		self.avelocity = '0 0 0';
+};
+
+void() W_FireGrenade =
+{
+	local	entity missile;
+	
+	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+	
+	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
+
+	missile = spawn ();
+	missile.owner = self;
+	missile.movetype = MOVETYPE_BOUNCE;
+	missile.solid = SOLID_BBOX;
+	missile.classname = "grenade";
+		
+// set missile speed	
+
+	makevectors	(self.v_angle + self.punchangle);
+	if (self.v_angle_x)
+		missile.velocity = v_forward*600 + v_up * 200 + crandom()*v_right*10 + crandom()*v_up*10;
+	else
+	{
+		missile.velocity = aim(self, 10000);
+		missile.velocity = missile.velocity * 600;
+		missile.velocity_z = 200;
+	}
+
+	missile.avelocity = '300 300 300';
+
+	missile.angles = vectoangles(missile.velocity);
+	
+	missile.touch = GrenadeTouch;
+	
+	// set missile duration
+	missile.nextthink = time + 2.5;
+	missile.think = GrenadeExplode;
+
+	setmodel (missile, "progs/grenade.mdl");
+	setsize (missile, '0 0 0', '0 0 0');		
+	setorigin (missile, offsetWeapon(24,8,4));
+	missile.isgrenade = 1;
+	appendToList(missile);
+	makePunch([4, 4, 0], [0, -8 + random()*4, 0], [0, 0, 0]);
+};
 
 void()	s_explode1	=	[0,		s_explode2] {};
 void()	s_explode2	=	[1,		s_explode3] {};
@@ -589,13 +781,6 @@ void() T_MissileTouch =
 	BecomeExplosion ();
 };
 
-
-
-/*
-================
-W_FireRocket
-================
-*/
 void() W_FireRocket =
 {
 	local	entity missile;
@@ -629,19 +814,6 @@ void() W_FireRocket =
 	setorigin (missile, self.origin + v_forward*8 + '0 0 16');
 };
 
-/*
-===============================================================================
-
-LIGHTNING
-
-===============================================================================
-*/
-
-/*
-=================
-LightningDamage
-=================
-*/
 void(vector p1, vector p2, entity from, float damage) LightningDamage =
 {
 	local entity		e1, e2;
@@ -686,7 +858,6 @@ void(vector p1, vector p2, entity from, float damage) LightningDamage =
 		T_Damage (trace_ent, from, from, damage);
 	}
 };
-
 
 void() W_FireLightning =
 {
@@ -733,107 +904,14 @@ void() W_FireLightning =
 	WriteCoord (MSG_BROADCAST, trace_endpos_x);
 	WriteCoord (MSG_BROADCAST, trace_endpos_y);
 	WriteCoord (MSG_BROADCAST, trace_endpos_z);
+	WriteByte (MSG_BROADCAST, 1);
+	WriteCoord (MSG_BROADCAST, self.v_angle_x);
+	WriteCoord (MSG_BROADCAST, self.v_angle_y);
+	WriteCoord (MSG_BROADCAST, self.v_angle_z);
 
 	LightningDamage (self.origin, trace_endpos + v_forward*4, self, 30);
 };
 
-
-//=============================================================================
-
-
-void() GrenadeExplode =
-{
-	removeFromList(self);
-	T_RadiusDamage (self, self.owner, 120, world);
-
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
-	WriteCoord (MSG_BROADCAST, self.origin_x);
-	WriteCoord (MSG_BROADCAST, self.origin_y);
-	WriteCoord (MSG_BROADCAST, self.origin_z);
-
-	BecomeExplosion ();
-};
-
-void() GrenadeTouch =
-{
-	if (other == self.owner)
-		return;		// don't explode on owner
-	if (other.takedamage == DAMAGE_AIM)
-	{
-		GrenadeExplode();
-		return;
-	}
-
-	sound (self, CHAN_WEAPON, "weapons/bounce.wav", 1, ATTN_NORM);	// bounce sound
-
-	if (self.velocity == '0 0 0')
-		self.avelocity = '0 0 0';
-};
-
-/*
-================
-W_FireGrenade
-================
-*/
-void() W_FireGrenade =
-{
-	local	entity missile;
-	
-	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
-	
-	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
-
-	missile = spawn ();
-	missile.owner = self;
-	missile.movetype = MOVETYPE_BOUNCE;
-	missile.solid = SOLID_BBOX;
-	missile.classname = "grenade";
-		
-// set missile speed	
-
-	makevectors	(self.v_angle + self.punchangle);
-	if (self.v_angle_x)
-		missile.velocity = v_forward*600 + v_up * 200 + crandom()*v_right*10 + crandom()*v_up*10;
-	else
-	{
-		missile.velocity = aim(self, 10000);
-		missile.velocity = missile.velocity * 600;
-		missile.velocity_z = 200;
-	}
-
-	missile.avelocity = '300 300 300';
-
-	missile.angles = vectoangles(missile.velocity);
-	
-	missile.touch = GrenadeTouch;
-	
-	// set missile duration
-	missile.nextthink = time + 2.5;
-	missile.think = GrenadeExplode;
-
-	setmodel (missile, "progs/grenade.mdl");
-	setsize (missile, '0 0 0', '0 0 0');		
-	setorigin (missile, self.origin);
-	missile.isgrenade = 1;
-	appendToList(missile);
-	makePunch([3,4,4],[0,crandom()*2,0],[0,0,0],0.2);
-};
-
-
-//=============================================================================
-
-void() spike_touch;
-void() superspike_touch;
-
-
-/*
-===============
-launch_spike
-
-Used for both the player and the ogre
-===============
-*/
 void(vector org, vector dir) launch_spike =
 {
 	newmis = spawn ();
@@ -868,32 +946,11 @@ void() W_FireSuperSpikes =
 	setmodel (newmis, "progs/s_spike.mdl");
 	setsize (newmis, VEC_ORIGIN, VEC_ORIGIN);		
 	
-	local float seedx,seedy;
-	seedx = rint(random()*12);
-	seedy = CIRCLEY[seedx];
-	seedx = CIRCLEX[seedx];
-	makePunch([seedx*4,seedx*2,random()*(-2)],[seedy*4 + crandom() * 4,seedy*2 + crandom() * 4,0],[0,crandom()*2,0],0.1);
-};
-
-void(vector porigin, vector poffset, float ptype) launchCasing =
-{
-	newmis = spawn ();
-	newmis.owner = self;
-	newmis.movetype = MOVETYPE_BOUNCE;
-	newmis.solid = SOLID_NOT;
-	newmis.angles = [random()*360, random()*360, random()*360];
-	newmis.avelocity = [random()*100, random()*100, random()*100];
-	newmis.touch = SUB_Null;
-	newmis.classname = "casing";
-	newmis.think = SUB_Remove;
-	newmis.nextthink = time + 2;
-	setmodel (newmis, "progs/case_shell.mdl");
-	setsize (newmis, VEC_ORIGIN, VEC_ORIGIN); // 0 0 0		
-	setorigin (newmis, porigin + poffset);
-	if (!ptype)
-		newmis.velocity = v_forward * crandom() * 5 + v_right * (200 + crandom()*50) + v_up * (200 + crandom()*100);
-	else
-		newmis.velocity = v_forward * random() * 20 + v_right * (100 + random()*50) + v_up * (300 + crandom()*100);
+	//local float seedx,seedy;
+	//seedx = rint(random()*12);
+	//seedy = CIRCLEY[seedx];
+	//seedx = CIRCLEX[seedx];
+	//makePunch([seedx*4,seedx*2,random()*(-2)],[seedy*4 + crandom() * 4,seedy*2 + crandom() * 4,0],[0,crandom()*2,0]);
 };
 
 void(float ox) W_FireSpikes =
@@ -1002,9 +1059,6 @@ void() superspike_touch =
 
 /*
 ===============================================================================
-
-PLAYER WEAPON USE
-
 ===============================================================================
 */
 
@@ -1014,6 +1068,8 @@ void() W_SetCurrentAmmo =
 	{
 		player_run ();		// get out of any weapon firing states
 		self.weaponframe = 0;
+		if (self.weapon & IT_SUPER_NAILGUN && self.chaingun_frame)
+			self.weaponframe = self.chaingun_frame;
 		self.sprawlflags -= self.sprawlflags & SFL_RESETWEAPONFRAME;
 	}
 
@@ -1026,9 +1082,9 @@ void() W_SetCurrentAmmo =
 	}
 	else if (self.weapon == IT_SHOTGUN)
 	{
-		self.currentammo = self.ammo_shells;
+		self.currentammo = self.ammo_nails;
 		self.weaponmodel = "progs/v_shot.mdl";
-		self.items = self.items | IT_SHELLS;
+		self.items = self.items | IT_NAILS;
 	}
 	else if (self.weapon == IT_SUPER_SHOTGUN)
 	{
@@ -1090,14 +1146,12 @@ float() W_BestWeapon =
 		return IT_NAILGUN;
 	if (self.waterlevel <= 1 && self.ammo_cells >= 1 && (it & IT_LIGHTNING) )
 		return IT_LIGHTNING;
-	else if(self.ammo_shells >= 1 && (it & IT_SHOTGUN) )
+	else if(self.ammo_nails >= 1 && (it & IT_SHOTGUN) )
 		return IT_SHOTGUN;
 
 	return IT_AXE;
 };
-//gnounc
-//wanted to get rid of the horrible triple negative when reading the call to checkNoAmmo. 
-//also it was unclear what checkNoAmmo should return for no ammo
+
 float() W_hasNoAmmo =
 {
 	if (self.currentammo)
@@ -1106,12 +1160,11 @@ float() W_hasNoAmmo =
 	if (self.weapon == IT_AXE)
 		return FALSE;	//the axe doesnt need ammo. so we lie. Player Totally has ammo..Promise! --gnounc
 	
-	W_DelpoyGun(W_BestWeapon ());
+	delpoyGun(W_BestWeapon ());
 	
 	// drop the weapon down
 	return TRUE;
 };
-
 
 /*
 ============
@@ -1120,14 +1173,6 @@ W_Attack
 An attack impulse can be triggered now
 ============
 */
-void()	player_axe1;
-void()	player_axeb1;
-void()	player_axec1;
-void()	player_axed1;
-void()	player_shot1;
-void()	player_nail1;
-void()	player_light1;
-void()	player_rocket1;
 
 void() W_Attack =
 {
@@ -1194,7 +1239,8 @@ void() W_Attack =
 
 	else if (self.weapon == IT_SUPER_NAILGUN)
 	{
-		player_nail1 ();
+		animateChaingun();
+		//player_nail1 ();
 	}
 
 	else if (self.weapon == IT_GRENADE_LAUNCHER)
@@ -1225,24 +1271,6 @@ void() W_Attack =
 	}
 };
 
-void() W_ResetFlags =
-{
-	self.sprawlflags -= self.sprawlflags & (SFL_SEMIAUTO | SFL_LEFTHAND | SFL_INQUICKMELEE | SFL_STOPMELEE | SFL_HOLD);
-};
-void(float gun) W_DelpoyGun =
-{
-	self.sprawlflags |= SFL_RESETWEAPONFRAME;
-	W_ResetFlags();
-	self.weapon = gun;
-	W_SetCurrentAmmo ();
-};
-
-/*
-============
-W_ChangeWeapon
-
-============
-*/
 void() W_ChangeWeapon =
 {
 	local	float	it, am, fl;
@@ -1259,7 +1287,7 @@ void() W_ChangeWeapon =
 	{
 		fl = IT_SHOTGUN;
 
-		if (self.ammo_shells < 1)
+		if (self.ammo_nails < 1)
 			am = 1;
 	}
 
@@ -1327,20 +1355,15 @@ void() W_ChangeWeapon =
 // set weapon, set ammo
 //
 	if (self.weapon != fl)
-		W_DelpoyGun(fl);
+		delpoyGun(fl);
 };
 
-/*
-============
-CheatCommand
-============
-*/
 void() CheatCommand =
 {
 	if (deathmatch || coop)
 		return;
 
-	self.ammo_rockets = 100;
+	self.ammo_rockets = 20;
 	self.ammo_nails = 200;
 	self.ammo_shells = 100;
 	self.items = self.items | 
@@ -1356,18 +1379,11 @@ void() CheatCommand =
 	self.ammo_cells = 200;
 	self.items = self.items | IT_LIGHTNING;
 	self.sprawlflags |= SFL_RESETWEAPONFRAME;
-	W_DelpoyGun(IT_ROCKET_LAUNCHER);
+	delpoyGun(IT_ROCKET_LAUNCHER);
 	self.impulse = 0;
 	//W_SetCurrentAmmo ();
 };
 
-/*
-============
-CycleWeaponCommand
-
-Go to the next weapon with ammo
-============
-*/
 void() CycleWeaponCommand =
 {
 	local	float	it, am, w;
@@ -1388,7 +1404,7 @@ void() CycleWeaponCommand =
 		{
 			w = IT_SHOTGUN;
 
-			if (self.ammo_shells < 1)
+			if (self.ammo_nails < 1)
 				am = 1;
 		}
 
@@ -1441,7 +1457,7 @@ void() CycleWeaponCommand =
 		}
 	
 		if (self.weapon != w)
-			W_DelpoyGun(w);
+			delpoyGun(w);
 			
 		if ( (self.items & w) && am == 0 )
 		{
@@ -1452,13 +1468,6 @@ void() CycleWeaponCommand =
 
 };
 
-/*
-============
-CycleWeaponReverseCommand
-
-Go to the prev weapon with ammo
-============
-*/
 void() CycleWeaponReverseCommand =
 {
 	local float it, am, w;
@@ -1514,7 +1523,7 @@ void() CycleWeaponReverseCommand =
 		{
 			w = IT_SHOTGUN;
 
-			if (self.ammo_shells < 1)
+			if (self.ammo_nails < 1)
 			am = 1;
 		}
 
@@ -1532,7 +1541,7 @@ void() CycleWeaponReverseCommand =
 		}
 
 		if (self.weapon != w)
-			W_DelpoyGun(w);
+			delpoyGun(w);
 			
 		if ( (self.items & w) && am == 0 )
 		{
@@ -1543,13 +1552,6 @@ void() CycleWeaponReverseCommand =
 
 };
 
-/*
-============
-ServerflagsCommand
-
-Just for development
-============
-*/
 void() ServerflagsCommand =
 {
 	serverflags = serverflags * 2 + 1;
@@ -1566,12 +1568,6 @@ void() QuadCheat =
 	dprint ("quad cheat\n");
 };
 
-/*
-============
-ImpulseCommands
-
-============
-*/
 void() ImpulseCommands =
 {
 	if (self.impulse >= 1 && self.impulse <= 8)
@@ -1590,32 +1586,8 @@ void() ImpulseCommands =
 	self.impulse = 0;
 };
 
-/*
-============
-W_WeaponFrame
-
-Called every frame so impulse events can be handled as well as possible
-============
-*/
 void() W_WeaponFrame =
 {
-	//dprint("flags = ");
-	//dprint(ftos(self.sprawlflags));
-	//dprint("\n");
-	/*
-	if (self.b_attack2)
-	{
-		dprint("Attack2\n");
-	}
-	if (self.b_kick)
-	{
-		dprint("Kick\n");
-	}
-	if (self.b_reload)
-	{
-		dprint("Reload\n");
-	}
-	*/
 	if (self.sprawlflags & SFL_INQUICKMELEE)
 		return;
 	
@@ -1635,6 +1607,7 @@ void() W_WeaponFrame =
 		else
 		{
 			quickMeleeStart();
+			self.sprawlflags |= SFL_STOPMELEE;
 		}
 	}
 	
@@ -1660,13 +1633,6 @@ void() W_WeaponFrame =
 	}
 };
 
-/*
-========
-SuperDamageSound
-
-Plays sound if needed
-========
-*/
 void() SuperDamageSound =
 {
 	if (self.super_damage_finished > time)
@@ -1679,5 +1645,3 @@ void() SuperDamageSound =
 	}
 	return;
 };
-
-

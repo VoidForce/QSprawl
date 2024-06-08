@@ -137,6 +137,7 @@ typedef enum
 	STAT_SECRETS		= 13,	// bumped on client side by svc_foundsecret
 	STAT_MONSTERS		= 14,	// bumped by svc_killedmonster
 	STAT_ITEMS			= 15,	//replaces clc_clientdata info
+	STAT_BULLETS		= 16,
 } stat_t;
 
 // stock defines
@@ -144,74 +145,34 @@ typedef enum
 typedef enum
 {
 	IT_SHOTGUN			= 1,
-	IT_SUPER_SHOTGUN	= 2,
-	IT_NAILGUN			= 4,
-	IT_SUPER_NAILGUN	= 8,
-	IT_GRENADE_LAUNCHER	= 16,
-	IT_ROCKET_LAUNCHER	= 32,
-	IT_LIGHTNING		= 64,
-	IT_SUPER_LIGHTNING	= 128,
-	IT_SHELLS			= 256,
-	IT_NAILS			= 512,
-	IT_ROCKETS			= 1024,
-	IT_CELLS			= 2048,
-	IT_AXE				= 4096,
-	IT_ARMOR1			= 8192,
-	IT_ARMOR2			= 16384,
-	IT_ARMOR3			= 32768,
-	IT_SUPERHEALTH		= 65536,
-	IT_KEY1				= 131072,
-	IT_KEY2				= 262144,
-	IT_INVISIBILITY		= 524288,
-	IT_INVULNERABILITY	= 1048576,
-	IT_SUIT				= 2097152,
-	IT_QUAD				= 4194304,
+	IT_SUPER_SHOTGUN	= (1<<1),
+	IT_NAILGUN			= (1<<2),
+	IT_SUPER_NAILGUN	= (1<<3),
+	IT_GRENADE_LAUNCHER	= (1<<4),
+	IT_ROCKET_LAUNCHER	= (1<<5),
+	IT_LIGHTNING		= (1<<6),
+	IT_SUPER_LIGHTNING	= (1<<7),
+	IT_SHELLS			= (1<<8),
+	IT_NAILS			= (1<<9),
+	IT_ROCKETS			= (1<<10),
+	IT_CELLS			= (1<<11),
+	IT_AXE				= (1<<12),
+	IT_ARMOR1			= (1<<13),
+	IT_ARMOR2			= (1<<14),
+	IT_ARMOR3			= (1<<15),
+	IT_SUPERHEALTH		= (1<<16),
+	IT_KEY1				= (1<<17),
+	IT_KEY2				= (1<<18),
+	IT_INVISIBILITY		= (1<<19),
+	IT_INVULNERABILITY	= (1<<20),
+	IT_SUIT				= (1<<21),
+	IT_QUAD				= (1<<22),
+	IT_BULLETS			= (1<<23),
 	IT_SIGIL1			= (1<<28),
 	IT_SIGIL2			= (1<<29),
 	IT_SIGIL3			= (1<<30),
 	IT_SIGIL4			= (1<<31),
 } items_t;
-
-//===========================================
-//rogue changed and added defines
-
-typedef enum
-{
-	RIT_SHELLS				= 128,
-	RIT_NAILS				= 256,
-	RIT_ROCKETS				= 512,
-	RIT_CELLS				= 1024,
-	RIT_AXE					= 2048,
-	RIT_LAVA_NAILGUN		= 4096,
-	RIT_LAVA_SUPER_NAILGUN	= 8192,
-	RIT_MULTI_GRENADE		= 16384,
-	RIT_MULTI_ROCKET		= 32768,
-	RIT_PLASMA_GUN			= 65536,
-	RIT_ARMOR1				= 8388608,
-	RIT_ARMOR2				= 16777216,
-	RIT_ARMOR3				= 33554432,
-	RIT_LAVA_NAILS			= 67108864,
-	RIT_PLASMA_AMMO			= 134217728,
-	RIT_MULTI_ROCKETS		= 268435456,
-	RIT_SHIELD				= 536870912,
-	RIT_ANTIGRAV			= 1073741824,
-	RIT_SUPERHEALTH			= 2147483648,
-} rogueitems_t;
-
-//MED 01/04/97 added hipnotic defines
-//===========================================
-//hipnotic added defines
-typedef enum
-{
-	HIT_PROXIMITY_GUN_BIT	= 16,
-	HIT_MJOLNIR_BIT			= 7,
-	HIT_LASER_CANNON_BIT	= 23,
-	HIT_PROXIMITY_GUN		= (1<<HIT_PROXIMITY_GUN_BIT),
-	HIT_MJOLNIR				= (1<<HIT_MJOLNIR_BIT),
-	HIT_LASER_CANNON		= (1<<HIT_LASER_CANNON_BIT),
-	HIT_WETSUIT				= (1<<(23+2)),
-	HIT_EMPATHY_SHIELDS		= (1<<(23+3)),
-} hipnoticitems_t;
 
 //===========================================
 

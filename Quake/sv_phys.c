@@ -1163,7 +1163,8 @@ void SV_Physics_Toss (edict_t *ent)
 	}
 
 // check for in water
-	SV_CheckWaterTransition (ent);
+	if (ent->v.movetype != MOVETYPE_BOUNCE)
+		SV_CheckWaterTransition (ent);
 }
 
 /*

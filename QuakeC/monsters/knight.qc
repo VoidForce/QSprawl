@@ -279,7 +279,9 @@ void() monster_knight =
 	self.netname = "Knight";
 	self.killstring = " was slashed by a Knight\n";
 
-	setsize (self, '-16 -16 -24', '16 16 40');
+	setsize (self, '-16 -16 -24', '16 16 28'); //28
+	self.head_offset = '0 0 24';
+	self.head_size = 8;
 	self.health = 75;
 	self.max_health = 75;
 

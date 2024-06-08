@@ -34,7 +34,7 @@ cvar_t ui_search_timeout = {"ui_search_timeout", "1", CVAR_ARCHIVE};
 extern cvar_t crosshair;
 extern cvar_t scr_fov;
 extern cvar_t cl_gun_fovscale;
-extern cvar_t v_gunkick;
+//extern cvar_t v_gunkick;
 extern cvar_t cl_bob;
 extern cvar_t cl_rollangle;
 extern cvar_t sv_autoload;
@@ -3211,7 +3211,6 @@ void M_Menu_Gamepad_f (void)
 	def (OPT_ALWAYSMLOOK,	"Mouse Look")			\
 	def (OPT_FOV,			"Field Of View")		\
 	def (OPT_FOVDISTORT,	"Gun Distortion")		\
-	def (OPT_RECOIL,		"Recoil")				\
 	def (OPT_VIEWBOB,		"View Bob")				\
 	def (OPT_ALWAYRUN,		"Always Run")			\
 													\
@@ -3644,9 +3643,9 @@ void M_AdjustSliders (int dir)
 		}
 		break;
 
-	case OPT_RECOIL:	// gun kick
-		Cvar_SetValueQuick (&v_gunkick, ((int) q_max (v_gunkick.value, 0.f) + 3 + dir) % 3);
-		break;
+	//case OPT_RECOIL:	// gun kick
+	//	Cvar_SetValueQuick (&v_gunkick, ((int) q_max (v_gunkick.value, 0.f) + 3 + dir) % 3);
+	//	break;
 
 	case OPT_FOV:	// field of view
 		Cvar_SetValueQuick (&scr_fov, CLAMP (FOV_MIN, scr_fov.value + dir * 5.f, FOV_MAX));
@@ -4076,6 +4075,7 @@ static void M_Options_DrawItem (int y, int item)
 		M_Print (x, y, cl_bob.value ? "On" : "Off");
 		break;
 
+	/* qSprawl Not allowed to change
 	case OPT_RECOIL:
 		if ((int)v_gunkick.value == 2)
 			M_Print (x, y, "Smooth");
@@ -4084,6 +4084,7 @@ static void M_Options_DrawItem (int y, int item)
 		else
 			M_Print (x, y, "Off");
 		break;
+	*/
 
 	case OPT_INVMOUSE:
 		M_DrawCheckbox (x, y, m_pitch.value < 0);

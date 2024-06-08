@@ -461,7 +461,9 @@ void() monster_hell_knight =
 	self.netname = "Hell Knight";
 	self.killstring = " was slain by a Hell Knight\n";
 
-	setsize (self, '-16 -16 -24', '16 16 40');
+	setsize (self, '-16 -16 -24', '16 16 36'); //40
+	self.head_offset = '0 0 32';
+	self.head_size = 10;
 	self.health = 250;
 	self.max_health = 250;
 

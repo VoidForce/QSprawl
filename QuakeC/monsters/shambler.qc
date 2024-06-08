@@ -256,6 +256,7 @@ void() CastLightning =
 	WriteCoord (MSG_BROADCAST, trace_endpos_x);
 	WriteCoord (MSG_BROADCAST, trace_endpos_y);
 	WriteCoord (MSG_BROADCAST, trace_endpos_z);
+	WriteByte (MSG_BROADCAST, 0);
 
 	LightningDamage (org, trace_endpos, self, 10);
 };

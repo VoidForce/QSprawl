@@ -76,6 +76,7 @@ do\
 	}\
 } while (0)
 
+void VectorPerpendicular(vec3_t A, vec3_t B);
 void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle); //johnfitz
 void VectorAngles (const vec3_t forward, vec3_t angles); //johnfitz
 

@@ -334,18 +334,42 @@ void SV_WallRunDetection()
 	//Con_DPrintf("wall_normal = [%f,%f,%f] \n", sv_player->v.wall_normal[0], sv_player->v.wall_normal[1], sv_player->v.wall_normal[2]);
 }
 
+#define PUNCH_DAMPING		8.0f		// bigger number makes the response more damped, smaller is less damped
+// currently the system will overshoot, with larger damping values it won't
+#define PUNCH_SPRING_CONSTANT	180.0f	// bigger number increases the speed at which the view corrects
+// hl2 spring force magnitude punch angle decay
 void DropPunchAngle (void)
 {
-	float	len;
+	vec3_t temp;
+	float damping,magnitude;
 
-	// find the length, normalize
-	len = VectorNormalize (sv_player->v.punchangle);
+	if (DotProduct(sv_player->v.punchangle, sv_player->v.punchangle) > 0.01
+		|| DotProduct(sv_player->v.punchvelocity, sv_player->v.punchvelocity) > 0.01)
+	{
+		VectorScale(sv_player->v.punchvelocity, host_frametime, temp);
+		VectorAdd(sv_player->v.punchangle, temp, sv_player->v.punchangle);
+		damping = q_max_f(0, 1 - (PUNCH_DAMPING * host_frametime));
+		VectorScale(sv_player->v.punchvelocity, damping, sv_player->v.punchvelocity);
+		magnitude = clamp_f(0, PUNCH_SPRING_CONSTANT * host_frametime, 2);
+		VectorScale(sv_player->v.punchangle, magnitude, temp);
+		VectorSubtract(sv_player->v.punchvelocity, temp, sv_player->v.punchvelocity);
 
-	//Con_DPrintf("frametime = %f, raw = %f \n", host_frametime*72, host_fpsframetime*250);
+		sv_player->v.punchangle[0] = clamp_f(-89, sv_player->v.punchangle[0], 89);
+		sv_player->v.punchangle[1] = clamp_f(-179, sv_player->v.punchangle[1], 179);
+		sv_player->v.punchangle[2] = clamp_f(-89, sv_player->v.punchangle[2], 89);
+	}
+	else
+	{
+		//reset to 0
+		VectorCopy(vec3_origin, sv_player->v.punchangle);
+		VectorCopy(vec3_origin, sv_player->v.punchvelocity);
+	}
+
+	/*len = VectorNormalize (sv_player->v.punchangle);
 	len -= (30 + len * 2) * host_frametime;
 	if (len < 0)
 		len = 0;
-	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);
+	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);*/
 }
 
 /*

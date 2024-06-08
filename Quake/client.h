@@ -186,8 +186,6 @@ typedef struct
 								// (0 is newest)
 	vec3_t		velocity;		// lerped between mvelocity[0] and [1]
 	vec3_t		punchangle;		// temporary offset
-	vec3_t		viewmodeloffset_origin; // qsprawl
-	vec3_t		viewmodeloffset_angles; // qsprawl
 	double		punchtime;
 
 // pitch drifting vars
@@ -258,6 +256,11 @@ typedef struct
 	float		zoomdir;
 
 	qboolean	forceunderwater;	// force underwater warping/sound distortion even when camera is not submerged (e.g. alk1.2 liquidbrush)
+// qsprawl
+	char		hitmarker;
+	vec3_t		viewmodeloffset_origin; // qsprawl
+	vec3_t		viewmodeloffset_angles; // qsprawl
+	vec3_t		punchvelocity;		// temporary offset's velocity
 } client_state_t;
 
 

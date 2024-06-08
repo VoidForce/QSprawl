@@ -43,20 +43,14 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	edict_t *ent = client->edict;
 	//FIXME: string stats!
 	int items;
-	eval_t *val = GetEdictFieldValue(ent, qcvm->extfields.items2);
-	if (val)
-		items = (int)ent->v.items | ((int)val->_float << 23);
-	else
-		items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
+
+	items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
 
 	memset(statsi, 0, sizeof(*statsi)*MAX_CL_STATS);
 	memset(statsf, 0, sizeof(*statsf)*MAX_CL_STATS);
 	memset((void*)statss, 0, sizeof(*statss)*MAX_CL_STATS);
 	statsf[STAT_HEALTH] = ent->v.health;
-//	statsf[STAT_FRAGS] = ent->v.frags;	//obsolete
 	statsi[STAT_WEAPON] = SV_ModelIndex(PR_GetString(ent->v.weaponmodel));
-	//if ((unsigned int)statsi[STAT_WEAPON] >= client->limit_models)
-	//	statsi[STAT_WEAPON] = 0;
 	statsf[STAT_AMMO] = ent->v.currentammo;
 	statsf[STAT_ARMOR] = ent->v.armorvalue;
 	statsf[STAT_WEAPONFRAME] = ent->v.weaponframe;
@@ -64,6 +58,7 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	statsf[STAT_NAILS] = ent->v.ammo_nails;
 	statsf[STAT_ROCKETS] = ent->v.ammo_rockets;
 	statsf[STAT_CELLS] = ent->v.ammo_cells;
+	statsf[STAT_BULLETS] = ent->v.ammo_bullets;
 	statsf[STAT_ACTIVEWEAPON] = ent->v.weapon;	//sent in a way that does NOT depend upon the current mod...
 
 	//FIXME: add support for clientstat/globalstat qc builtins.
@@ -960,8 +955,8 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg)
 
 	//johnfitz -- devstats
 stats:
-	if (msg->cursize > 1024 && dev_peakstats.packetsize <= 1024)
-		Con_DWarning ("%i byte packet exceeds standard limit of 1024 (max = %d).\n", msg->cursize, msg->maxsize);
+	//if (msg->cursize > 1024 && dev_peakstats.packetsize <= 1024)
+	//	Con_DWarning ("%i byte packet exceeds standard limit of 1024 (max = %d).\n", msg->cursize, msg->maxsize);
 	dev_stats.packetsize = msg->cursize;
 	dev_peakstats.packetsize = q_max(msg->cursize, dev_peakstats.packetsize);
 	//johnfitz
@@ -1000,7 +995,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	int		i;
 	edict_t	*other;
 	int		items;
-	eval_t	*val;
+	//eval_t	*val;
 
 //
 // send a damage message
@@ -1040,16 +1035,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	if (ent->v.idealpitch)
 		bits |= SU_IDEALPITCH;
 
-// stuff the sigil bits into the high bits of items for sbar, or else
-// mix in items2
-	val = GetEdictFieldValueByName(ent, "items2");
-
-	if (val)
-		items = (int)ent->v.items | ((int)val->_float << 23);
-	else
-		items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
-
-	bits |= SU_ITEMS;
+// stuff the sigil bits into the high bits of items for sbar
+	items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
 
 	if ( (int)ent->v.flags & FL_ONGROUND)
 		bits |= SU_ONGROUND;
@@ -1059,10 +1046,12 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 
 	for (i=0 ; i<3 ; i++)
 	{
-		if (ent->v.punchangle[i])
+		if (ent->v.punchangle[i] || ent->v.punchvelocity[i])
 			bits |= (SU_PUNCH1<<i);
 		if (ent->v.velocity[i])
 			bits |= (SU_VELOCITY1<<i);
+		if (ent->v.viewmodeloffset_angles[i] || ent->v.viewmodeloffset_origin[i])
+			bits |= SU_VIEWMODEL;
 	}
 
 	if (ent->v.weaponframe)
@@ -1071,70 +1060,75 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	if (ent->v.armorvalue)
 		bits |= SU_ARMOR;
 
-//	if (ent->v.weapon)
-	  bits |= SU_WEAPON;
+	bits |= SU_WEAPON;
+	if (bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
-	if (sv.protocol != PROTOCOL_NETQUAKE)
-	{
-		if (bits & SU_WEAPON && SV_ModelIndex(PR_GetString(ent->v.weaponmodel)) & 0xFF00) bits |= SU_WEAPON2;
-		if ((int)ent->v.armorvalue & 0xFF00) bits |= SU_ARMOR2;
-		if ((int)ent->v.currentammo & 0xFF00) bits |= SU_AMMO2;
-		if ((int)ent->v.ammo_shells & 0xFF00) bits |= SU_SHELLS2;
-		if ((int)ent->v.ammo_nails & 0xFF00) bits |= SU_NAILS2;
-		if ((int)ent->v.ammo_rockets & 0xFF00) bits |= SU_ROCKETS2;
-		if ((int)ent->v.ammo_cells & 0xFF00) bits |= SU_CELLS2;
-		if (bits & SU_WEAPONFRAME && (int)ent->v.weaponframe & 0xFF00) bits |= SU_WEAPONFRAME2;
-		if (bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
-		if (bits >= 65536) bits |= SU_EXTEND1;
-		if (bits >= 16777216) bits |= SU_EXTEND2;
-	}
-	//johnfitz
+	if (ent->v.hitmarker)
+		bits |= SU_HITMARKER;
+	/*
+	if (bits >= 65536) bits |= SU_EXTEND1; //?
+	if (bits >= 16777216) bits |= SU_EXTEND2; //?
 
-// send the data
-
-	MSG_WriteByte (msg, svc_clientdata);
-	MSG_WriteShort (msg, bits);
-
-	//johnfitz -- PROTOCOL_FITZQUAKE
-	if (bits & SU_EXTEND1) MSG_WriteByte(msg, bits>>16);
-	if (bits & SU_EXTEND2) MSG_WriteByte(msg, bits>>24);
-	//johnfitz
+	if (bits & SU_EXTEND1)
+		MSG_WriteByte(msg, bits >> 16); //byte
+	if (bits & SU_EXTEND2)
+		MSG_WriteByte(msg, bits >> 24); //byte
+	*/
+//-------------------------------------------------------------------------------------------------------------------------------------
+// send the data  **  send the data  **  send the data  **  send the data  **  send the data
+//-------------------------------------------------------------------------------------------------------------------------------------
+	// byte - 1
+	// char - 1 signed
+	// short - 2
+	// long - 4
+//start
+	MSG_WriteByte (msg, svc_clientdata); //byte 1
+	MSG_WriteShort (msg, bits); //short 2
 
 	if (bits & SU_VIEWHEIGHT)
-		MSG_WriteChar (msg, ent->v.view_ofs[2]);
+		MSG_WriteChar (msg, ent->v.view_ofs[2]); //char 1
 
 	if (bits & SU_IDEALPITCH)
-		MSG_WriteChar (msg, ent->v.idealpitch);
+		MSG_WriteChar (msg, ent->v.idealpitch); // char 1
 
 	for (i=0 ; i<3 ; i++)
 	{
-		if (bits & (SU_PUNCH1<<i))
-			MSG_WriteFloat (msg, ent->v.punchangle[i]/16);
+		if (bits & (SU_PUNCH1 << i))
+		{
+			MSG_WriteFloat(msg, ent->v.punchangle[i]); //max 3 float
+			MSG_WriteFloat(msg, ent->v.punchvelocity[i]); //max 3 float
+		}
 		if (bits & (SU_VELOCITY1<<i))
-			MSG_WriteChar (msg, ent->v.velocity[i]/16);
+			MSG_WriteChar (msg, ent->v.velocity[i]/16); //max 3 char 3
+		// qsprawl add check here
+		if (bits & SU_VIEWMODEL)
+		{
+			MSG_WriteFloat(msg, ent->v.viewmodeloffset_angles[i]);
+			MSG_WriteShort(msg, ent->v.viewmodeloffset_origin[i]);
+		}
 	}
 
-// [always sent]	if (bits & SU_ITEMS)
-	MSG_WriteLong (msg, items);
+	MSG_WriteLong (msg, items); // long 4
 
 	if (bits & SU_WEAPONFRAME)
-		MSG_WriteByte (msg, ent->v.weaponframe);
+		MSG_WriteShort (msg, ent->v.weaponframe); // short (new) 2
 	if (bits & SU_ARMOR)
-		MSG_WriteByte (msg, ent->v.armorvalue);
+		MSG_WriteByte (msg, ent->v.armorvalue); // byte 1
 	if (bits & SU_WEAPON)
-		MSG_WriteByte (msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel)));
+		MSG_WriteByte (msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel))); // byte i guess? 1
 
-	MSG_WriteShort (msg, ent->v.health);
-	MSG_WriteByte (msg, ent->v.currentammo);
-	MSG_WriteByte (msg, ent->v.ammo_shells);
-	MSG_WriteByte (msg, ent->v.ammo_nails);
-	MSG_WriteByte (msg, ent->v.ammo_rockets);
-	MSG_WriteByte (msg, ent->v.ammo_cells);
+	MSG_WriteShort (msg, ent->v.health); // short (switch to byte?) 2
+	// so, for qSprawl we don't need ammo past 200, so the byte size would be enough
+	MSG_WriteByte (msg, ent->v.currentammo); // byte 1
+	MSG_WriteByte (msg, ent->v.ammo_shells); // byte 1
+	MSG_WriteByte (msg, ent->v.ammo_nails);  // byte 1
+	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1
+	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1
+	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1
 
 	if (standard_quake)
 	{
-		MSG_WriteByte (msg, ent->v.weapon);
+		MSG_WriteByte (msg, ent->v.weapon); //1
 	}
 	else
 	{
@@ -1142,36 +1136,19 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		{
 			if ( ((int)ent->v.weapon) & (1<<i) )
 			{
-				MSG_WriteByte (msg, i);
+				MSG_WriteByte (msg, i); // max 32
 				break;
 			}
 		}
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
-	if (bits & SU_WEAPON2)
-		MSG_WriteByte (msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel)) >> 8);
-	if (bits & SU_ARMOR2)
-		MSG_WriteByte (msg, (int)ent->v.armorvalue >> 8);
-	if (bits & SU_AMMO2)
-		MSG_WriteByte (msg, (int)ent->v.currentammo >> 8);
-	if (bits & SU_SHELLS2)
-		MSG_WriteByte (msg, (int)ent->v.ammo_shells >> 8);
-	if (bits & SU_NAILS2)
-		MSG_WriteByte (msg, (int)ent->v.ammo_nails >> 8);
-	if (bits & SU_ROCKETS2)
-		MSG_WriteByte (msg, (int)ent->v.ammo_rockets >> 8);
-	if (bits & SU_CELLS2)
-		MSG_WriteByte (msg, (int)ent->v.ammo_cells >> 8);
-	if (bits & SU_WEAPONFRAME2)
-		MSG_WriteByte (msg, (int)ent->v.weaponframe >> 8);
 	if (bits & SU_WEAPONALPHA)
-		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha
+		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1
 	//johnfitz
 
-	// Hack: Alkaline 1.1 uses bit flags to store the active weapon,
-	// but we only send the stat as a byte, which can lead to truncation.
-	// If we detect this, re-send the stat separately (as a 32-bit int).
+// Hack: Alkaline 1.1 uses bit flags to store the active weapon,
+// but we only send the stat as a byte, which can lead to truncation.
+// If we detect this, re-send the stat separately (as a 32-bit int).
 	if ((byte)ent->v.weapon != (int)ent->v.weapon && msg->cursize + 6 <= msg->maxsize)
 	{
 		MSG_WriteByte (msg, svc_updatestat);

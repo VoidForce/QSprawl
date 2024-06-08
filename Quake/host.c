@@ -119,7 +119,7 @@ static void Max_Fps_f (cvar_t *var)
 	{
 		if (!host_netinterval)
 			Con_Printf ("Using renderer/network isolation.\n");
-		host_netinterval = 1.0 / 72; // qs
+		host_netinterval = 1.0 / 72; // qSprawl was /72
 	}
 	else
 	{

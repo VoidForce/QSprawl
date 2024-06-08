@@ -131,6 +131,7 @@ void		end_sys_globals;		// flag for structure dumping
 .vector		avelocity;
 
 .vector		punchangle;		// temp angle adjust from damage or recoil
+.vector		punchvelocity;
 
 .string		classname;		// spawn function
 .string		model;
@@ -161,6 +162,7 @@ void		end_sys_globals;		// flag for structure dumping
 .float		weaponframe;
 .float		currentammo;
 .float		ammo_shells, ammo_nails, ammo_rockets, ammo_cells;
+.float		ammo_bullets; //new
 
 .float		items;			// bit flags
 
@@ -244,6 +246,9 @@ void		end_sys_globals;		// flag for structure dumping
 .float		wallrun;
 .vector		wall_normal;
 .float 		wall_jumps;
+.float		hitmarker;
+.vector		viewmodeloffset_origin;
+.vector     viewmodeloffset_angles;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -262,188 +267,174 @@ void		end_sys_fields;			// flag for structure dumping
 // constants
 //
 
-float	FALSE					= 0;
-float 	TRUE					= 1;
-//
-const float SLIDE_STOPSPEED		= 100;
+const float	FALSE					= 0;
+const float TRUE					= 1;
 
 // edict.flags
-float	FL_FLY					= 1;
-float	FL_SWIM					= 2;
-float	FL_CLIENT				= 8;	// set for all client edicts
-float	FL_INWATER				= 16;	// for enter / leave water splash
-float	FL_MONSTER				= 32;
-float	FL_GODMODE				= 64;	// player cheat
-float	FL_NOTARGET				= 128;	// player cheat
-float	FL_ITEM					= 256;	// extra wide size for bonus items
-float	FL_ONGROUND				= 512;	// standing on something
-float	FL_PARTIALGROUND		= 1024;	// not all corners are valid
-float	FL_WATERJUMP			= 2048;	// player jumping out of water
-float	FL_JUMPRELEASED			= 4096;	// for jump debouncing
-
-float 	MF_CROUCHINAIR			= 1;
-float	MF_INSLIDE				= 2;
+const float	FL_FLY					= 1;
+const float	FL_SWIM					= 2;
+const float	FL_CLIENT				= 8;	// set for all client edicts
+const float	FL_INWATER				= 16;	// for enter / leave water splash
+const float	FL_MONSTER				= 32;
+const float	FL_GODMODE				= 64;	// player cheat
+const float	FL_NOTARGET				= 128;	// player cheat
+const float	FL_ITEM					= 256;	// extra wide size for bonus items
+const float	FL_ONGROUND				= 512;	// standing on something
+const float	FL_PARTIALGROUND		= 1024;	// not all corners are valid
+const float	FL_WATERJUMP			= 2048;	// player jumping out of water
+const float	FL_JUMPRELEASED			= 4096;	// for jump debouncing
 
 // edict.movetype values
-float	MOVETYPE_NONE			= 0;	// never moves
-//float	MOVETYPE_ANGLENOCLIP	= 1;
-//float	MOVETYPE_ANGLECLIP		= 2;
-float	MOVETYPE_WALK			= 3;	// players only
-float	MOVETYPE_STEP			= 4;	// discrete, not real time unless fall
-float	MOVETYPE_FLY			= 5;
-float	MOVETYPE_TOSS			= 6;	// gravity
-float	MOVETYPE_PUSH			= 7;	// no clip to world, push and crush
-float	MOVETYPE_NOCLIP			= 8;
-float	MOVETYPE_FLYMISSILE		= 9;	// fly with extra size against monsters
-float	MOVETYPE_BOUNCE			= 10;
-float	MOVETYPE_BOUNCEMISSILE	= 11;	// bounce with extra size
+const float	MOVETYPE_NONE			= 0;	// never moves
+//const float	MOVETYPE_ANGLENOCLIP	= 1;
+//const float	MOVETYPE_ANGLECLIP		= 2;
+const float	MOVETYPE_WALK			= 3;	// players only
+const float	MOVETYPE_STEP			= 4;	// discrete, not real time unless fall
+const float	MOVETYPE_FLY			= 5;
+const float	MOVETYPE_TOSS			= 6;	// gravity
+const float	MOVETYPE_PUSH			= 7;	// no clip to world, push and crush
+const float	MOVETYPE_NOCLIP			= 8;
+const float	MOVETYPE_FLYMISSILE		= 9;	// fly with extra size against monsters
+const float	MOVETYPE_BOUNCE			= 10;
+const float	MOVETYPE_BOUNCEMISSILE	= 11;	// bounce with extra size
 
 // edict.solid values
-float	SOLID_NOT				= 0;	// no interaction with other objects
-float	SOLID_TRIGGER			= 1;	// touch on edge, but not blocking
-float	SOLID_BBOX				= 2;	// touch on edge, block
-float	SOLID_SLIDEBOX			= 3;	// touch on edge, but not an onground
-float	SOLID_BSP				= 4;	// bsp clip, touch on edge, block
+const float	SOLID_NOT				= 0;	// no interaction with other objects
+const float	SOLID_TRIGGER			= 1;	// touch on edge, but not blocking
+const float	SOLID_BBOX				= 2;	// touch on edge, block
+const float	SOLID_SLIDEBOX			= 3;	// touch on edge, but not an onground
+const float	SOLID_BSP				= 4;	// bsp clip, touch on edge, block
 
 // range values
-float	RANGE_MELEE				= 0;
-float	RANGE_NEAR				= 1;
-float	RANGE_MID				= 2;
-float	RANGE_FAR				= 3;
+const float	RANGE_MELEE				= 0;
+const float	RANGE_NEAR				= 1;
+const float	RANGE_MID				= 2;
+const float	RANGE_FAR				= 3;
 
 // deadflag values
 
-float	DEAD_NO					= 0;
-float	DEAD_DYING				= 1;
-float	DEAD_DEAD				= 2;
-float	DEAD_RESPAWNABLE		= 3;
+const float	DEAD_NO					= 0;
+const float	DEAD_DYING				= 1;
+const float	DEAD_DEAD				= 2;
+const float	DEAD_RESPAWNABLE		= 3;
 
 // takedamage values
 
-float	DAMAGE_NO				= 0;
-float	DAMAGE_YES				= 1;
-float	DAMAGE_AIM				= 2;
+const float	DAMAGE_NO				= 0;
+const float	DAMAGE_YES				= 1;
+const float	DAMAGE_AIM				= 2;
 
 // items
-float	IT_AXE					= 4096;
-float	IT_SHOTGUN				= 1;
-float	IT_SUPER_SHOTGUN		= 2;
-float	IT_NAILGUN				= 4;
-float	IT_SUPER_NAILGUN		= 8;
-float	IT_GRENADE_LAUNCHER		= 16;
-float	IT_ROCKET_LAUNCHER		= 32;
-float	IT_LIGHTNING			= 64;
-float	IT_EXTRA_WEAPON			= 128;
-
-float	IT_SHELLS				= 256;
-float	IT_NAILS				= 512;
-float	IT_ROCKETS				= 1024;
-float	IT_CELLS				= 2048;
-
-float	IT_ARMOR1				= 8192;
-float	IT_ARMOR2				= 16384;
-float	IT_ARMOR3				= 32768;
-float	IT_SUPERHEALTH			= 65536;
-
-float	IT_KEY1					= 131072;
-float	IT_KEY2					= 262144;
-
-float	IT_INVISIBILITY			= 524288;
-float	IT_INVULNERABILITY		= 1048576;
-float	IT_SUIT					= 2097152;
-float	IT_QUAD					= 4194304;
+const float	IT_AXE					= 4096;
+const float	IT_SHOTGUN				= 1;
+const float	IT_SUPER_SHOTGUN		= 2;
+const float	IT_NAILGUN				= 4;
+const float	IT_SUPER_NAILGUN		= 8;
+const float	IT_GRENADE_LAUNCHER		= 16;
+const float	IT_ROCKET_LAUNCHER		= 32;
+const float	IT_LIGHTNING			= 64;
+const float	IT_EXTRA_WEAPON			= 128;
+const float	IT_SHELLS				= 256;
+const float	IT_NAILS				= 512;
+const float	IT_ROCKETS				= 1024;
+const float	IT_CELLS				= 2048;
+const float	IT_ARMOR1				= 8192;
+const float	IT_ARMOR2				= 16384;
+const float	IT_ARMOR3				= 32768;
+const float	IT_SUPERHEALTH			= 65536;
+const float	IT_KEY1					= 131072;
+const float	IT_KEY2					= 262144;
+const float	IT_INVISIBILITY			= 524288;
+const float	IT_INVULNERABILITY		= 1048576;
+const float	IT_SUIT					= 2097152;
+const float	IT_QUAD					= 4194304;
 
 // point content values
 
-float	CONTENT_EMPTY			= -1;
-float	CONTENT_SOLID			= -2;
-float	CONTENT_WATER			= -3;
-float	CONTENT_SLIME			= -4;
-float	CONTENT_LAVA			= -5;
-float	CONTENT_SKY				= -6;
+const float	CONTENT_EMPTY			= -1;
+const float	CONTENT_SOLID			= -2;
+const float	CONTENT_WATER			= -3;
+const float	CONTENT_SLIME			= -4;
+const float	CONTENT_LAVA			= -5;
+const float	CONTENT_SKY				= -6;
 
-float	STATE_TOP		= 0;
-float	STATE_BOTTOM	= 1;
-float	STATE_UP		= 2;
-float	STATE_DOWN		= 3;
+const float	STATE_TOP		= 0;
+const float	STATE_BOTTOM	= 1;
+const float	STATE_UP		= 2;
+const float	STATE_DOWN		= 3;
 
-vector	VEC_ORIGIN = '0 0 0';
-vector	VEC_HULL_MIN = '-16 -16 -24';
-vector	VEC_HULL_MAX = '16 16 32';
+const vector	VEC_ORIGIN = '0 0 0';
+const vector	VEC_HULL_MIN = '-16 -16 -24';
+const vector	VEC_HULL_MAX = '16 16 32';
 
-vector	VEC_HULL2_MIN = '-32 -32 -24';
-vector	VEC_HULL2_MAX = '32 32 64';
+const vector	VEC_HULL2_MIN = '-32 -32 -24';
+const vector	VEC_HULL2_MAX = '32 32 64';
 
 // protocol bytes
-float	SVC_TEMPENTITY		= 23;
-float	SVC_KILLEDMONSTER	= 27;
-float	SVC_FOUNDSECRET		= 28;
-float	SVC_INTERMISSION	= 30;
-float	SVC_FINALE			= 31;
-float	SVC_CDTRACK			= 32;
-float	SVC_SELLSCREEN		= 33;
+const float	SVC_TEMPENTITY		= 23;
+const float	SVC_KILLEDMONSTER	= 27;
+const float	SVC_FOUNDSECRET		= 28;
+const float	SVC_INTERMISSION	= 30;
+const float	SVC_FINALE			= 31;
+const float	SVC_CDTRACK			= 32;
+const float	SVC_SELLSCREEN		= 33;
 
 
-float	TE_SPIKE		= 0;
-float	TE_SUPERSPIKE	= 1;
-float	TE_GUNSHOT		= 2;
-float	TE_EXPLOSION	= 3;
-float	TE_TAREXPLOSION	= 4;
-float	TE_LIGHTNING1	= 5;
-float	TE_LIGHTNING2	= 6;
-float	TE_WIZSPIKE		= 7;
-float	TE_KNIGHTSPIKE	= 8;
-float	TE_LIGHTNING3	= 9;
-float	TE_LAVASPLASH	= 10;
-float	TE_TELEPORT		= 11;
-float	TE_BEAMBYNAME	= 14; //qsprawl
+const float	TE_SPIKE		= 0;
+const float	TE_SUPERSPIKE	= 1;
+const float	TE_GUNSHOT		= 2;
+const float	TE_EXPLOSION	= 3;
+const float	TE_TAREXPLOSION	= 4;
+const float	TE_LIGHTNING1	= 5;
+const float	TE_LIGHTNING2	= 6;
+const float	TE_WIZSPIKE		= 7;
+const float	TE_KNIGHTSPIKE	= 8;
+const float	TE_LIGHTNING3	= 9;
+const float	TE_LAVASPLASH	= 10;
+const float	TE_TELEPORT		= 11;
+const float	TE_BEAMBYNAME	= 14; //qsprawl
+const float	TE_BULLETTRACE	= 15;
+const float	TE_GAUSSTRACE	= 16;
+const float	TE_IMPACT		= 17;
+const float	TE_MUZZLE		= 18;
 
 // sound channels
 // channel 0 never willingly overrides
 // other channels (1-7) allways override a playing sound on that channel
-float	CHAN_AUTO		= 0;
-float	CHAN_WEAPON		= 1;
-float	CHAN_VOICE		= 2;
-float	CHAN_ITEM		= 3;
-float	CHAN_BODY		= 4;
+const float	CHAN_AUTO		= 0;
+const float	CHAN_WEAPON		= 1;
+const float	CHAN_VOICE		= 2;
+const float	CHAN_ITEM		= 3;
+const float	CHAN_BODY		= 4;
 
-float	ATTN_NONE		= 0;
-float	ATTN_NORM		= 1;
-float	ATTN_IDLE		= 2;
-float	ATTN_STATIC		= 3;
+const float	ATTN_NONE		= 0;
+const float	ATTN_NORM		= 1;
+const float	ATTN_IDLE		= 2;
+const float	ATTN_STATIC		= 3;
 
 // update types
 
-float	UPDATE_GENERAL	= 0;
-float	UPDATE_STATIC	= 1;
-float	UPDATE_BINARY	= 2;
-float	UPDATE_TEMP		= 3;
+const float	UPDATE_GENERAL	= 0;
+const float	UPDATE_STATIC	= 1;
+const float	UPDATE_BINARY	= 2;
+const float	UPDATE_TEMP		= 3;
 
 // entity effects
 
-float	EF_BRIGHTFIELD	= 1;
-float	EF_MUZZLEFLASH 	= 2;
-float	EF_BRIGHTLIGHT 	= 4;
-float	EF_DIMLIGHT 	= 8;
-float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect // 1 frame
-float	EF_NOLERP2 		= 256; // old behaviour 2 frames
+const float	EF_BRIGHTFIELD	= 1;
+const float	EF_MUZZLEFLASH 	= 2;
+const float	EF_BRIGHTLIGHT 	= 4;
+const float	EF_DIMLIGHT 	= 8;
+const float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect // 1 frame
+const float	EF_NOLERP2 		= 256; // old behaviour 2 frames
 
 
 // messages
-float	MSG_BROADCAST	= 0;		// unreliable to all
-float	MSG_ONE			= 1;		// reliable to one (msg_entity)
-float	MSG_ALL			= 2;		// reliable to all
-float	MSG_INIT		= 3;		// write to the init string
+const float	MSG_BROADCAST	= 0;		// unreliable to all
+const float	MSG_ONE			= 1;		// reliable to one (msg_entity)
+const float	MSG_ALL			= 2;		// reliable to all
+const float	MSG_INIT		= 3;		// write to the init string
 
-//slowmo states
-const float SLOWMO_VALUE = 0.4;
-const float SLOWMO_FADE_TIME = 0.25;
-const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
-
-const float TYPE_GENERAL = 0;
-const float TYPE_PLAYER = 1;
-const float SLIDE_OFFSET = 10;
-const float STANDART_OFFSET = 22;
 
 //================================================
 
@@ -464,7 +455,10 @@ float	framecount;
 float	slowmotion;
 float	slowmotion_time;
 
-float		skill;
+float	skill;
+entity	multi_ent;
+float	multi_damage;
+
 
 //================================================
 
@@ -506,10 +500,10 @@ float		skill;
 .float	search_time;
 .float	attack_state;
 
-float	AS_STRAIGHT		= 1;
-float	AS_SLIDING		= 2;
-float	AS_MELEE		= 3;
-float	AS_MISSILE		= 4;
+const float	AS_STRAIGHT		= 1;
+const float	AS_SLIDING		= 2;
+const float	AS_MELEE		= 3;
+const float	AS_MISSILE		= 4;
 
 //
 // player only fields
@@ -517,13 +511,50 @@ float	AS_MISSILE		= 4;
 // qsprawl
 // new player related constants/flags
 //
-float SFL_RESETWEAPONFRAME = 1;
-float SFL_SEMIAUTO = 2;
-float SFL_LEFTHAND = 4;
-float SFL_INQUICKMELEE = 8;
-float SFL_STOPMELEE = 16;
-float SFL_HOLD = 32;
-float SFL_MONSTER = 64;
+#define IGNOREMONSTERS 1
+#define ALLOWMONSTERS 0
+
+const float IMPACT_NORMAL = 0;
+const float IMPACT_GAUSS_FINAL = 1; // solid, endpoint
+const float IMPACT_GAUSS_ENTRANCE = 2; // solid, penetrating, entrance hole
+const float IMPACT_GAUSS_EXIT = 3; // solid, penetrating, exit hole
+const float IMPACT_GAUSS_FLESH_HEADSHOT = 4;
+const float IMPACT_GAUSS_FLESH = 5; // red blood
+const float IMPACT_GAUSS_ROBOT_HEADSHOT = 6; 
+const float IMPACT_GAUSS_ROBOT = 7; // mech/robot sparks
+
+const float BT_FLESH_RED = 0; // human
+const float BT_FLESH_BLUE = 1; // cyborg
+const float BT_ROBOT = 2; // mech/robot
+
+const float MF_CROUCHINAIR			= 1;
+const float	MF_INSLIDE				= 2;
+const float	MF_PISTOL = 1;
+const float	MF_SHOTGUN = 2;
+const float	MF_SMG = 3;
+const float	MF_GAUSS = 4;
+const float	MF_CHAINGUN = 5;
+const float	MF_GRENADE = 6;
+const float	MF_LG = 7;
+//slowmo states
+const float SLOWMO_VALUE = 0.4;
+const float SLOWMO_FADE_TIME = 0.25;
+const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
+
+const float TYPE_GENERAL = 0;
+const float TYPE_PLAYER = 1;
+const float SLIDE_OFFSET = 10;
+const float STANDART_OFFSET = 22;
+const float SLIDE_STOPSPEED		= 100;
+
+const float SFL_RESETWEAPONFRAME = 1;
+const float SFL_SEMIAUTO = 2;
+const float SFL_LEFTHAND = 4;
+const float SFL_INQUICKMELEE = 8;
+const float SFL_STOPMELEE = 16;
+const float SFL_HOLD = 32;
+const float SFL_INERTIA = 64;
+const float SFL_VMOFFSET = 128; // we need to make something about viewmodel
 
 const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
 const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
@@ -537,11 +568,17 @@ const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.92
 .float		grenade_finished;
 .float		rocket_finished;
 
+.float		chaingun_speed;
+.float		chaingun_frame;
+//.float		chaingun_barrel;
+
 .vector		punch_fast;
 .vector		punch_normal;
 .vector		punch_slow;
 .float		punch_time;
-.float		punch_relaxtime;
+
+.entity		weapon_director; // special entity that handles complex stuff for the player. One extra entity per client.
+.float		deploy_time;
 
 entity		grenade_handler; // global
 .entity		list_next;
@@ -550,7 +587,16 @@ entity		grenade_handler; // global
 
 .string		quickmelee_model; // stores the current weapon model;
 .float		quickmelee_weapon;
+.float		hitmarker_time;
+// monsters stuff ----------------------------------------------------------------------------------------------------------
+.vector		head_offset;
+.float		head_size;
+.float		bodytype;
 //
+// extra utility fields, to meet all the needs for complex stuff
+.float		fA, fB, fC, fD, fE, fF, fG, fH, fI, fJ, fK, fL, fM, fN, fO, fP; // 16 floats 
+.vector		vA, vB, vC, vD, vE, vF, vG, vH, vI, vJ, vK, vL, vM, vN, vO, vP; // 48 floats
+.entity		eA, eB, eC, eD, eE, eF, eG, eH, eI, eJ, eK, eL, eM, eN, eO, eP; // 16 ints
 
 .float		walkframe;
 
@@ -770,5 +816,6 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
-void (float newvalue) change_timescale = #701; // clamped from 0 to 10
 entity(.float fld, float match) findfloat = #700 // returns chain of entities
+void (float newvalue) change_timescale = #701; // clamped from 0 to 10
+float(vector raypoint, vector direction, vector point) distancetoray = #702; // 
