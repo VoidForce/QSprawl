@@ -60,7 +60,7 @@ vector(float fwd, float right, float vertical) offsetWeapon =
 
 void() resetFlags =
 {
-	self.sprawlflags -= self.sprawlflags & (SFL_SEMIAUTO | SFL_LEFTHAND | SFL_INQUICKMELEE | SFL_STOPMELEE | SFL_HOLD);
+	self.sprawlflags -= self.sprawlflags & (SFL_SEMIAUTO | SFL_LEFTHAND | SFL_HOLD); //SFL_INQUICKMELEE | SFL_STOPMELEE | 
 };
 
 void(float gun) delpoyGun =
@@ -73,6 +73,8 @@ void(float gun) delpoyGun =
 		self.shotgun_finished = time + 0.4;
 	self.sprawlflags |= SFL_RESETWEAPONFRAME | SFL_VMOFFSET;
 	resetFlags();
+	if (gun == IT_AXE || self.weapon == IT_AXE)
+		self.sprawlflags |= SFL_NEEDTOSETSPEED;
 	self.weapon = gun;
 	W_SetCurrentAmmo ();
 };
@@ -360,7 +362,7 @@ void(vector dir, float offset_x, float offset_y, float damage) FireBulletAim =
 				
 				if (distancetoray(src, direction, head_origin) < trace_ent.head_size)
 				{
-					self.hitmarker = 1;
+					self.engineflags |= ENF_HITMARKER;
 					self.hitmarker_time = time + 0.2;
 					if (self.weapon == IT_SHOTGUN)
 						dmg *= 3;
@@ -383,12 +385,13 @@ void(vector dir, float offset_x, float offset_y, float damage) FireBulletAim =
 
 void() W_FireAxe =
 {
-	local	vector	source;
-	local	vector	org;
+	local vector source, direction, org, head_origin;
+	local float dmg;
 
 	makevectors	(self.v_angle + self.punchangle);
 	source = self.origin + '0 0 16';
-	traceline (source, source + v_forward*96, FALSE, self);
+	direction = v_forward * 96;
+	traceline (source, source + direction, FALSE, self);
 	if (trace_fraction == 1.0)
 		return;
 	
@@ -397,14 +400,30 @@ void() W_FireAxe =
 	if (trace_ent.takedamage)
 	{
 		trace_ent.axhitme = 1;
+		dmg = 30;
+		if (trace_ent.flags & FL_MONSTER)
+		{
+			head_origin = findHeadPosition(trace_ent);
+	
+			if (distancetoray(source, direction, head_origin) < trace_ent.head_size)
+			{
+				self.engineflags |= ENF_HITMARKER;
+				self.hitmarker_time = time + 0.2;
+				dmg *= 3;
+			}
+		}
 		SpawnBlood (org, '0 0 0', 20);
-		T_Damage (trace_ent, self, self, 30);
+		T_Damage (trace_ent, self, self, dmg);
 	}
 
 	else
 	{	// hit wall
-		sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
-		sendMessageVec(org, TE_GUNSHOT);
+		if (self.katanasound_finished < time)
+		{
+			sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
+			sendMessageVec(org, TE_GUNSHOT);
+			self.katanasound_finished = time + 0.4;
+		}
 	}
 };
 
@@ -429,7 +448,9 @@ void() W_FirePistol =
 
 	//sendMessageVecVecFlag(start, dir, MF_PISTOL, TE_MUZZLE);
 // recoil
-	makePunch([8,0,0], [0,-4 + crandom()*2,0],[0,0,0]);
+	makePunch([3, 0, 0], [rint(crandom() * 1) * 2, 0, 0], [0, 0, 0]);
+	addPunchVelocity(-40, 0, 0);
+	//makePunch([8,0,0], [0,-4 + crandom()*2,0],[0,0,0]);
 };
 
 void() W_FireSuperShotgun =
@@ -496,7 +517,8 @@ void(float leftgun) W_FireSMG =
 	seedy = CIRCLEY[seedx];
 	seedx = CIRCLEX[seedx];
 	//punch_relaxtime
-	makePunch([4+random()*2, 1, 0], [crandom(), crandom() * crandom() * 4, 0], [0, 0, 0]);
+	makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]); //crandom() * crandom() * 4
+	addPunchVelocity(-6,crandom()*4,0);
 };
 
 #define GAUSS_DAMAGE 190
@@ -511,6 +533,7 @@ void() W_FireGauss =
 	
 // misc stuff
 	sound (self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM);
+	self.show_hostile = time + 1;	// wake monsters up	
 	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
 	
 // preparations before trace
@@ -553,7 +576,7 @@ void() W_FireGauss =
 				if (distancetoray(start, direction, findHeadPosition(trace_ent)) < trace_ent.head_size) 
 				{
 				// hit head
-					self.hitmarker = 1; // tell HUD
+					self.engineflags |= ENF_HITMARKER; // tell hud
 					self.hitmarker_time = time + 0.2;
 					damage += GAUSS_HEAD_DAMAGE * power; // modify damage
 					if ( trace_ent.bodytype == BT_ROBOT)
@@ -650,7 +673,8 @@ void() W_FireChaingun =
 	seedx = rint(random()*8);
 	seedy = CIRCLEY[seedx];
 	seedx = CIRCLEX[seedx];
-	makePunch([seedx,seedx*2,0.5],[seedy,seedy*1.5,0],[0,crandom()*0.5,0]);
+	makePunch([seedx*8,seedx,0],[seedy*8,seedy,0],[0,crandom()*0.5,0]);
+	addPunchVelocity(-20,crandom()*50,0);
 };
 
 void() GrenadeExplode =
@@ -724,7 +748,8 @@ void() W_FireGrenade =
 	setorigin (missile, offsetWeapon(24,8,4));
 	missile.isgrenade = 1;
 	appendToList(missile);
-	makePunch([4, 4, 0], [0, -8 + random()*4, 0], [0, 0, 0]);
+	makePunch([6, 0, 0], [0, 0, 0], [0, 0, 0]);
+	addPunchVelocity(-40,-60 + random()*20,0);
 };
 
 void()	s_explode1	=	[0,		s_explode2] {};
@@ -1182,92 +1207,83 @@ void() W_Attack =
 		return;
 	
 	makevectors	(self.v_angle + self.punchangle);		// calculate forward angle for velocity
-	self.show_hostile = time + 1;	// wake monsters up
-
-	if (self.weapon == IT_AXE)
+	
+	switch (self.weapon)
 	{
-		sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
-		katanaSwingStart();
-		/*r = random();
-		if (r < 0.25)
-			player_axe1 ();
-		else if (r<0.5)
-			player_axeb1 ();
-		else if (r<0.75)
-			player_axec1 ();
-		else
-			player_axed1 ();*/
-		self.attack_finished = time + 0.5;
-	}
-
-	else if (self.weapon == IT_SHOTGUN)
-	{
-		if (self.pistol_finished > time ) 
-			return;
-		
-		if (self.sprawlflags & SFL_SEMIAUTO && (self.pistol_finished + 0.3 > time))
-			return;
-		
-		self.sprawlflags |= SFL_SEMIAUTO;
-		animatePistolFire();
-		W_FirePistol ();
-		
-		self.pistol_finished = time + 0.3;
-		self.attack_finished = time + 0.15;
-	}
-
-	else if (self.weapon == IT_SUPER_SHOTGUN)
-	{
-		if (self.shotgun_finished > time ) 
-			return;
-		//player_shot1 ();
-		if (!self.wallrun) 
-			self.velocity += normalize(v_forward) * (-400);
+		case IT_AXE:
+			if (self.katana_finished > time)
+				return;
 			
-		animateShotgunFire();
-		W_FireSuperShotgun ();
-		self.shotgun_finished = time + 1.2;
-		self.attack_finished = time + 0.35;
-	}
+			katanaSwingStart();
+			break;
+			
+		case IT_SHOTGUN:
+			if (self.pistol_finished > time ) 
+				return;
+			
+			if (self.sprawlflags & SFL_SEMIAUTO && (self.pistol_finished + 0.2 > time))
+				return;
+			
+			self.sprawlflags |= SFL_SEMIAUTO;
+			animatePistolFire();
+			W_FirePistol ();
+			self.show_hostile = time + 1;	// wake monsters up	
+			
+			self.pistol_finished = time + 0.2;
+			self.attack_finished = time + 0.15;
+			break;
+			
+		case IT_SUPER_SHOTGUN:
+			if (self.shotgun_finished > time ) 
+				return;
+			//player_shot1 ();
+			if (self.wallrun) 
+				self.velocity += v_forward * (-200);
+			else
+				self.velocity += v_forward * (-400);
+			
+			animateShotgunFire();
+			W_FireSuperShotgun ();
+			self.show_hostile = time + 1;	// wake monsters up	
+			self.shotgun_finished = time + 1.2;
+			self.attack_finished = time + 0.35;
+			break;
+			
+		case IT_NAILGUN:
+			animateSMGFire();
+			self.show_hostile = time + 1;	// wake monsters up	
+			self.attack_finished = time + 0.05;
+			break;
+			
+		case IT_SUPER_NAILGUN:
+			animateChaingun();
+			break;
+			
+		case IT_GRENADE_LAUNCHER:
+			if (self.grenade_finished > time ) 
+				return;
 
-	else if (self.weapon == IT_NAILGUN)
-	{
-		animateSMGFire();
-		self.attack_finished = time + 0.05;
-		//player_nail1 ();
-	}
+			animateGrenadeFire();
+			W_FireGrenade();
+			self.show_hostile = time + 1;	// wake monsters up	
+			self.grenade_finished = time + 0.4;
+			self.attack_finished = time + 0.3;
+			break;
+			
+		case IT_ROCKET_LAUNCHER:
+			if (self.gauss_finished > time ) 
+				return;
 
-	else if (self.weapon == IT_SUPER_NAILGUN)
-	{
-		animateChaingun();
-		//player_nail1 ();
-	}
-
-	else if (self.weapon == IT_GRENADE_LAUNCHER)
-	{
-		if (self.grenade_finished > time ) 
-			return;
-
-		animateGrenadeFire();
-		W_FireGrenade();
-		self.grenade_finished = time + 0.6;
-		self.attack_finished = time + 0.3;
-	}
-
-	else if (self.weapon == IT_ROCKET_LAUNCHER)
-	{
-		if (self.gauss_finished > time ) 
-			return;
-
-		heatupGauss();
-	}
-
-	else if (self.weapon == IT_LIGHTNING)
-	{
-		self.weaponframe = 1;
-		player_light1();
-		self.attack_finished = time + 0.1;
-		sound (self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM);
+			heatupGauss();
+			break;
+			
+		case IT_LIGHTNING:
+			self.weaponframe = 1;
+			player_light1();
+			self.show_hostile = time + 1;	// wake monsters up	
+			self.attack_finished = time + 0.1;
+			sound (self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM);
+			break;
 	}
 };
 
@@ -1597,11 +1613,14 @@ void() W_WeaponFrame =
 	
 	if (self.b_melee && !(self.sprawlflags & SFL_STOPMELEE))
 	{
-		if (self.weapon == IT_AXE && time > self.attack_finished)
+		if (self.weapon == IT_AXE)
 		{
-			sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
-			katanaSwingStart();
-			self.attack_finished = time + 0.5;
+			if (time > self.attack_finished)
+			{
+				sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
+				katanaSwingStart();
+				self.attack_finished = time + 0.5;
+			}
 		// this is copy paste, should it be a separate method?
 		}
 		else
@@ -1611,9 +1630,6 @@ void() W_WeaponFrame =
 		}
 	}
 	
-	if (self.impulse)	// gb, stop wasting performance
-		ImpulseCommands ();
-	
 	if (self.sprawlflags & SFL_HOLD)
 	{
 		if (self.button0)
@@ -1621,6 +1637,9 @@ void() W_WeaponFrame =
 		else
 			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	}
+	
+	if (self.impulse)	// gb, stop wasting performance
+		ImpulseCommands ();
 		
 	if (time < self.attack_finished)
 		return;

@@ -438,8 +438,8 @@ void()	ogre_die1	=[	$death1,	ogre_die2	] {};
 void()	ogre_die2	=[	$death2,	ogre_die3	] {};
 void()	ogre_die3	=[	$death3,	ogre_die4	]
 {
-	self.solid = SOLID_NOT;
-	self.ammo_rockets = 2;DropBackpack();
+	self.ammo_rockets = 2;
+	DropBackpack();
 };
 
 void()	ogre_die4	=[	$death4,	ogre_die5	] {};
@@ -473,6 +473,7 @@ void()	ogre_bdie10	=[	$bdeath10,	ogre_bdie10	] {};
 
 void() ogre_die =
 {
+	self.solid = SOLID_NOT;
 	// check for gib
 	if (self.health < -80)
 	{

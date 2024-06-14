@@ -1166,6 +1166,29 @@ void Sbar_DrawFace (void)
 	Sbar_DrawPic (112, 0, Sbar_FacePic ());
 }
 
+void Sbar_DrawAdrenaline(void)
+{
+	
+	int baseLength;
+	int baseHeight;
+	int progress;
+	int color;
+
+	if (cl.engineflags & ENF_ADRENALINE_OFF)
+		color = 251;
+	else
+		color = 111;
+
+	baseHeight = (int)glheight / 240;
+	baseLength = (int)glwidth / 8;
+
+	GL_SetCanvas(CANVAS_DEFAULT);
+	progress = (int)(baseLength * (CLAMP(0, cl.stats[STAT_ADRENALINE], 255)) / 255);
+
+	Draw_Fill((int)glwidth * 0.5 - baseLength * 0.5 - 2, (int)glheight * 0.88 - 2, baseLength + 4, baseHeight + 4, 42, 255);
+	Draw_Fill((int)glwidth * 0.5 - baseLength * 0.5,	 (int)glheight * 0.88,	   baseLength,	   baseHeight,	   0,	255);
+	Draw_Fill((int)glwidth * 0.5 - baseLength * 0.5,	 (int)glheight * 0.88,	   progress,	   baseHeight,	   color, 255);
+}
 /*
 ===============
 Sbar_Draw
@@ -1258,6 +1281,7 @@ void Sbar_Draw (void)
 		{
 			if (scr_viewsize.value < 110) //johnfitz -- check viewsize instead of sb_lines
 			{
+				Sbar_DrawAdrenaline();
 				Sbar_DrawInventory ();
 				if (cl.maxclients != 1)
 					Sbar_DrawFrags ();
@@ -1267,6 +1291,7 @@ void Sbar_Draw (void)
 		{
 			if (scr_viewsize.value < 120)
 			{
+				Sbar_DrawAdrenaline();
 				Sbar_DrawInventoryQW();
 			}
 			if (cl.maxclients != 1 && scr_viewsize.value < 110)	// qw hides frag count if MiniDeathmatchOverlay is showing
@@ -1292,14 +1317,7 @@ void Sbar_Draw (void)
 				Sbar_DrawPicAlpha (0, 0, sb_sbar, scr_sbaralpha.value); //johnfitz -- scr_sbaralpha
 
 	   // keys (hipnotic only)
-			//MED 01/04/97 moved keys here so they would not be overwritten
-			if (hipnotic)
-			{
-				if (cl.items & IT_KEY1)
-					Sbar_DrawPic (209, 3, sb_items[0]);
-				if (cl.items & IT_KEY2)
-					Sbar_DrawPic (209, 12, sb_items[1]);
-			}
+
 		// armor
 			if (cl.items & IT_INVULNERABILITY)
 			{

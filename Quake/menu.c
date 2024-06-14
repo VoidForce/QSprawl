@@ -4449,6 +4449,7 @@ void M_Options_Mousemove (int cx, int cy)
 
 static const char* const bindnames[][2] =
 {
+	{"+gyroaction",		"Gyro switch"},
 	{"+forward",		"Move forward"},
 	{"+back",			"Move backward"},
 	{"+moveleft",		"Move left"},
@@ -4458,25 +4459,24 @@ static const char* const bindnames[][2] =
 	{"+movedown",		"Swim down"},
 	{"+speed",			"Run"},
 	{"+slide",			"Slide"},
-	{"+gyroaction",		"Gyro switch"},
 	{"",				""},
 	{"+attack",			"Attack"},
-	{"+attack2",		"Alternative attack"},
+	//{"+attack2",		"Alternative attack"},
 	{"+melee",			"Quick melee"},
-	{"+kick",			"Kick"},
+	//{"+kick",			"Kick"},
 	{"+adrenaline",		"Adrenaline"},
-	{"+reload",			"Reload"},
+	//{"+reload",			"Reload"},
 	{"+use",			"Use"},
 	{"impulse 10",		"Next weapon"},
 	{"impulse 12",		"Previous weapon"},
-	{"impulse 1",		"Axe"},
-	{"impulse 2",		"Shotgun"},
-	{"impulse 3",		"Super Shotgun"},
-	{"impulse 4",		"Nailgun"},
-	{"impulse 5",		"Super Nailgun"},
+	{"impulse 1",		"Katana"},
+	{"impulse 2",		"Revolver"},
+	{"impulse 3",		"Shotgun"},
+	{"impulse 4",		"Double SMGs"},
+	{"impulse 5",		"Chaingun"},
 	{"impulse 6",		"Grenade Launcher"},
-	{"impulse 7",		"Rocket Launcher"},
-	{"impulse 8",		"Thunderbolt"},
+	{"impulse 7",		"Gauss Rifle"},
+	{"impulse 8",		"Shock Cannon"},
 };
 
 #define	NUMCOMMANDS		Q_COUNTOF(bindnames)

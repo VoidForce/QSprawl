@@ -256,6 +256,7 @@ void() dog_dieb9		=[	$deathb9,	dog_dieb9	] {};
 
 void() dog_die =
 {
+	self.solid = SOLID_NOT;
 	// check for gib
 	if (self.health < -35)
 	{
@@ -269,7 +270,6 @@ void() dog_die =
 
 	// regular death
 	sound (self, CHAN_VOICE, "dog/ddeath.wav", 1, ATTN_NORM);
-	self.solid = SOLID_NOT;
 
 	if (random() > 0.5)
 		dog_die1 ();

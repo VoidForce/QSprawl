@@ -783,6 +783,11 @@ void CL_ParseClientdata (void)
 		cl.stats[STAT_ITEMS] = i;
 	}
 
+	if (bits & SU_ENGINEFLAGS)
+		cl.engineflags = MSG_ReadShort();
+	else
+		cl.engineflags = 0;
+
 	cl.onground = (bits & SU_ONGROUND) != 0;
 	cl.inwater = (bits & SU_INWATER) != 0;
 
@@ -860,6 +865,14 @@ void CL_ParseClientdata (void)
 		Sbar_Changed();
 	}
 
+	i = MSG_ReadByte();
+	
+	if (cl.stats[STAT_ADRENALINE] != i)
+	{
+		cl.stats[STAT_ADRENALINE] = i;
+		Sbar_Changed();
+	}
+
 	i = MSG_ReadByte ();
 
 	if (standard_quake)
@@ -897,12 +910,7 @@ void CL_ParseClientdata (void)
 	CL_SetHudStat (STAT_ROCKETS);
 	CL_SetHudStat (STAT_CELLS);
 	CL_SetHudStat (STAT_BULLETS);
-
-	//qsprawl
-	if (bits & SU_HITMARKER)
-		cl.hitmarker = 1;
-	else
-		cl.hitmarker = 0;
+	CL_SetHudStat (STAT_ADRENALINE);
 
 	//johnfitz -- lerping
 	//ericw -- this was done before the upper 8 bits of cl.stats[STAT_WEAPON] were filled in, breaking on large maps like zendar.bsp

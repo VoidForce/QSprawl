@@ -131,10 +131,11 @@ void() f_attack18       =[      $attack18,      f_run1    ] {ai_charge(10);};
 
 void() f_death1 =[      $death1,        f_death2        ] 
 {
+	self.solid = SOLID_NOT;
 	sound (self, CHAN_VOICE, "fish/death.wav", 1, ATTN_NORM);
 };
 
-void() f_death2 =[      $death2,        f_death3        ] {self.solid = SOLID_NOT;};	// gb, become nonsolid faster
+void() f_death2 =[      $death2,        f_death3        ] {};	// gb, become nonsolid faster
 void() f_death3 =[      $death3,        f_death4        ] {};
 void() f_death4 =[      $death4,        f_death5        ] {};
 void() f_death5 =[      $death5,        f_death6        ] {};

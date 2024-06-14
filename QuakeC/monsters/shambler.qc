@@ -345,7 +345,7 @@ void(entity attacker, float damage)	sham_pain =
 
 void() sham_death1      =[      $death1,       sham_death2     ] {};
 void() sham_death2      =[      $death2,       sham_death3     ] {};
-void() sham_death3      =[      $death3,       sham_death4     ] {self.solid = SOLID_NOT;};
+void() sham_death3      =[      $death3,       sham_death4     ] {};
 void() sham_death4      =[      $death4,       sham_death5     ] {};
 void() sham_death5      =[      $death5,       sham_death6     ] {};
 void() sham_death6      =[      $death6,       sham_death7     ] {};
@@ -357,6 +357,7 @@ void() sham_death11     =[      $death11,      sham_death11    ] {};
 
 void() sham_die =
 {
+	self.solid = SOLID_NOT;
 	// check for gib
 	if (self.health < -60)
 	{

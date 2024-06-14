@@ -243,14 +243,11 @@ void(entity attacker, float damage)	enf_pain =
 
 //============================================================================
 
-
-
-
 void()	enf_die1	=[	$death1,	enf_die2	] {};
 void()	enf_die2	=[	$death2,	enf_die3	] {};
 void()	enf_die3	=[	$death3,	enf_die4	]
 {
-	self.solid = SOLID_NOT;self.ammo_cells = 5;
+	self.ammo_cells = 5;
 	DropBackpack();
 };
 
@@ -286,6 +283,7 @@ void()	enf_fdie11	=[	$fdeath11,	enf_fdie11	] {};
 
 void() enf_die =
 {
+	self.solid = SOLID_NOT;
 	setHead('0 0 0');
 	// check for gib
 	if (self.health < -35)

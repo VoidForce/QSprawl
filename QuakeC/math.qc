@@ -63,6 +63,20 @@ float() crandom =
 {
 	return 2*(random() - 0.5);
 };
+
+float(float x, float y) pow =
+{
+	if (y < 0)
+		return 0;
+	float c;
+	c = 1;
+	while (y)
+	{
+		c *= x;
+		y--;
+	}
+	return c;
+};
 /*
 use entity(vector raypoint, vector direction, vector point) distancetoray = #702; instead;
 float(vector raypoint, vector direction, vector point) DistanceToLine =

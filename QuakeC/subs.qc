@@ -699,3 +699,15 @@ vector(entity target) findHeadPosition =
 	
 	return result;
 };
+
+void weaponThink(void() thinkfunc, float timer) =
+{
+	if (self.sprawlflags & SFL_INQUICKMELEE)
+	{
+		// somehow we get into think after quickmelee started, reset frame and cancel current think
+		self.weaponframe = 1;
+		return;
+	}
+	self.think = thinkfunc;
+	self.nextthink = time + timer;
+};

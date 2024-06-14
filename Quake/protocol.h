@@ -80,7 +80,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_VELOCITY1	(1<<5)
 #define	SU_VELOCITY2	(1<<6)
 #define	SU_VELOCITY3	(1<<7)
-#define	SU_HITMARKER	(1<<8)  // qSprawl Hitmarker, the bit is it
+#define	SU_ENGINEFLAGS	(1<<8)  // qSprawl Hitmarker, the bit is it
 #define	SU_ONGROUND		(1<<9)	// no data follows, the bit is it
 #define	SU_INWATER		(1<<10)	// no data follows, the bit is it
 #define	SU_WEAPONFRAME	(1<<11)
@@ -89,6 +89,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SU_WEAPONALPHA	(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
 #define SU_VIEWMODEL	(1<<15)
 
+#define ENF_HITMARKER		1
+#define ENF_ADRENALINE_OFF	(1<<1)
 //#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
 /*
 #define	SU_VIEWHEIGHT	(1<<0)

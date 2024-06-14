@@ -157,13 +157,15 @@ typedef struct
 	float		phys_acceleration;
 	float		phys_airacceleration;
 	float		phys_airfriction;
+	float		player_inputs;
 	float		entity_type;
 	float		wallrun;
 	vec3_t		wall_normal;
 	float		wall_jumps;
-	float		hitmarker;
 	vec3_t		viewmodeloffset_origin;
 	vec3_t		viewmodeloffset_angles;
+	float		adrenaline;
+	float		engineflags;
 } entvars_t;
 
-#define PROGHEADER_CRC 65443
+#define PROGHEADER_CRC 32221

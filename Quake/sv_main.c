@@ -59,6 +59,7 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	statsf[STAT_ROCKETS] = ent->v.ammo_rockets;
 	statsf[STAT_CELLS] = ent->v.ammo_cells;
 	statsf[STAT_BULLETS] = ent->v.ammo_bullets;
+	statsf[STAT_ADRENALINE] = ent->v.adrenaline*255;
 	statsf[STAT_ACTIVEWEAPON] = ent->v.weapon;	//sent in a way that does NOT depend upon the current mod...
 
 	//FIXME: add support for clientstat/globalstat qc builtins.
@@ -1063,8 +1064,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	bits |= SU_WEAPON;
 	if (bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
 
-	if (ent->v.hitmarker)
-		bits |= SU_HITMARKER;
+	if ((int)ent->v.engineflags)
+		bits |= SU_ENGINEFLAGS;
 	/*
 	if (bits >= 65536) bits |= SU_EXTEND1; //?
 	if (bits >= 16777216) bits |= SU_EXTEND2; //?
@@ -1109,6 +1110,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	}
 
 	MSG_WriteLong (msg, items); // long 4
+	if (bits & SU_ENGINEFLAGS)
+		MSG_WriteShort(msg, ent->v.engineflags);
 
 	if (bits & SU_WEAPONFRAME)
 		MSG_WriteShort (msg, ent->v.weaponframe); // short (new) 2
@@ -1125,6 +1128,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1
 	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1
 	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1
+
+	MSG_WriteByte (msg, ent->v.adrenaline * 255);
 
 	if (standard_quake)
 	{

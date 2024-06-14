@@ -111,6 +111,7 @@ particle_t *R_AllocParticle (void)
 		p->spawn = cl.time - 0.001;
 		return p;
 	}
+	Con_DPrintf("Out of Particles\n");
 	return NULL;
 }
 
@@ -770,7 +771,9 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 	particle_t* p;
 	vec3_t direction;
 	vec3_t side, up;
+	vec3_t offset;
 	int i, j, k, odd, lookup_index;
+	float additionalvelocity;
 
 	VectorSubtract(shooter, impact, direction);
 	VectorNormalize(direction);
@@ -843,7 +846,23 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 		break;
 	case IMPACT_GAUSS_EXIT: // solid, penetrating, exit hole
 		// high intensity forward blast with gravity, glow
+		VectorInverse(direction);
+		for (i = 0; i < 64; i++)
+		{
+			if (!(p = R_AllocParticle()))
+				return;
 
+			p->ramp = -5 - i;
+			p->color = 0x0f;
+			p->type = pt_gaussexit;
+			//p->type = pt_grav;
+			VectorAdd(impact, direction, offset);
+			VectorCopy(offset, p->org);
+			//VectorCopy(vec3_origin, p->vel);
+			additionalvelocity = 10;
+			VectorCopy(direction, p->vel);
+			VectorScale(p->vel, additionalvelocity, p->vel);
+		}
 		break;
 	}
 }
@@ -995,7 +1014,7 @@ void CL_RunParticles (void)
 {
 	particle_t		*p;
 	int				i, cur, active;
-	float			time1, time2, time3, dvel, frametime, grav;
+	float			time1, time2, time3, dvel, frametime, grav, save;
 	extern	cvar_t	sv_gravity;
 
 	frametime = cl.time - cl.oldtime;
@@ -1064,6 +1083,25 @@ void CL_RunParticles (void)
 			else if ((int)p->ramp > 0)
 				p->color = spark[(int)p->ramp];
 			break;
+
+		case pt_gaussexit:
+			p->ramp += time1;
+			if (p->ramp > 40)
+				p->die = -1;
+			if ((int)p->ramp == 0)
+			{
+				p->vel[0] += (rand() % 40) - 20;
+				p->vel[1] += (rand() % 40) - 20;
+				p->vel[2] += (rand() % 40) - 20;
+			}
+			if (p->ramp > 0)
+			{
+				save = p->vel[2];
+				//VectorScale(p->vel, 0.99, p->vel);
+				p->vel[2] = save - grav * (int)p->ramp * 0.1;
+			}
+			break;
+
 		case pt_fire:
 			p->ramp += time1;
 			if (p->ramp >= 6)

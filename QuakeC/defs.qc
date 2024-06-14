@@ -242,13 +242,15 @@ void		end_sys_globals;		// flag for structure dumping
 .float		phys_acceleration;
 .float		phys_airacceleration;
 .float		phys_airfriction;
+.float		player_inputs;
 .float		entity_type;
 .float		wallrun;
 .vector		wall_normal;
 .float 		wall_jumps;
-.float		hitmarker;
 .vector		viewmodeloffset_origin;
 .vector     viewmodeloffset_angles;
+.float		adrenaline; // [0 .. 1]
+.float		engineflags;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -513,6 +515,11 @@ const float	AS_MISSILE		= 4;
 //
 #define IGNOREMONSTERS 1
 #define ALLOWMONSTERS 0
+#define COMBO_RESET_TIME 0.25
+// ENGINE FLAGS, USED ON THE ENGINE SIDE FOR THINGS, ALWAYS SENT
+const float ENF_HITMARKER = 1;
+const float ENF_ADRENALINE_OFF = 2;
+
 
 const float IMPACT_NORMAL = 0;
 const float IMPACT_GAUSS_FINAL = 1; // solid, endpoint
@@ -526,9 +533,12 @@ const float IMPACT_GAUSS_ROBOT = 7; // mech/robot sparks
 const float BT_FLESH_RED = 0; // human
 const float BT_FLESH_BLUE = 1; // cyborg
 const float BT_ROBOT = 2; // mech/robot
-
-const float MF_CROUCHINAIR			= 1;
-const float	MF_INSLIDE				= 2;
+// movement flags
+const float MF_CROUCHINAIR = 1;
+const float	MF_INSLIDE = 2;
+const float MF_LEFTLEG = 4;
+const float MF_JUMPDISABLED = 8;
+//muzzleflash
 const float	MF_PISTOL = 1;
 const float	MF_SHOTGUN = 2;
 const float	MF_SMG = 3;
@@ -543,6 +553,7 @@ const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
 
 const float TYPE_GENERAL = 0;
 const float TYPE_PLAYER = 1;
+
 const float SLIDE_OFFSET = 10;
 const float STANDART_OFFSET = 22;
 const float SLIDE_STOPSPEED		= 100;
@@ -554,7 +565,15 @@ const float SFL_INQUICKMELEE = 8;
 const float SFL_STOPMELEE = 16;
 const float SFL_HOLD = 32;
 const float SFL_INERTIA = 64;
-const float SFL_VMOFFSET = 128; // we need to make something about viewmodel
+const float SFL_VMOFFSET = 128; // TODO: i need to make something about viewmodel
+const float SFL_NEEDTOSETSPEED = 256;
+const float SFL_SPRINT = 512;
+// movement inputs
+const float MOVE_FORWARD = 1;
+const float MOVE_BACKWARD = 2;
+const float MOVE_RIGHT = 4;
+const float MOVE_LEFT = 8;
+const float MOVE_NONE = 0;
 
 const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
 const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
@@ -562,11 +581,12 @@ const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.38
 const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
 //
 .float		sprawlflags;
+.float		katana_finished;
+.float		katanasound_finished;
 .float		pistol_finished;
 .float		shotgun_finished;
 .float		gauss_finished;
 .float		grenade_finished;
-.float		rocket_finished;
 
 .float		chaingun_speed;
 .float		chaingun_frame;
@@ -588,6 +608,18 @@ entity		grenade_handler; // global
 .string		quickmelee_model; // stores the current weapon model;
 .float		quickmelee_weapon;
 .float		hitmarker_time;
+
+.float		current_speed;
+.float		speedmodifier;
+.float		adrenaline_regentimer;
+.float		dodge_time;
+.float		combo;
+.float		combo_index;
+.float		combo_index_head;
+.vector		combo_queue;
+.float		combo_timer;
+.float		saved_inputs;
+.float		saved_inputs_old;
 // monsters stuff ----------------------------------------------------------------------------------------------------------
 .vector		head_offset;
 .float		head_size;
@@ -627,6 +659,7 @@ entity		grenade_handler; // global
 .float		slide_active;
 .float 		jump_timer;
 .float		crouch_timer;
+.float		footstep_timer;
 .float		movementflags;
 
 //

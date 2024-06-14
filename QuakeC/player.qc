@@ -183,22 +183,21 @@ void() animatePistolFire =
 {
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	self.weaponframe = 1;
-	self.think = loopPistolFire;
-	self.nextthink = time + 0.1;
+	weaponThink(loopPistolFire, 0.1);
 };
 
 void() loopPistolFire =
 {
 	self.weaponframe++;
-	self.nextthink = time + 0.1;
 
 	if (self.weaponframe > 9)
 	{
-		self.think = player_run;
+		weaponThink(player_run, 0.1);
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		self.think = loopPistolFire;
+		weaponThink(loopPistolFire, 0.1);
+	
 };
 //------------------------------------------
 // Shotgun
@@ -206,14 +205,12 @@ void() animateShotgunFire =
 {
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	self.weaponframe = 1;
-	self.think = loopShotgunFire;
-	self.nextthink = time + 0.05;
+	weaponThink(loopShotgunFire, 0.05);
 };
 
 void() loopShotgunFire =
 {
 	self.weaponframe++;
-	self.nextthink = time + 0.05;
 	
 	if (self.weaponframe == 10)
 		makePunch([0,-8,0], [0,-5,0], [0,0,0]);
@@ -224,11 +221,11 @@ void() loopShotgunFire =
 	}
 	if (self.weaponframe > 29)
 	{
-		self.think = player_run;
+		weaponThink(player_run, 0.05);
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		self.think = loopShotgunFire;
+		weaponThink(loopShotgunFire, 0.05);
 };
 //------------------------------------------
 // SMG
@@ -246,22 +243,21 @@ void() animateSMGFire =
 		self.weaponframe = floor(15 + random()*2);
 	}
 	self.sprawlflags = SFL_LEFTHAND ^ self.sprawlflags; // switch the bit
-	self.think = loopSMGFire;
-	self.nextthink = time + 0.05;
+
+	weaponThink(loopSMGFire, 0.05);
 };
 
 void() loopSMGFire =
 {
 	self.weaponframe++;
-	self.nextthink = time + 0.05;
 
 	if ((self.weaponframe > 13 && !(self.sprawlflags & SFL_LEFTHAND)) || (self.weaponframe > 27 && self.sprawlflags & SFL_LEFTHAND))
 	{
-		self.think = player_run;
+		weaponThink(player_run, 0.05);
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		self.think = loopSMGFire;
+		weaponThink(loopSMGFire, 0.05);
 };
 //------------------------------------------
 // Grenade Launcher
@@ -269,8 +265,7 @@ void() animateGrenadeFire =
 {
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	self.weaponframe = 1;
-	self.think = loopGrenadeFire;
-	self.nextthink = time + 0.05;
+	weaponThink(loopGrenadeFire, 0.05);
 };
 
 void() loopGrenadeFire =
@@ -280,11 +275,11 @@ void() loopGrenadeFire =
 
 	if (self.weaponframe > 17)
 	{
-		self.think = player_run;
+		weaponThink(player_run, 0.05);
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		self.think = loopGrenadeFire;
+		weaponThink(loopGrenadeFire, 0.05);
 };
 //------------------------------------------
 // Gauss
@@ -300,39 +295,35 @@ void() heatupGauss =
 	
 	// mark hold
 	self.sprawlflags |= SFL_HOLD;
-	self.think = heatupGaussLoop; 
-	self.nextthink = time + 0.03;
+	weaponThink(heatupGaussLoop, 0.03);
 };
 
 void() heatupGaussLoop = 
 {
 	self.weaponframe++;
-	self.nextthink = time + 0.03;
 	
 	if (self.weaponframe > GAUSS_FIREFRAME)
 	{
 		W_FireGauss();
-		self.think = postGaussFire;
+		weaponThink(postGaussFire, 0.03);
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 		self.gauss_finished = time + 1;
 		self.attack_finished = time + 0.2;
 		return;
 	}
 	else if (!self.button0)
-		self.think = cooldownGaussLoop;
+		weaponThink(cooldownGaussLoop, 0.03);
 	else
-		self.think = heatupGaussLoop; 
+		weaponThink(heatupGaussLoop, 0.03);
 };
 
 void() cooldownGaussLoop =
 {
 	self.weaponframe--;
 	if (self.weaponframe < 1)
-		self.think = player_run;
+		weaponThink(player_run, 0.03);
 	else
-		self.think = cooldownGaussLoop;
-	
-	self.nextthink = time + 0.03;
+		weaponThink(cooldownGaussLoop, 0.03);
 };
 
 void() postGaussFire =
@@ -340,38 +331,74 @@ void() postGaussFire =
 	self.weaponframe++;
 	if (self.weaponframe > 47)
 	{
-		self.think = player_run;
+		weaponThink(player_run, 0.05);
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		self.think = postGaussFire;
-	self.nextthink = time + 0.05;
+		weaponThink(postGaussFire, 0.05);
 };
 //------------------------------------------
 // Katana
 void() katanaSwingStart = 
 {
 	self.weaponframe = 1;
-	self.think = katanaSwingLoop;
-	self.nextthink = time + 0.05;
+	self.sprawlflags |= SFL_HOLD | SFL_SPRINT;
+	weaponThink(katanaSwingLoop, 0.035);
 };
 
 void() katanaSwingLoop = 
 {
-	self.weaponframe++;
-	self.nextthink = time + 0.05;
+	if (self.button0 && self.sprawlflags & SFL_HOLD)
+	{
+		weaponThink(katanaSwingLoop, 0.1);
+		return;
+	}
 	
+	if (self.weaponframe == 1)
+	{
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+		self.attack_finished = time + 0.3;
+		self.katana_finished = time + 0.4;
+		addPunchVelocity(30,-150,20);
+	}
+	
+	self.weaponframe++;
+	
+	if (self.weaponframe == 2)
+		sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
 	if (self.weaponframe == 4)
+	{
+		W_FireAxe();
+		if (self.speedmodifier > 1.25)
+		{
+			self.touch = playerBump;
+			self.movementflags |= MF_JUMPDISABLED;
+			makevectors(self.v_angle);
+			self.velocity += [v_forward_x, v_forward_y, 0] * 400 * (self.speedmodifier - 1.0);
+			SetMovementParams_Slide();
+			consumeAdrenaline(0, 0.3);
+		}
+		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
+	}
+	
+	if (self.weaponframe > 4 && self.weaponframe < 8 && self.movementflags & MF_JUMPDISABLED)
 		W_FireAxe();
 	
+	if (self.weaponframe == 8 )
+	{
+		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
+		if (!self.b_slide)
+			SetMovementParams_Standard();
+	}
+
 	if (self.weaponframe > 39)
 	{
 		self.sprawlflags |= SFL_RESETWEAPONFRAME;
-		self.think = player_run;
-		self.attack_finished = time + 0.2;
+		//self.attack_finished = time + 0.2;
+		weaponThink(player_run, 0.05);
 	}
 	else
-		self.think = katanaSwingLoop;
+		weaponThink(katanaSwingLoop, 0.035);
 };
 //------------------------------------------
 // Quick Melee
@@ -384,7 +411,7 @@ void() quickMeleeStart =
 	sound (self, CHAN_AUTO, "weapons/ax1.wav", 1, ATTN_NORM);
 	self.weaponframe = 1;
 	self.think = quickMeleeLoop;
-	self.nextthink = time + 0.05;
+	self.nextthink = time + 0.01;
 };
 
 void() quickMeleeLoop = 
@@ -410,8 +437,7 @@ void() quickMeleeLoop =
 void() animateChaingun =
 {
 	self.sprawlflags |= SFL_HOLD;
-	self.think = spinChaingunLoop;
-	self.nextthink = time + 0.02;
+	weaponThink(spinChaingunLoop, 0.02);
 };
 
 const float SPIN_STARTFRAME = 1;
@@ -440,8 +466,7 @@ void() spinChaingunLoop =
 	if (!self.button0)
 	{
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
-		self.think = spinDownLoop;
-		self.nextthink = time + 0.02;
+		weaponThink(spinDownLoop, 0.02);
 		return;
 	}
 	self.weaponframe++;
@@ -474,11 +499,11 @@ void() spinChaingunLoop =
 	}
 
 	self.chaingun_frame = self.weaponframe;
-	self.think = spinChaingunLoop;
+
 	if (self.weaponframe < SPIN_ENDFRAME)
-		self.nextthink = time + 0.02 + 0.04 * (1 - self.chaingun_speed);
+		weaponThink(spinChaingunLoop, 0.02 + 0.04 * (1 - self.chaingun_speed));
 	else
-		self.nextthink = time + 0.02;
+		weaponThink(spinChaingunLoop, 0.02);
 };
 
 void() spinDownLoop =
@@ -500,71 +525,12 @@ void() spinDownLoop =
 		self.chaingun_speed = 0;
 	
 	if (self.chaingun_speed == 0)
-		self.think = player_run;
+		weaponThink(player_run, 0.05);
 	else
-		self.think = spinDownLoop;
+		weaponThink(spinDownLoop, 0.02 + 0.04 * (1 - self.chaingun_speed));
 
 	self.chaingun_frame = self.weaponframe;
-	self.nextthink = time + 0.02 + 0.04 * (1 - self.chaingun_speed);
 };
-//89 112
-/*
-void() heatupGauss =
-{
-	if (self.weaponframe > GAUSS_FIREFRAME)
-		self.weaponframe = 1;
-	else
-		self.weaponframe++;
-
-	self.sprawlflags |= SFL_HOLD;
-	self.think = heatupGaussLoop; 
-	self.nextthink = time + 0.03;
-};
-
-void() heatupGaussLoop = 
-{
-	self.weaponframe++;
-	self.nextthink = time + 0.03;
-	
-	if (self.weaponframe > GAUSS_FIREFRAME)
-	{
-		W_FireGauss();
-		self.think = postGaussFire;
-		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
-		self.gauss_finished = time + 1;
-		self.attack_finished = time + 0.2;
-		return;
-	}
-	else if (!self.button0)
-		self.think = cooldownGaussLoop;
-	else
-		self.think = heatupGaussLoop; 
-};
-
-void() cooldownGaussLoop =
-{
-	self.weaponframe--;
-	if (self.weaponframe < 1)
-		self.think = player_run;
-	else
-		self.think = cooldownGaussLoop;
-	
-	self.nextthink = time + 0.05;
-};
-
-void() postGaussFire =
-{
-	self.weaponframe++;
-	if (self.weaponframe > 47)
-	{
-		self.think = player_run;
-		self.sprawlflags |= SFL_RESETWEAPONFRAME;
-	}
-	else
-		self.think = postGaussFire;
-	self.nextthink = time + 0.05;
-};
-*/
 
 void()	player_shot1 =	[$shotatt1, player_shot2	] 
 {

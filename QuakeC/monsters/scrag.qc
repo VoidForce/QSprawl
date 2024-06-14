@@ -353,7 +353,7 @@ void()	wiz_death1	=[	$death1,		wiz_death2	]
 };
 
 void()	wiz_death2	=[	$death2,		wiz_death3	] {};
-void()	wiz_death3	=[	$death3,		wiz_death4	] {self.solid = SOLID_NOT;};
+void()	wiz_death3	=[	$death3,		wiz_death4	] {};
 void()	wiz_death4	=[	$death4,		wiz_death5	] {};
 void()	wiz_death5	=[	$death5,		wiz_death6	] {};
 void()	wiz_death6	=[	$death6,		wiz_death7	] {};
@@ -362,6 +362,7 @@ void()	wiz_death8	=[	$death8,		wiz_death8	] {};
 
 void() wiz_die =
 {
+	self.solid = SOLID_NOT;
 // check for gib
 	if (self.health < -40)
 	{

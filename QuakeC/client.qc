@@ -569,6 +569,9 @@ void() PutClientInServer =
 	self.phys_acceleration = 13;
 	self.phys_airacceleration = 10;
 	self.phys_airfriction = 0.1;
+	self.speedmodifier = 1;
+	self.adrenaline = 1;
+	//self.touch = playerBump;
 
 	self.show_hostile = 0;
 	self.max_health = 100;
@@ -830,6 +833,10 @@ void() PlayerJump =
 	local float jump_force;
 	local float speed_fatigue;
 	local float speed2d;
+	
+	if (self.movementflags & MF_JUMPDISABLED)
+		return;
+	
 	if (self.flags & FL_WATERJUMP)
 		return;
 	
@@ -1049,7 +1056,7 @@ void() SetMovementParams_Standard =
 {
 	self.phys_acceleration = 13;
 	self.phys_friction = 8;
-	self.phys_speed = 320;
+	self.phys_speed = 320 * self.speedmodifier;
 };
 
 void() ResetSlowmotion =
@@ -1057,6 +1064,324 @@ void() ResetSlowmotion =
 	slowmotion_time = 0;
 	slowmotion = 0;
 	change_timescale(0);
+};
+
+float(float amount_frametime, float amount) consumeAdrenaline =
+{
+	if (self.engineflags & ENF_ADRENALINE_OFF || self.adrenaline_regentimer > time)
+		return 1;
+
+	self.adrenaline -= amount_frametime * frametime;
+	self.adrenaline -= amount;
+	
+	if (self.adrenaline <= 0)
+	{
+		self.adrenaline_regentimer = time + 3;
+		self.engineflags |= ENF_ADRENALINE_OFF;
+		self.adrenaline = 0;
+	}
+	return 0;
+};
+
+void() regenAdrenaline =
+{
+	if (self.adrenaline_regentimer < time)
+	{
+		self.engineflags -= self.engineflags & ENF_ADRENALINE_OFF;
+	}
+	
+	if (self.adrenaline < 0.5 )
+	{
+		self.adrenaline += frametime * 0.15;
+		self.adrenaline = min(self.adrenaline, 0.5);
+	}
+	else
+	{
+		self.adrenaline += frametime * 0.1;
+		self.adrenaline = min(self.adrenaline, 1);
+	}
+};
+
+//-------------------------------------------- DASH JUMPS -- BEGIN -------------------------------------
+
+const float BACKJUMP[2] = {MOVE_BACKWARD,MOVE_BACKWARD};
+const float FRONTJUMP[2] = {MOVE_FORWARD,MOVE_FORWARD};
+const float LEFTJUMP[2] = {MOVE_LEFT, MOVE_LEFT}; // count diagonals too
+const float RIGHTJUMP[2] = {MOVE_RIGHT, MOVE_RIGHT};
+
+float (entity who) traceDown =
+{
+	traceline(who.origin, who.origin + '0 0 -64', IGNOREMONSTERS, self);
+	if (trace_fraction != 1)
+		return 1;
+	else 
+		return 0;
+};
+
+float (entity who, vector dir_forward, vector dir_right) traceWall =
+{
+	traceline(who.origin, who.origin + dir_forward + dir_right + '0 0 -24', ALLOWMONSTERS, self);
+	if (trace_fraction != 1)
+		return 1;
+	else 
+		return 0;
+};
+
+void(float fwall, float rwall, float fvel, float rvel, float onground) makeDodge =
+{
+	if (self.b_slide)
+		return;
+	if (self.engineflags & ENF_ADRENALINE_OFF)
+		return;
+// on ground, slightly above ground
+	if ((self.weapon == IT_AXE || onground) && (self.flags & FL_ONGROUND || traceDown(self))) // ground dodge in priority over wall dodge
+	{
+		makevectors(self.angles);
+		self.flags -= self.flags & FL_ONGROUND;
+		//self.customflags |= CF_DODGE; // allow one jump after dodge
+		self.velocity += v_forward * fvel + v_right * rvel + '0 0 160';
+		self.dodge_time = time + 0.5;
+		consumeAdrenaline(0, 0.2);
+		// make jump sound here
+	}
+	else 
+	{
+	//wall in the opposite side of dodge direction
+		makevectors(self.angles);
+		if (!(self.flags & FL_ONGROUND) && traceWall(self, fwall * v_forward, rwall * v_right))
+		{
+			self.velocity += v_forward * fvel * 0.65 + v_right * rvel * 0.65; // + '0 0 -100'
+			//if (self.velocity_z < 270)
+			//	self.velocity_z = 270;
+			self.velocity_z = 0;
+			self.dodge_time = time + 0.5;
+			consumeAdrenaline(0, 0.2);
+			// make jump sound here
+		}
+	}
+};
+#define DODGE_SPEED 500
+void() checkPressCombo =
+{
+	local float i;
+	local float action;
+	local float combo1,combo2,combo3,combo4; 
+
+	for (i = 0; i < 3; i++)
+	{
+		action = readQueue(i);
+	// no more actions to read, cancel
+		if (!action)
+			return;
+	// front jump, combo1
+		if ( FRONTJUMP[combo1] == action)
+			combo1++;
+		else
+			combo1 = 0;
+		
+		if (combo1 == 2)
+		{
+			if (self.dodge_time < time)
+				makeDodge(-96, 0, DODGE_SPEED, 0, 0); // forward wall, righ wall, forward velocity, right velocity
+			resetQueue();
+			return;
+		}
+	// back jump, combo2	
+		if ( BACKJUMP[combo2] == action)
+			combo2++;
+		else
+			combo2 = 0;
+		
+		if (combo2 == 2)
+		{
+			if (self.dodge_time < time)
+				makeDodge(96, 0, -DODGE_SPEED, 0, 1); // backwards dodge allowed on the ground
+			resetQueue();
+			return;
+		}
+	// left jump, combo3	
+		if (LEFTJUMP[combo3] & action)
+		{
+			combo3++;
+			//dprint(" True! ");
+		}
+		else
+			combo3 = 0;
+
+		if (combo3 == 2)
+		{		
+			if (self.dodge_time < time)
+				makeDodge(0, 96, 0, -DODGE_SPEED, 0);
+			resetQueue();
+			return;
+		}
+	// right jump, combo4
+		if (RIGHTJUMP[combo4] & action)
+			combo4++;
+		else
+			combo4 = 0;
+		
+		if (combo4 == 2)
+		{
+			if (self.dodge_time < time)
+				makeDodge(0, -96, 0, DODGE_SPEED, 0);
+			resetQueue();
+			return;
+		}
+	}
+};
+
+void() resetQueue =
+{
+	self.combo = 0;
+	self.combo_timer = 0;
+	self.combo_index = 0;
+	self.combo_index_head = 0;
+	self.combo_queue = [0,0,0];
+};
+
+float(float i) readQueue =
+{
+	local float j; // keep i untouched
+// playing safe here, ok?
+	if (self.combo_index_head < 0 || self.combo_index_head > 2)
+	{
+		dprint(" ERROR! .combo_index_head out of range (client.qc, pushQueue) \n");
+		self.combo_index = 0;
+		self.combo_index_head = 0;
+		self.combo_queue = [0,0,0];
+		return 0;
+	}
+	
+	j = self.combo_index_head + i;
+	
+	if (j > 2)
+		j -= 3;
+	
+	return self.combo_queue[j];
+};
+
+// 0..2 is boundaries of vector array
+void(float value) pushQueue =
+{
+// playing safe here, ok?
+	if (self.combo_index < 0 || self.combo_index > 2)
+	{
+		dprint(" ERROR! .combo_index out of range (client.qc, pushQueue) \n");
+		self.combo_index = 0;
+		self.combo_index_head = 0;
+		self.combo_queue = [0,0,0];
+		return;
+	}
+
+	self.combo_queue[self.combo_index] = value;
+	
+	self.combo_index++;
+// loop i
+	if (self.combo_index > 2)
+	{
+		self.combo_index = 0;
+		self.combo_index_head++;
+	}
+	else if (self.combo_index_head)
+		self.combo_index_head++;
+
+// loop head
+	if (self.combo_index_head > 2)
+		self.combo_index_head = 0;
+};
+
+void() catchComboInput =
+{
+	local float i;
+	local float current_bit;
+	local float changed_bits;
+// we not pressing buttons fast enough, reset
+	if (self.combo_timer && self.combo_timer < time)
+		resetQueue();
+	
+	if (self.player_inputs && (self.saved_inputs != self.player_inputs))
+	{
+		for (i = 0; i < 4; i++)
+		{
+			//current_bit = (1 << i); -- why does bit shift not working???
+			current_bit = pow (2,i);
+			if ( !(current_bit & self.saved_inputs) && current_bit & self.player_inputs) // bit was 0 became 1
+				changed_bits |= current_bit; //store it
+		}
+		
+		if (changed_bits)
+		{
+			pushQueue(changed_bits); // push all bits that was changed, this way we can check both perfect (1 key) and non-perfect combos
+			self.combo_timer = time + COMBO_RESET_TIME;
+		}
+	}
+	
+	checkPressCombo();
+};
+/*
+MOVE_FORWARD
+MOVE_BACKWARD
+MOVE_RIGHT
+MOVE_LEFT
+MOVE_NONE
+*/
+void() checkMovementInput =
+{
+// directional keys, there are 8 possible cases (9 if we count no movement), and only one active at a time
+// full reset 
+
+	catchComboInput();
+// Important! must be set after all the input/combo checks
+// any of this shouldn't be modified outside of body of this procedure
+	self.saved_inputs = self.player_inputs;
+};
+
+//------------------------------------------------------ DASH JUMPS -- END -----------------------------------
+
+void() kickFootsteps =
+{
+	local float intensity;
+	
+	if (self.footstep_timer > time)
+		return;
+	
+	intensity = self.speedmodifier - 1.0;
+	
+	self.footstep_timer = time + 0.3;
+	
+	if (self.movementflags & MF_LEFTLEG)
+		addPunchVelocity(-60*intensity,-30*intensity,-10*intensity);
+	else
+		addPunchVelocity(-60*intensity,30*intensity,10*intensity);
+	self.movementflags ^= MF_LEFTLEG;
+};
+
+void() playerBump =
+{
+	vector direction;
+	float angle_difference;
+	//dprint3("Touch:", other.classname, "\n");
+	if (other.flags & FL_MONSTER && other.takedamage)
+	{
+		makevectors(self.v_angle);
+		direction = other.origin - self.origin;
+		direction = normalize(direction);
+		angle_difference = direction * v_forward;
+		if (angle_difference > 0.5)
+		{
+			T_Damage (other, self, self, 100);
+			//self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			self.touch = SUB_Null;
+		}
+	}
+	if (self.katana_finished < time)
+	{
+		self.touch = SUB_Null;
+		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
+		if (!self.b_slide)
+			SetMovementParams_Standard();
+	}
 };
 
 /*================
@@ -1074,7 +1399,61 @@ void() PlayerPreThink =
 
 	if (self.view_ofs == '0 0 0')
 		return;		// intermission or finale
-		
+	
+	checkMovementInput();
+	
+	self.current_speed = vlen([self.velocity_x,self.velocity_y, 0]);
+	
+	if (self.movementflags & MF_JUMPDISABLED && self.katana_finished < time)
+	{
+		self.touch = SUB_Null;
+		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
+		if (!self.b_slide)
+			SetMovementParams_Standard();
+	}
+	if (self.sprawlflags & SFL_NEEDTOSETSPEED)
+	{
+		if (self.weapon == IT_AXE)
+			self.speedmodifier = 1.25;
+		else
+			self.speedmodifier = 1;
+		self.sprawlflags -= self.sprawlflags & SFL_NEEDTOSETSPEED;
+		SetMovementParams_Standard();
+	}
+	
+	if (self.weapon == IT_AXE && self.flags & FL_ONGROUND)
+	{
+		if (self.wallrun || self.b_slide)
+		{
+			self.speedmodifier = 1.25;
+		}
+		else
+		{
+			if (!(self.engineflags & ENF_ADRENALINE_OFF) && self.sprawlflags & SFL_SPRINT)
+			{
+				if (self.player_inputs == MOVE_FORWARD)
+				{
+					kickFootsteps();
+					self.speedmodifier += frametime; // +100% per second
+					consumeAdrenaline(0.2, 0);
+					if (self.speedmodifier > 2)
+					{
+						self.speedmodifier = min(2, self.speedmodifier);
+						consumeAdrenaline(0.2, 0);
+					}
+				}
+			}
+			else
+				self.speedmodifier = 1.25;
+			
+			if (self.speedmodifier > 1.25 && self.current_speed < 320 * self.speedmodifier * 0.8)
+				self.speedmodifier = 1.25;
+			
+			self.phys_speed = 320 * self.speedmodifier;
+			self.phys_acceleration = 13 - self.speedmodifier * 2;
+		}
+	}
+	
 	local float i;
 	local float delta;
 	local float progress;
@@ -1170,6 +1549,15 @@ void() PlayerPreThink =
 			slowmotion = 1;
 		}
 	}
+	
+	if (slowmotion)
+		consumeAdrenaline(0.5, 0);
+	
+	if (self.engineflags & ENF_ADRENALINE_OFF)
+	{
+		slowmotion = 0;
+		slowmotion_time = time;
+	}
 	// make changes to timescale
 	if (slowmotion_time > 0)
 	{
@@ -1185,11 +1573,11 @@ void() PlayerPreThink =
 			slowmotion_time = 0;
 	}
 	
+	
 	local vector velocity2d;
-	local float dspeed;
+	local float boostspeed;
 
-	dspeed=vlen([self.velocity_x,self.velocity_y, 0]);
-	//dprint3("speed = ", ftos(dspeed), "\r");
+	//dprint3("speed = ", ftos(self.current_speed), "\r");
 	// Slide button pressed
 	if (self.b_slide)
 	{
@@ -1205,7 +1593,7 @@ void() PlayerPreThink =
 				SetMovementParams_Slide();
 				
 				// we on the ground and it's first frame when we press the slide button, so do the slide initial boost
-				if (dspeed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
+				if (self.current_speed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
 				{
 					velocity2d = self.velocity;
 					velocity2d_z = 0;
@@ -1213,21 +1601,30 @@ void() PlayerPreThink =
 					if (!(self.movementflags & MF_CROUCHINAIR))
 					{
 						// ground boost
-						self.velocity_x += velocity2d_x * 270;
-						self.velocity_y += velocity2d_y * 270;
+						if (self.weapon == IT_AXE && !(self.engineflags & ENF_ADRENALINE_OFF))
+						{
+							boostspeed = 270 * self.speedmodifier;
+							consumeAdrenaline(0, 0.15);
+						}
+						else 
+							boostspeed = 270;
 						addPunchVelocity(-60,0,0);
 					}
 					else
 					{
+						boostspeed = 150 * self.speedmodifier;
 						//boost after we land while holding crouch
-						self.velocity_x += velocity2d_x * 150;
-						self.velocity_y += velocity2d_y * 150;
 						//already have viewpunch from landing
 					}
+					if (boostspeed + self.current_speed > 720)
+						boostspeed = 720 - self.current_speed;
+						
+					self.velocity_x += velocity2d_x * boostspeed;
+					self.velocity_y += velocity2d_y * boostspeed;
 				}
 			}
 			// we sliding too slow, so stop slide and start crouch-walk
-			else if (dspeed < SLIDE_STOPSPEED)
+			else if (self.current_speed < SLIDE_STOPSPEED)
 			{
 				SetMovementParams_Crouchwalk();
 			}
@@ -1290,7 +1687,10 @@ void() PlayerPostThink =
 
 	if (self.deadflag)
 		return;
-
+	
+	//dprint3("adrenaline: ", ftos(self.adrenaline), "\n");
+	regenAdrenaline();
+	
 	if (self.sprawlflags & SFL_VMOFFSET)
 	{
 		float progress;
@@ -1307,10 +1707,10 @@ void() PlayerPostThink =
 		}
 	}
 	
-	if (self.hitmarker)
+	if (self.engineflags & ENF_HITMARKER)
 	{
 		if (self.hitmarker_time < time )
-			self.hitmarker = 0;
+			self.engineflags -= self.engineflags & ENF_HITMARKER;
 	}
 	
 	if (self.sprawlflags & SFL_SEMIAUTO)

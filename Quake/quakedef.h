@@ -138,6 +138,7 @@ typedef enum
 	STAT_MONSTERS		= 14,	// bumped by svc_killedmonster
 	STAT_ITEMS			= 15,	//replaces clc_clientdata info
 	STAT_BULLETS		= 16,
+	STAT_ADRENALINE		= 17,
 } stat_t;
 
 // stock defines

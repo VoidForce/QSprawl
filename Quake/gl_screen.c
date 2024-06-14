@@ -1054,11 +1054,11 @@ void SCR_DrawCrosshair (void)
 	lheight = (int)glheight * 0.5;
 	crosshair_width = (int)glheight / 250;
 	crosshair_width = crosshair_width - (crosshair_width % 2); // should split at half
-	crosshair_length = crosshair_width * 20;
+	crosshair_length = crosshair_width * 10;
 	half_width = crosshair_width / 2;
 	gap = crosshair_width * 4;
 
-	if (cl.hitmarker)
+	if (cl.engineflags & 1)
 	{
 		color = 251;
 		/*

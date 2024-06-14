@@ -274,7 +274,6 @@ void()	army_die1	=[	$death1,	army_die2	] {};
 void()	army_die2	=[	$death2,	army_die3	] {};
 void()	army_die3	=[	$death3,	army_die4	]
 {
-	self.solid = SOLID_NOT;
 	self.ammo_shells = 5;
 	DropBackpack();
 };
@@ -309,6 +308,7 @@ void()	army_cdie11	=[	$deathc11,	army_cdie11	] {};
 
 void() army_die =
 {
+	self.solid = SOLID_NOT;
 	// check for gib
 	if (self.health < -35)
 	{
