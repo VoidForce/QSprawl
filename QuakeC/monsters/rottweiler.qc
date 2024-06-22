@@ -73,7 +73,7 @@ local float 	ldmg;
 		return;
 		
 	ldmg = (random() + random() + random()) * 8;
-	T_Damage (self.enemy, self, self, ldmg);
+	T_Damage (self.enemy, self, self, ldmg, 0);
 };
 
 void()	Dog_JumpTouch =
@@ -88,7 +88,7 @@ void()	Dog_JumpTouch =
 		if ( vlen(self.velocity) > 300 )
 		{
 			ldmg = 10 + 10*random();
-			T_Damage (other, self, self, ldmg);	
+			T_Damage (other, self, self, ldmg, 0);	
 		}
 	}
 
@@ -258,12 +258,14 @@ void() dog_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	if (self.health < -35)
+	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowGib ("progs/gib3.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
+		ThrowGib ("progs/m_gib_01.mdl", self.health);
+		ThrowGib ("progs/m_gib_02.mdl", self.health);
+		ThrowGib ("progs/m_gib_03.mdl", self.health);
+		ThrowGib ("progs/m_gib_04.mdl", self.health);
+		ThrowGib ("progs/m_gib_05.mdl", self.health);
 		ThrowHead ("progs/h_dog.mdl", self.health);
 		return;
 	}
@@ -375,10 +377,13 @@ void() monster_dog =
 	self.killstring = " was mauled by a Rottweiler\n";
 
 	setsize (self, '-32 -32 -24', '32 32 20');//40
-	self.head_offset = '19 1 0';
-	self.head_size = 8;
+	self.head_offset = '0 0 0';
+	self.head_size = 0;
 	self.health = 100;
 	self.max_health = 100;
+	self.armorclass_body = 5;
+	self.monstertype = TYPE_DOG;
+	self.gib_threshold = 100;
 
 	self.th_stand = dog_stand1;
 	self.th_walk = dog_walk1;

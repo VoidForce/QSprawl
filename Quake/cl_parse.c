@@ -102,6 +102,7 @@ const char *svc_strings[] =
 qboolean warn_about_nehahra_protocol; //johnfitz
 
 extern vec3_t	v_punchangles[2]; //johnfitz
+extern vec3_t	v_shakeangles[2];
 
 //=============================================================================
 
@@ -710,8 +711,52 @@ void CL_ParseClientdata (void)
 {
 	int		i, j;
 	int		bits; //johnfitz
+	int		anglesbits;
 
-	bits = (unsigned short)MSG_ReadShort (); //johnfitz -- read bits here isntead of in CL_ParseServerMessage()
+	bits = (unsigned short)MSG_ReadShort (); // 2
+
+	if (bits & SU_ANGLES)
+	{
+		anglesbits = (unsigned long)MSG_ReadLong(); //3
+		for (i = 0; i < 3; i++)
+		{
+			if (anglesbits & (ANG_PUNCH1 << i))
+				cl.punchangle[i] = MSG_ReadFloat(); //4
+			else
+				cl.punchangle[i] = 0;
+
+			if (anglesbits & (ANG_PUNCHVEL1 << i))
+				cl.punchvelocity[i] = MSG_ReadFloat(); //5
+			else
+				cl.punchvelocity[i] = 0;
+
+			if (anglesbits & (ANG_SHAKE1 << i))
+				cl.shakeangle[i] = MSG_ReadFloat(); //6
+			else
+				cl.shakeangle[i] = 0;
+
+			if (anglesbits & (ANG_SHAKEVEL1 << i))
+				cl.shakevelocity[i] = MSG_ReadFloat(); //7
+			else
+				cl.shakevelocity[i] = 0;
+
+			if (anglesbits & (ANG_MODEL1 << i))
+				cl.viewmodeloffset_angles[i] = MSG_ReadFloat(); //8
+			else
+				cl.viewmodeloffset_angles[i] = 0;
+		}
+	}
+	else
+	{
+		for (i = 0; i < 3; i++)
+		{
+			cl.punchangle[i] = 0;
+			cl.punchvelocity[i] = 0;
+			cl.shakeangle[i] = 0;
+			cl.shakevelocity[i] = 0;
+			cl.viewmodeloffset_angles[i] = 0;
+		}
+	}
 
 	/*
 	//johnfitz -- PROTOCOL_FITZQUAKE
@@ -723,12 +768,12 @@ void CL_ParseClientdata (void)
 	*/
 
 	if (bits & SU_VIEWHEIGHT)
-		cl.viewheight = MSG_ReadChar ();
+		cl.viewheight = MSG_ReadChar (); //9
 	else
 		cl.viewheight = DEFAULT_VIEWHEIGHT;
 
 	if (bits & SU_IDEALPITCH)
-		cl.idealpitch = MSG_ReadChar ();
+		cl.idealpitch = MSG_ReadChar (); //10
 	else
 		cl.idealpitch = 0;
 
@@ -739,27 +784,10 @@ void CL_ParseClientdata (void)
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
 	for (i = 0; i < 3; i++)
 	{
-		if (bits & (SU_PUNCH1 << i))
-		{
-			cl.punchangle[i] = MSG_ReadFloat();
-			cl.punchvelocity[i] = MSG_ReadFloat();
-		}
-		else
-		{
-			cl.punchangle[i] = 0;
-			cl.punchvelocity[i] = 0;
-		}
-
 		if (bits & (SU_VELOCITY1<<i) )
-			cl.mvelocity[0][i] = MSG_ReadChar()*16;
+			cl.mvelocity[0][i] = MSG_ReadChar()*16; //11
 		else
 			cl.mvelocity[0][i] = 0;
-
-		if (bits & SU_VIEWMODEL) // for now like this, split up into 6 checks later
-		{
-			cl.viewmodeloffset_angles[i] = MSG_ReadFloat();
-			cl.viewmodeloffset_origin[i] = MSG_ReadShort();
-		}
 	}
 
 	//johnfitz -- update v_punchangles
@@ -770,8 +798,15 @@ void CL_ParseClientdata (void)
 		cl.punchtime = cl.time;
 	}
 	//johnfitz
+	// qSprawl
+	if (v_shakeangles[0][0] != cl.shakeangle[0] || v_shakeangles[0][1] != cl.shakeangle[1] || v_shakeangles[0][2] != cl.shakeangle[2])
+	{
+		VectorCopy(v_shakeangles[0], v_shakeangles[1]); // stor current as old
+		VectorCopy(cl.shakeangle, v_shakeangles[0]); // set current from data we just read
+		cl.shaketime = cl.time;
+	}
 
-	i = MSG_ReadLong (); // items
+	i = MSG_ReadLong (); // items //12
 
 	if (cl.items != i)
 	{	// set flash times
@@ -784,7 +819,7 @@ void CL_ParseClientdata (void)
 	}
 
 	if (bits & SU_ENGINEFLAGS)
-		cl.engineflags = MSG_ReadShort();
+		cl.engineflags = MSG_ReadShort(); //13
 	else
 		cl.engineflags = 0;
 
@@ -792,12 +827,12 @@ void CL_ParseClientdata (void)
 	cl.inwater = (bits & SU_INWATER) != 0;
 
 	if (bits & SU_WEAPONFRAME)
-		cl.stats[STAT_WEAPONFRAME] = MSG_ReadShort ();
+		cl.stats[STAT_WEAPONFRAME] = MSG_ReadShort (); //14
 	else
 		cl.stats[STAT_WEAPONFRAME] = 0;
 
 	if (bits & SU_ARMOR)
-		i = MSG_ReadByte ();
+		i = MSG_ReadByte (); //15
 	else
 		i = 0;
 	if (cl.stats[STAT_ARMOR] != i)
@@ -807,7 +842,7 @@ void CL_ParseClientdata (void)
 	}
 
 	if (bits & SU_WEAPON)
-		i = MSG_ReadByte ();
+		i = MSG_ReadByte (); //16
 	else
 		i = 0;
 	if (cl.stats[STAT_WEAPON] != i)
@@ -816,56 +851,56 @@ void CL_ParseClientdata (void)
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadShort ();
+	i = MSG_ReadShort (); //17
 	if (cl.stats[STAT_HEALTH] != i)
 	{
 		cl.stats[STAT_HEALTH] = i;
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadByte ();
+	i = MSG_ReadByte (); //18
 	if (cl.stats[STAT_AMMO] != i)
 	{
 		cl.stats[STAT_AMMO] = i;
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadByte ();
+	i = MSG_ReadByte (); //19
 	if (cl.stats[STAT_SHELLS] != i)
 	{
 		cl.stats[STAT_SHELLS] = i;
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadByte();
+	i = MSG_ReadShort(); //20
 	if (cl.stats[STAT_NAILS] != i)
 	{
 		cl.stats[STAT_NAILS] = i;
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte();
+	i = MSG_ReadByte(); //21
 	if (cl.stats[STAT_ROCKETS] != i)
 	{
 		cl.stats[STAT_ROCKETS] = i;
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte();
+	i = MSG_ReadByte(); //22
 	if (cl.stats[STAT_CELLS] != i)
 	{
 		cl.stats[STAT_CELLS] = i;
 		Sbar_Changed();
 	}
 // i need more boolets
-	i = MSG_ReadByte();
+	i = MSG_ReadByte(); //23
 	if (cl.stats[STAT_BULLETS] != i)
 	{
 		cl.stats[STAT_BULLETS] = i;
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte();
+	i = MSG_ReadByte(); //24
 	
 	if (cl.stats[STAT_ADRENALINE] != i)
 	{
@@ -873,7 +908,7 @@ void CL_ParseClientdata (void)
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte ();
+	i = MSG_ReadByte (); //25
 
 	if (standard_quake)
 	{
@@ -894,7 +929,7 @@ void CL_ParseClientdata (void)
 	}
 
 	if (bits & SU_WEAPONALPHA)
-		cl.viewent.alpha = MSG_ReadByte();
+		cl.viewent.alpha = MSG_ReadByte(); //26
 	else
 		cl.viewent.alpha = ENTALPHA_DEFAULT;
 	//johnfitz

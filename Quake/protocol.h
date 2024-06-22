@@ -74,23 +74,40 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //johnfitz
 #define	SU_VIEWHEIGHT	(1<<0)
 #define	SU_IDEALPITCH	(1<<1)
-#define	SU_PUNCH1		(1<<2)
-#define	SU_PUNCH2		(1<<3)
-#define	SU_PUNCH3		(1<<4)
-#define	SU_VELOCITY1	(1<<5)
-#define	SU_VELOCITY2	(1<<6)
-#define	SU_VELOCITY3	(1<<7)
-#define	SU_ENGINEFLAGS	(1<<8)  // qSprawl Hitmarker, the bit is it
-#define	SU_ONGROUND		(1<<9)	// no data follows, the bit is it
-#define	SU_INWATER		(1<<10)	// no data follows, the bit is it
-#define	SU_WEAPONFRAME	(1<<11)
-#define	SU_ARMOR		(1<<12)
-#define	SU_WEAPON		(1<<13)
-#define SU_WEAPONALPHA	(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
-#define SU_VIEWMODEL	(1<<15)
+#define	SU_VELOCITY1	(1<<2)
+#define	SU_VELOCITY2	(1<<3)
+#define	SU_VELOCITY3	(1<<4)
+#define	SU_ENGINEFLAGS	(1<<5)
+#define	SU_ONGROUND		(1<<6)
+#define	SU_INWATER		(1<<7)
+#define	SU_WEAPONFRAME	(1<<8) 
+#define	SU_ARMOR		(1<<9)	// no data follows, the bit is it
+#define	SU_WEAPON		(1<<10)	// no data follows, the bit is it
+#define SU_ANGLES		(1<<11)
+#define SU_WEAPONALPHA	(1<<14)
+//(1<<13)
+//(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
+//(1<<15)
+
+#define ANG_PUNCH1		(1<<0)
+#define ANG_PUNCH2		(1<<1)
+#define ANG_PUNCH3		(1<<2)
+#define ANG_PUNCHVEL1	(1<<3)
+#define ANG_PUNCHVEL2	(1<<4)
+#define ANG_PUNCHVEL3	(1<<5)
+#define ANG_SHAKE1		(1<<6)
+#define ANG_SHAKE2		(1<<7)
+#define ANG_SHAKE3		(1<<8)
+#define ANG_SHAKEVEL1	(1<<9)
+#define ANG_SHAKEVEL2	(1<<10)
+#define ANG_SHAKEVEL3	(1<<11)
+#define ANG_MODEL1		(1<<12)
+#define ANG_MODEL2		(1<<13)
+#define ANG_MODEL3		(1<<14)
 
 #define ENF_HITMARKER		1
 #define ENF_ADRENALINE_OFF	(1<<1)
+#define ENF_NOWALLRUN		(1<<2)
 //#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
 /*
 #define	SU_VIEWHEIGHT	(1<<0)

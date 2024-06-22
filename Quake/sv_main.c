@@ -993,6 +993,7 @@ SV_WriteClientdataToMessage
 void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 {
 	int		bits;
+	int		anglesbits;
 	int		i;
 	edict_t	*other;
 	int		items;
@@ -1029,6 +1030,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	}
 
 	bits = 0;
+	anglesbits = 0;
 
 	if (ent->v.view_ofs[2] != DEFAULT_VIEWHEIGHT)
 		bits |= SU_VIEWHEIGHT;
@@ -1047,13 +1049,27 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 
 	for (i=0 ; i<3 ; i++)
 	{
-		if (ent->v.punchangle[i] || ent->v.punchvelocity[i])
-			bits |= (SU_PUNCH1<<i);
+		if (ent->v.punchangle[i])
+			anglesbits |= (ANG_PUNCH1<<i);
+
+		if (ent->v.punchvelocity[i])
+			anglesbits |= (ANG_PUNCHVEL1 << i);
+
+		if (ent->v.shakeangle[i])
+			anglesbits |= (ANG_SHAKE1 << i);
+
+		if (ent->v.shakevelocity[i])
+			anglesbits |= (ANG_SHAKEVEL1 << i);
+
+		if (ent->v.viewmodeloffset_angles[i])
+			anglesbits |= (ANG_MODEL1 << i);
+
 		if (ent->v.velocity[i])
-			bits |= (SU_VELOCITY1<<i);
-		if (ent->v.viewmodeloffset_angles[i] || ent->v.viewmodeloffset_origin[i])
-			bits |= SU_VIEWMODEL;
+			bits |= (SU_VELOCITY1 << i);
 	}
+
+	if (anglesbits)
+		bits |= SU_ANGLES;
 
 	if (ent->v.weaponframe)
 		bits |= SU_WEAPONFRAME;
@@ -1083,57 +1099,66 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	// short - 2
 	// long - 4
 //start
-	MSG_WriteByte (msg, svc_clientdata); //byte 1
-	MSG_WriteShort (msg, bits); //short 2
-
-	if (bits & SU_VIEWHEIGHT)
-		MSG_WriteChar (msg, ent->v.view_ofs[2]); //char 1
-
-	if (bits & SU_IDEALPITCH)
-		MSG_WriteChar (msg, ent->v.idealpitch); // char 1
-
-	for (i=0 ; i<3 ; i++)
+	MSG_WriteByte (msg, svc_clientdata); //byte 1 1
+	MSG_WriteShort (msg, bits); //short 2 2 
+	if (bits & SU_ANGLES)
 	{
-		if (bits & (SU_PUNCH1 << i))
+		MSG_WriteLong(msg, anglesbits); //short 2 3
+		for (i = 0; i < 3; i++)
 		{
-			MSG_WriteFloat(msg, ent->v.punchangle[i]); //max 3 float
-			MSG_WriteFloat(msg, ent->v.punchvelocity[i]); //max 3 float
-		}
-		if (bits & (SU_VELOCITY1<<i))
-			MSG_WriteChar (msg, ent->v.velocity[i]/16); //max 3 char 3
-		// qsprawl add check here
-		if (bits & SU_VIEWMODEL)
-		{
-			MSG_WriteFloat(msg, ent->v.viewmodeloffset_angles[i]);
-			MSG_WriteShort(msg, ent->v.viewmodeloffset_origin[i]);
+			if (anglesbits & (ANG_PUNCH1 << i))
+				MSG_WriteFloat(msg, ent->v.punchangle[i]); //max 3 float 4 
+
+			if (anglesbits & (ANG_PUNCHVEL1 << i))
+				MSG_WriteFloat(msg, ent->v.punchvelocity[i]); //max 3 float 5
+
+			if (anglesbits & (ANG_SHAKE1 << i))
+				MSG_WriteFloat(msg, ent->v.shakeangle[i]); //max 3 float 6
+
+			if (anglesbits & (ANG_SHAKEVEL1 << i))
+				MSG_WriteFloat(msg, ent->v.shakevelocity[i]); //max 3 float 7
+
+			if (anglesbits & (ANG_MODEL1 << i))
+				MSG_WriteFloat(msg, ent->v.viewmodeloffset_angles[i]); //max 3 float 8
 		}
 	}
 
-	MSG_WriteLong (msg, items); // long 4
+	if (bits & SU_VIEWHEIGHT)
+		MSG_WriteChar (msg, ent->v.view_ofs[2]); //char 1 9
+
+	if (bits & SU_IDEALPITCH)
+		MSG_WriteChar (msg, ent->v.idealpitch); // char 1 10
+
+	for (i=0 ; i<3 ; i++)
+	{
+		if (bits & (SU_VELOCITY1<<i))
+			MSG_WriteChar (msg, ent->v.velocity[i]/16); //max 3 char 3 11
+	}
+
+	MSG_WriteLong (msg, items); // long 4 12
 	if (bits & SU_ENGINEFLAGS)
-		MSG_WriteShort(msg, ent->v.engineflags);
+		MSG_WriteShort(msg, ent->v.engineflags); // short 2 13
 
 	if (bits & SU_WEAPONFRAME)
-		MSG_WriteShort (msg, ent->v.weaponframe); // short (new) 2
+		MSG_WriteShort (msg, ent->v.weaponframe); // short (new) 2 14
 	if (bits & SU_ARMOR)
-		MSG_WriteByte (msg, ent->v.armorvalue); // byte 1
+		MSG_WriteByte (msg, ent->v.armorvalue); // byte 1 15
 	if (bits & SU_WEAPON)
-		MSG_WriteByte (msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel))); // byte i guess? 1
+		MSG_WriteByte (msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel))); // byte i guess? 1 16
 
-	MSG_WriteShort (msg, ent->v.health); // short (switch to byte?) 2
+	MSG_WriteShort (msg, ent->v.health); // short (switch to byte?) 2 17
 	// so, for qSprawl we don't need ammo past 200, so the byte size would be enough
-	MSG_WriteByte (msg, ent->v.currentammo); // byte 1
-	MSG_WriteByte (msg, ent->v.ammo_shells); // byte 1
-	MSG_WriteByte (msg, ent->v.ammo_nails);  // byte 1
-	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1
-	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1
-	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1
-
-	MSG_WriteByte (msg, ent->v.adrenaline * 255);
+	MSG_WriteByte (msg, ent->v.currentammo); // byte 1 18
+	MSG_WriteByte (msg, ent->v.ammo_shells); // byte 1 19
+	MSG_WriteShort (msg, ent->v.ammo_nails);  // Short 2 20
+	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1 21
+	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1 22
+	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1 23
+	MSG_WriteByte (msg, ent->v.adrenaline * 255); // byte 1 24 
 
 	if (standard_quake)
 	{
-		MSG_WriteByte (msg, ent->v.weapon); //1
+		MSG_WriteByte (msg, ent->v.weapon); //1 25
 	}
 	else
 	{
@@ -1141,14 +1166,14 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		{
 			if ( ((int)ent->v.weapon) & (1<<i) )
 			{
-				MSG_WriteByte (msg, i); // max 32
+				MSG_WriteByte (msg, i); // max 32 25
 				break;
 			}
 		}
 	}
 
 	if (bits & SU_WEAPONALPHA)
-		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1
+		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1 26
 	//johnfitz
 
 // Hack: Alkaline 1.1 uses bit flags to store the active weapon,

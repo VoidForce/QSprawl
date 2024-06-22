@@ -356,10 +356,9 @@ void() katanaSwingLoop =
 	
 	if (self.weaponframe == 1)
 	{
-		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 		self.attack_finished = time + 0.3;
 		self.katana_finished = time + 0.4;
-		addPunchVelocity(30,-150,20);
+		addShake(30,-150,20);
 	}
 	
 	self.weaponframe++;
@@ -369,26 +368,33 @@ void() katanaSwingLoop =
 	if (self.weaponframe == 4)
 	{
 		W_FireAxe();
-		if (self.speedmodifier > 1.25)
+		if (self.speedmodifier > 1.35)
 		{
 			self.touch = playerBump;
-			self.movementflags |= MF_JUMPDISABLED;
-			makevectors(self.v_angle);
-			self.velocity += [v_forward_x, v_forward_y, 0] * 400 * (self.speedmodifier - 1.0);
-			SetMovementParams_Slide();
-			consumeAdrenaline(0, 0.3);
+			consumeAdrenaline(0, 0.5);
 		}
+		self.movementflags |= MF_JUMPDISABLED;
+		
+		//StopAcceleration(0.25);
+		ForceStartSlide(0.4);
+		//StopAirAcceleration(0.3);
+		
+		makevectors(self.v_angle);
+		self.velocity += [v_forward_x, v_forward_y, 0] * ( 100 + (400 * (self.speedmodifier - 1.0)));
+		self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
 		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	}
 	
-	if (self.weaponframe > 4 && self.weaponframe < 8 && self.movementflags & MF_JUMPDISABLED)
+	if (self.weaponframe > 4 && self.katana_charges > 0 && self.movementflags & MF_JUMPDISABLED)
+	{
 		W_FireAxe();
+		self.katana_charges--;
+	}
 	
 	if (self.weaponframe == 8 )
 	{
 		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
-		if (!self.b_slide)
-			SetMovementParams_Standard();
 	}
 
 	if (self.weaponframe > 39)
@@ -563,51 +569,6 @@ void()	player_axed1 =	[$axattd1, player_axed2	] {self.weaponframe=5;};
 void()	player_axed2 =	[$axattd2, player_axed3	] {self.weaponframe=6;};
 void()	player_axed3 =	[$axattd3, player_axed4	] {self.weaponframe=7;W_FireAxe();};
 void()	player_axed4 =	[$axattd4, player_run	] {self.weaponframe=8; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-
-
-//============================================================================
-
-void() player_nail1   =[$nailatt1, player_nail2  ] 
-{
-	self.effects = self.effects | EF_MUZZLEFLASH ;
-
-	if (!self.button0)
-		{
-			self.sprawlflags |= SFL_RESETWEAPONFRAME;
-			player_run ();
-			return;
-		}
-
-	self.weaponframe = self.weaponframe + 1;
-
-	if (self.weaponframe == 39)
-		self.weaponframe = 1;
-
-	SuperDamageSound();
-	W_FireSpikes (4);
-	self.attack_finished = time + 0.2;
-};
-
-void() player_nail2   =[$nailatt2, player_nail1  ]
-{
-	self.effects = self.effects | EF_MUZZLEFLASH ;
-
-	if (!self.button0)
-		{
-			self.sprawlflags |= SFL_RESETWEAPONFRAME;
-			player_run ();
-			return;
-		}
-
-	self.weaponframe = self.weaponframe + 1;
-
-	if (self.weaponframe == 39)
-		self.weaponframe = 1;
-
-	SuperDamageSound();
-	W_FireSpikes (-4);
-	self.attack_finished = time + 0.2;
-};
 
 //============================================================================
 
@@ -884,67 +845,6 @@ void() PlayerDead =
 {
 	self.nextthink = -1;
 	self.deadflag = DEAD_DEAD;	// allow respawn after a certain time
-};
-
-vector(float dm) VelocityForDamage =
-{
-	local vector v;
-
-	v_x = 100 * crandom();
-	v_y = 100 * crandom();
-	v_z = 200 + 100 * random();
-
-	if (dm > -50)
-	{
-		v = v * 0.7;
-	}
-
-	else if (dm > -200)
-	{
-		v = v * 2;
-	}
-
-	else
-		v = v * 10;
-
-	return v;
-};
-
-void(string gibname, float dm) ThrowGib =
-{
-	local	entity new;
-
-	new = spawn();
-	new.origin = self.origin;
-	setmodel (new, gibname);
-	setsize (new, '0 0 0', '0 0 0');
-	new.velocity = VelocityForDamage (dm);
-	new.movetype = MOVETYPE_BOUNCE;
-	new.solid = SOLID_NOT;
-	new.avelocity_x = random()*600;
-	new.avelocity_y = random()*600;
-	new.avelocity_z = random()*600;
-	new.think = SUB_Remove;
-	new.ltime = time;
-	new.nextthink = time + 10 + random()*10;
-	new.frame = 0;
-	new.flags = 0;
-};
-
-void(string gibname, float dm) ThrowHead =
-{
-	setmodel (self, gibname);
-	self.frame = 0;
-	self.nextthink = -1;
-	self.movetype = MOVETYPE_BOUNCE;
-	self.takedamage = DAMAGE_NO;
-	self.solid = SOLID_NOT;
-	self.view_ofs = '0 0 8';
-	setsize (self, '-16 -16 0', '16 16 56');
-	self.velocity = VelocityForDamage (dm);
-	self.origin_z = self.origin_z - 24;
-	self.flags = self.flags - (self.flags & FL_ONGROUND);
-	self.avelocity = crandom() * '0 600 0';
 };
 
 void() GibPlayer =

@@ -59,6 +59,8 @@ typedef struct particle_s
 	float		die;
 	vec3_t		vel;
 	float		ramp;
+	vec3_t		wish_vel;
+	byte		flag;
 } particle_t;
 
 

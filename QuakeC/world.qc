@@ -275,9 +275,16 @@ void() worldspawn =
 	precache_model ("progs/player.mdl");
 	precache_model ("progs/eyes.mdl");
 	precache_model ("progs/h_player.mdl");
+	precache_model ("progs/smallgib.mdl");
 	precache_model ("progs/gib1.mdl");
 	precache_model ("progs/gib2.mdl");
 	precache_model ("progs/gib3.mdl");
+	precache_model ("progs/m_gib_01.mdl");
+	precache_model ("progs/m_gib_02.mdl");
+	precache_model ("progs/m_gib_03.mdl");
+	precache_model ("progs/m_gib_04.mdl");
+	precache_model ("progs/m_gib_05.mdl");
+	
 
 	precache_model ("progs/s_bubble.spr");	// drowning bubbles
 	precache_model ("progs/s_explod.spr");	// sprite explosion

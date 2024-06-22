@@ -1319,17 +1319,20 @@ void Sbar_Draw (void)
 	   // keys (hipnotic only)
 
 		// armor
-			if (cl.items & IT_INVULNERABILITY)
+			if (cl.stats[STAT_ARMOR] > 0)
 			{
-				Sbar_DrawNum (24, 0, 666, 3, 1);
-				Sbar_DrawPic (0, 0, draw_disc);
-			}
-			else
-			{
-				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
-				pic = Sbar_ArmorPic ();
-				if (pic)
-					Sbar_DrawPic (0, 0, pic);
+				if (cl.items & IT_INVULNERABILITY)
+				{
+					Sbar_DrawNum(24, 0, 666, 3, 1);
+					Sbar_DrawPic(0, 0, draw_disc);
+				}
+				else
+				{
+					Sbar_DrawNum(24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+					pic = Sbar_ArmorPic();
+					if (pic)
+						Sbar_DrawPic(0, 0, pic);
+				}
 			}
 
 		// face
@@ -1344,8 +1347,9 @@ void Sbar_Draw (void)
 			if (pic)
 				Sbar_DrawPic (224, 0, pic);
 
-			Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3,
-						  cl.stats[STAT_AMMO] <= 10);
+			
+			if (cl.stats[STAT_ACTIVEWEAPON] != IT_AXE)
+				Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3, cl.stats[STAT_AMMO] <= 2);
 		}
 
 		//johnfitz -- removed the vid.width > 320 check here

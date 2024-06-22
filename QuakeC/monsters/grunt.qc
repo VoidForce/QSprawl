@@ -217,7 +217,7 @@ void() Laser_Touch =
 	if (other.health)
 	{
 		SpawnBlood (org, self.velocity*0.2, 15);
-		T_Damage (other, self, self.owner, 15);
+		T_Damage (other, self, self.owner, 15, 0);
 	}
 	else
 	{
@@ -270,47 +270,95 @@ void() army_fire =
 	LaunchLaser(org, self.enemy.origin - self.origin);
 };
 
-void()	army_die1	=[	$death1,	army_die2	] {};
-void()	army_die2	=[	$death2,	army_die3	] {};
-void()	army_die3	=[	$death3,	army_die4	]
-{
-	self.ammo_shells = 5;
-	DropBackpack();
-};
-
-void()	army_die4	=[	$death4,	army_die5	] {};
-void()	army_die5	=[	$death5,	army_die6	] {};
+void()	army_die1	=[	$death1,	army_die2	] {ai_velocity(50);};
+void()	army_die2	=[	$death2,	army_die3	] {ai_velocity(40);};
+void()	army_die3	=[	$death3,	army_die4	] {ai_velocity(30);};
+void()	army_die4	=[	$death4,	army_die5	] {ai_velocity(20);};
+void()	army_die5	=[	$death5,	army_die6	] {ai_velocity(20);};
 void()	army_die6	=[	$death6,	army_die7	] {};
 void()	army_die7	=[	$death7,	army_die8	] {};
 void()	army_die8	=[	$death8,	army_die9	] {};
 void()	army_die9	=[	$death9,	army_die10	] {};
 void()	army_die10	=[	$death10,	army_die10	] {};
 
-void()	army_cdie1	=[	$deathc1,	army_cdie2	] {};
-void()	army_cdie2	=[	$deathc2,	army_cdie3	] {ai_back(5);};
-void()	army_cdie3	=[	$deathc3,	army_cdie4	]
-{
-	self.solid = SOLID_NOT;
-	self.ammo_shells = 5;
-	DropBackpack();
-	ai_back(4);
-};
-
-void()	army_cdie4	=[	$deathc4,	army_cdie5	] {ai_back(13);};
-void()	army_cdie5	=[	$deathc5,	army_cdie6	] {ai_back(3);};
-void()	army_cdie6	=[	$deathc6,	army_cdie7	] {ai_back(4);};
+void()	army_cdie1	=[	$deathc1,	army_cdie2	] {ai_velocity(50);};
+void()	army_cdie2	=[	$deathc2,	army_cdie3	] {ai_velocity(40);};
+void()	army_cdie3	=[	$deathc3,	army_cdie4	] {ai_velocity(30);};
+void()	army_cdie4	=[	$deathc4,	army_cdie5	] {ai_velocity(20);};
+void()	army_cdie5	=[	$deathc5,	army_cdie6	] {ai_velocity(20);};
+void()	army_cdie6	=[	$deathc6,	army_cdie7	] {};
 void()	army_cdie7	=[	$deathc7,	army_cdie8	] {};
 void()	army_cdie8	=[	$deathc8,	army_cdie9	] {};
 void()	army_cdie9	=[	$deathc9,	army_cdie10	] {};
 void()	army_cdie10	=[	$deathc10,	army_cdie11	] {};
 void()	army_cdie11	=[	$deathc11,	army_cdie11	] {};
 
+/*===========
+SoldierCheckAttack
+
+The player is in view, so decide to move or launch an attack
+Returns FALSE if movement should continue
+============*/
+float() SoldierCheckAttack =
+{
+	local vector	spot1, spot2;	
+	local entity	targ;
+	local float		chance;
+
+	targ = self.enemy;
+	
+	// see if any entities are in the way of the shot
+	spot1 = self.origin + self.view_ofs;
+	spot2 = targ.origin + targ.view_ofs;
+
+	traceline (spot1, spot2, FALSE, self);
+
+	if (trace_inopen && trace_inwater)
+		return FALSE;			// sight line crossed contents
+
+	if (trace_ent != targ)
+		return FALSE;	// don't have a clear shot
+			
+	
+// missile attack
+	if (time < self.attack_finished)
+		return FALSE;
+		
+	if (enemy_range == RANGE_FAR)
+		return FALSE;
+		
+	if (enemy_range == RANGE_MELEE)
+		chance = 0.9;
+
+	else if (enemy_range == RANGE_NEAR)
+		chance = 0.4;
+
+	else if (enemy_range == RANGE_MID)
+		chance = 0.05;
+
+	else
+		chance = 0;
+
+	if (random () < chance)
+	{
+		self.th_missile ();
+		SUB_AttackFinished (1 + random());
+
+		if (random() < 0.3)
+			self.lefty = !self.lefty;
+
+		return TRUE;
+	}
+
+	return FALSE;
+};
 
 void() army_die =
 {
 	self.solid = SOLID_NOT;
+	self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.health < -35)
+	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_guard.mdl", self.health);
@@ -319,12 +367,20 @@ void() army_die =
 		ThrowGib ("progs/gib3.mdl", self.health);
 		return;
 	}
-
-	// regular death
-	sound (self, CHAN_VOICE, "soldier/death1.wav", 1, ATTN_NORM);
+	
+	if (self.health_head <= 0)
+	{
+		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
+		setmodel (self, "progs/soldier_headless.mdl");
+		for (float i = 0; i < 5; i++)
+		{
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+		}
+	}
+	else
+		sound (self, CHAN_VOICE, "soldier/death1.wav", 1, ATTN_NORM);
 	if (random() < 0.5)
 		army_die1 ();
-
 	else
 		army_cdie1 ();
 };
@@ -344,6 +400,8 @@ void() monster_army =
 	precache_model2 ("progs/laser.mdl");
 	
 	precache_model ("progs/soldier.mdl");
+	precache_model ("progs/soldier_headless.mdl");
+	
 	precache_model ("progs/h_guard.mdl");
 	precache_model ("progs/gib1.mdl");
 	precache_model ("progs/gib2.mdl");
@@ -371,9 +429,15 @@ void() monster_army =
 
 	setsize (self, '-16 -16 -24', '16 16 30');//40
 	self.head_offset = '7 0 20';
-	self.head_size = 8;
-	self.health = 60;
-	self.max_health = 60;
+	self.head_size = 12;
+	self.health = 100;
+	self.max_health = 100;
+	self.health_head = 20;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
+	self.monstertype = TYPE_SOLDIER;
+	self.armorclass_body = 5;
+	self.armorclass_head = 0;
+	self.gib_threshold = 100;
 
 	self.th_stand = army_stand1;
 	self.th_walk = army_walk1;
@@ -381,6 +445,16 @@ void() monster_army =
 	self.th_missile = army_atk1;
 	self.th_pain = army_pain;
 	self.th_die = army_die;
-
+	
+	/*
+	precache_model2 ("progs/sphere.mdl");
+	self.headmodel = spawn();
+	setsize (self.headmodel, '0 0 0', '0 0 0'); 
+	makevectors2(self.angles);
+	setorigin (self.headmodel, self.origin + self.head_offset_x * v_forward + self.head_offset_y * v_right + self.head_offset_z * v_up);
+	setmodel (self.headmodel, "progs/sphere.mdl");
+	self.headmodel.alpha = 0.5;
+	*/
+	
 	walkmonster_start ();
 };

@@ -179,14 +179,16 @@ void() demon_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	if (self.health < -80)
+	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_demon.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-
+		ThrowGib ("progs/m_gib_01.mdl", self.health);
+		ThrowGib ("progs/m_gib_02.mdl", self.health);
+		ThrowGib ("progs/m_gib_03.mdl", self.health);
+		ThrowGib ("progs/demon_gib_claw.mdl", self.health);
+		ThrowGib ("progs/demon_gib_leg.mdl" , self.health);
+		ThrowGib ("progs/demon_gib_ass.mdl" , self.health);
 		return;
 	}
 
@@ -198,49 +200,6 @@ void() demon_die =
 void() Demon_MeleeAttack =
 {
 	demon1_atta1 ();
-};
-
-
-/*QUAKED monster_demon1 (1 0 0) (-32 -32 -24) (32 32 64) Ambush*/
-void() monster_demon1 =
-{
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-	precache_model ("progs/demon.mdl");
-	precache_model ("progs/h_demon.mdl");
-
-	precache_sound ("demon/ddeath.wav");
-	precache_sound ("demon/dhit2.wav");
-	precache_sound ("demon/djump.wav");
-	precache_sound ("demon/dpain1.wav");
-	precache_sound ("demon/idle1.wav");
-	precache_sound ("demon/sight2.wav");
-
-	self.solid = SOLID_SLIDEBOX;
-	self.movetype = MOVETYPE_STEP;
-
-	//gnounc
-	setmodel (self, "progs/demon.mdl");
-	self.noise = "demon/sight2.wav";
-	self.killstring = " was eviscerated by a Fiend\n";
-
-	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
-	self.health = 300;
-	self.max_health = 300;
-	self.head_offset = '24 0 0';
-
-	self.th_stand = demon1_stand1;
-	self.th_walk = demon1_walk1;
-	self.th_run = demon1_run1;
-	self.th_die = demon_die;
-	self.th_melee = Demon_MeleeAttack;		// one of two attacks
-	self.th_missile = demon1_jump1;			// jump attack
-	self.th_pain = demon1_pain;
-		
-	walkmonster_start();
 };
 
 
@@ -340,7 +299,7 @@ void(float side)	Demon_Melee =
 		
     sound (self, CHAN_WEAPON, "demon/dhit2.wav", 1, ATTN_NORM);
 	ldmg = 10 + 5*random();
-	T_Damage (self.enemy, self, self, ldmg);	
+	T_Damage (self.enemy, self, self, ldmg, 0);	
 
 	makevectors2 (self.angles);
 	SpawnMeatSpray (self.origin + v_forward*16, side * v_right);
@@ -359,7 +318,7 @@ void()	Demon_JumpTouch =
 		if ( vlen(self.velocity) > 400 )
 		{
 			ldmg = 40 + 10*random();
-			T_Damage (other, self, self, ldmg);	
+			T_Damage (other, self, self, ldmg, 0);	
 		}
 	}
 
@@ -380,3 +339,48 @@ void()	Demon_JumpTouch =
 	self.nextthink = time + 0.1;
 };
 
+
+/*QUAKED monster_demon1 (1 0 0) (-32 -32 -24) (32 32 64) Ambush*/
+void() monster_demon1 =
+{
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	precache_model ("progs/demon.mdl");
+	precache_model ("progs/h_demon.mdl");
+	precache_model ("progs/demon_gib_claw.mdl");
+	precache_model ("progs/demon_gib_leg.mdl");
+	precache_model ("progs/demon_gib_ass.mdl");
+
+	precache_sound ("demon/ddeath.wav");
+	precache_sound ("demon/dhit2.wav");
+	precache_sound ("demon/djump.wav");
+	precache_sound ("demon/dpain1.wav");
+	precache_sound ("demon/idle1.wav");
+	precache_sound ("demon/sight2.wav");
+
+	self.solid = SOLID_SLIDEBOX;
+	self.movetype = MOVETYPE_STEP;
+
+	//gnounc
+	setmodel (self, "progs/demon.mdl");
+	self.noise = "demon/sight2.wav";
+	self.killstring = " was eviscerated by a Fiend\n";
+
+	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
+	self.health = 300;
+	self.max_health = 300;
+
+	self.monstertype = TYPE_FIEND;
+	self.th_stand = demon1_stand1;
+	self.th_walk = demon1_walk1;
+	self.th_run = demon1_run1;
+	self.th_die = demon_die;
+	self.th_melee = Demon_MeleeAttack;		// one of two attacks
+	self.th_missile = demon1_jump1;			// jump attack
+	self.th_pain = demon1_pain;
+		
+	walkmonster_start();
+};

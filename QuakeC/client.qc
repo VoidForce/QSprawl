@@ -334,7 +334,7 @@ void() changelevel_touch =
 
 	if ((cvar("noexit") == 1) || ((cvar("noexit") == 2) && (mapname != "start")))
 	{
-		T_Damage (other, self, self, 50000);
+		T_Damage (other, self, self, 50000, 0);
 		return;
 	}
 
@@ -563,16 +563,16 @@ void() PutClientInServer =
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_WALK;
 
-	self.phys_speed = 320;
-	self.phys_friction = 8;
-	self.phys_gravity = 1; // 0.9
-	self.phys_acceleration = 13;
-	self.phys_airacceleration = 10;
+	self.phys_speed = 320; // absolute value in units/s
+	self.phys_friction = 8; // absolute value
+	self.phys_gravity = 1; // 800, this is force multiplyer
+	self.current_acceleration = self.phys_acceleration = 1; // 13 in the engine, this is force multiplyer
+	self.current_airacceleration = self.phys_airacceleration = 1; // 10 in the engine, this is force multiplyer
 	self.phys_airfriction = 0.1;
-	self.speedmodifier = 1;
+	self.speedmodifier = 1; // used for axe sprint, force multiplyer for phys_speed
 	self.adrenaline = 1;
 	//self.touch = playerBump;
-
+	
 	self.show_hostile = 0;
 	self.max_health = 100;
 	self.flags = FL_CLIENT;
@@ -652,14 +652,12 @@ void() info_player_start =
 {
 };
 
-
 /*QUAKED info_player_start2 (1 0 0) (-16 -16 -24) (16 16 24)
 Only used on start map for the return point from an episode.
 */
 void() info_player_start2 =
 {
 };
-
 
 /*
 saved out by quaked in region mode
@@ -832,7 +830,6 @@ void() PlayerJump =
 	local float z;
 	local float jump_force;
 	local float speed_fatigue;
-	local float speed2d;
 	
 	if (self.movementflags & MF_JUMPDISABLED)
 		return;
@@ -880,21 +877,22 @@ void() PlayerJump =
 		if (self.wall_jumps > 2) 
 			return;
 		self.wall_jumps++;
-
-		speed2d = vlen([self.velocity_x, self.velocity_y, 0]);
 		
 		z = self.velocity_z;
 		jump_force = clamp(0, time - self.jump_timer, 1);
-		speed_fatigue = clamp(0.25, speed2d / 320, 1);
+		speed_fatigue = clamp(0.25, self.current_speed / 320, 1);
 		// magnitude of force away from the wall, and forward
 		walljump_direction = self.wall_normal * (125 + (1 - jump_force) * 100) + v_forward * (100 + (1 - jump_force) * 150) * speed_fatigue;
 		walljump_direction_z = 0;
 		self.velocity += walljump_direction;
-		addPunchVelocity(-100 * (1 - jump_force) - 50, crandom() * 80 * (1 - jump_force), 40  * (1 - jump_force)); // punch before speedfatigue override
+		addShake(-100 * (1 - jump_force) - 50, crandom() * 80 * (1 - jump_force), 40  * (1 - jump_force)); // punch before speedfatigue override
 		
 		speed_fatigue = 1 - clamp(0, self.velocity_z / 600, 1); // we won't let player fly upwards too fast with jump spam
 		self.velocity_z += (100 + 320 * jump_force) * speed_fatigue;
 		self.velocity_z = max(125, self.velocity_z);
+		
+		if (self.current_speed < 200 && self.velocity_z < 300)
+			self.velocity_z += 200;
 		//self.velocity_z = min(500, self.velocity_z);
 		self.jump_timer = time + 0.5;
 			// player jumping sound
@@ -902,7 +900,7 @@ void() PlayerJump =
 	}
 	else // regular jump
 	{
-		addPunchVelocity(-50,crandom()*50, 0);
+		addShake(-50,crandom()*50, 0);
 		self.velocity_z = self.velocity_z + 270;
 		self.jump_timer = time;
 		self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
@@ -946,7 +944,7 @@ void() WaterMove =
 			if (self.dmg > 15)
 				self.dmg = 10;
 
-			T_Damage (self, world, world, self.dmg);
+			T_Damage (self, world, world, self.dmg, 0);
 			self.pain_finished = time + 1;
 		}
 	}
@@ -973,7 +971,7 @@ void() WaterMove =
 			else
 				self.dmgtime = time + 0.2;
 
-			T_Damage (self, world, world, 10*self.waterlevel);
+			T_Damage (self, world, world, 10*self.waterlevel, 0);
 		}
 	}
 	else if (self.watertype == CONTENT_SLIME)
@@ -981,7 +979,7 @@ void() WaterMove =
 		if (self.dmgtime < time && self.radsuit_finished < time)
 		{
 			self.dmgtime = time + 1;
-			T_Damage (self, world, world, 4*self.waterlevel);
+			T_Damage (self, world, world, 4*self.waterlevel, 0);
 		}
 	}
 	
@@ -1041,22 +1039,79 @@ void() CheckWaterJump =
 
 void() SetMovementParams_Slide =
 {
+	self.current_acceleration = 0;
 	self.phys_acceleration = 0;
 	self.phys_friction = 0.85;
 };
 
 void() SetMovementParams_Crouchwalk =
 {
-	self.phys_acceleration = 13;
+	self.current_acceleration = 1;
+	if (!(self.movementflags & MF_NOACCELERATION))
+		self.phys_acceleration = 1;
 	self.phys_friction = 8;
 	self.phys_speed = 160;
 };
 
 void() SetMovementParams_Standard =
 {
-	self.phys_acceleration = 13;
+	self.current_acceleration = 1;
+	if (!(self.movementflags & MF_NOACCELERATION))
+		self.phys_acceleration = 1;
 	self.phys_friction = 8;
 	self.phys_speed = 320 * self.speedmodifier;
+};
+
+void(float timer) StopAcceleration =
+{
+	self.current_acceleration = self.phys_acceleration;
+	self.phys_acceleration = 0;
+	self.movementflags |= MF_NOACCELERATION;
+	if (timer < 0)
+		self.noacceleration_timer = time + 7200; // 2 hours, wait to be manually reset
+	else
+		self.noacceleration_timer = time + timer;
+};
+
+void() StartAcceleration =
+{
+	self.phys_acceleration = self.current_acceleration;
+	self.noacceleration_timer = 0;
+	self.movementflags -= self.movementflags & MF_NOACCELERATION;	
+};
+
+void(float timer) StopAirAcceleration =
+{
+	self.current_airacceleration = self.phys_airacceleration;
+	self.phys_airacceleration = 0;
+	self.movementflags |= MF_NOAIRACCELERATION;
+	if (timer < 0)
+		self.noairacceleration_timer = time + 7200; // 2 hours
+	else
+		self.noairacceleration_timer = time + timer;
+};
+
+void() StartAirAcceleration =
+{
+	self.phys_airacceleration = self.current_airacceleration;
+	self.noairacceleration_timer = 0;
+	self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
+};
+
+void(float timer) ForceStartSlide =
+{
+	self.phys_friction = 0;
+	self.movementflags |= MF_FORCEDSLIDE;
+	if (timer < 0)
+		self.forcedslide_timer = time + 7200;
+	else
+		self.forcedslide_timer = timer + timer;
+};
+
+void() StopSlide =
+{
+	self.phys_friction = 8;
+	self.movementflags -= self.movementflags & MF_FORCEDSLIDE;
 };
 
 void() ResetSlowmotion =
@@ -1127,45 +1182,60 @@ float (entity who, vector dir_forward, vector dir_right) traceWall =
 		return 0;
 };
 
-void(float fwall, float rwall, float fvel, float rvel, float onground) makeDodge =
+void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 {
+	if (self.weapon != IT_AXE)
+		return;
 	if (self.b_slide)
 		return;
 	if (self.engineflags & ENF_ADRENALINE_OFF)
 		return;
-// on ground, slightly above ground
-	if ((self.weapon == IT_AXE || onground) && (self.flags & FL_ONGROUND || traceDown(self))) // ground dodge in priority over wall dodge
-	{
-		makevectors(self.angles);
-		self.flags -= self.flags & FL_ONGROUND;
-		//self.customflags |= CF_DODGE; // allow one jump after dodge
-		self.velocity += v_forward * fvel + v_right * rvel + '0 0 160';
-		self.dodge_time = time + 0.5;
-		consumeAdrenaline(0, 0.2);
-		// make jump sound here
-	}
+	if (!(self.flags & FL_ONGROUND || traceDown(self))) // on ground, slightly above ground
+		return;
+	
+	local float jump_height;
+	
+	jump_height = 160;
+	//if (type == MOVE_BACKWARD)
+	//	jump_height = 400;
+	
+	makevectors(self.angles);
+	self.flags -= self.flags & FL_ONGROUND;
+	self.velocity += v_forward * fvel + v_right * rvel + [0,0, jump_height];
+	self.dodge_time = time + 0.5;
+	consumeAdrenaline(0, 0.2);
+	addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
+	self.jump_timer = time + 0.5;
+	StopAirAcceleration(0.4);
+	// make jump sound here
+	/*
 	else 
 	{
 	//wall in the opposite side of dodge direction
 		makevectors(self.angles);
 		if (!(self.flags & FL_ONGROUND) && traceWall(self, fwall * v_forward, rwall * v_right))
 		{
+			fvel *= 0.5;
+			rvel *= 0.5;
 			self.velocity += v_forward * fvel * 0.65 + v_right * rvel * 0.65; // + '0 0 -100'
-			//if (self.velocity_z < 270)
-			//	self.velocity_z = 270;
-			self.velocity_z = 0;
+			if (self.velocity_z < 300) //270
+				self.velocity_z = 300;
+			//self.velocity_z = 0;
 			self.dodge_time = time + 0.5;
 			consumeAdrenaline(0, 0.2);
+			addShake(100,rvel * 0.2, rvel * 0.1);
+			self.jump_timer = time + 0.5;
 			// make jump sound here
 		}
 	}
+	*/
 };
 #define DODGE_SPEED 500
 void() checkPressCombo =
 {
 	local float i;
 	local float action;
-	local float combo1,combo2,combo3,combo4; 
+	local float combo2,combo3,combo4; 
 
 	for (i = 0; i < 3; i++)
 	{
@@ -1173,6 +1243,7 @@ void() checkPressCombo =
 	// no more actions to read, cancel
 		if (!action)
 			return;
+		/*
 	// front jump, combo1
 		if ( FRONTJUMP[combo1] == action)
 			combo1++;
@@ -1182,10 +1253,10 @@ void() checkPressCombo =
 		if (combo1 == 2)
 		{
 			if (self.dodge_time < time)
-				makeDodge(-96, 0, DODGE_SPEED, 0, 0); // forward wall, righ wall, forward velocity, right velocity
+				makeDodge(-96, 0, DODGE_SPEED, 0, MOVE_FORWARD); // forward wall, righ wall, forward velocity, right velocity
 			resetQueue();
 			return;
-		}
+		}*/
 	// back jump, combo2	
 		if ( BACKJUMP[combo2] == action)
 			combo2++;
@@ -1195,7 +1266,7 @@ void() checkPressCombo =
 		if (combo2 == 2)
 		{
 			if (self.dodge_time < time)
-				makeDodge(96, 0, -DODGE_SPEED, 0, 1); // backwards dodge allowed on the ground
+				makeDodge(96, 0, -500, 0, MOVE_BACKWARD); // backwards dodge allowed on the ground
 			resetQueue();
 			return;
 		}
@@ -1211,7 +1282,7 @@ void() checkPressCombo =
 		if (combo3 == 2)
 		{		
 			if (self.dodge_time < time)
-				makeDodge(0, 96, 0, -DODGE_SPEED, 0);
+				makeDodge(0, 96, 0, -DODGE_SPEED, MOVE_LEFT);
 			resetQueue();
 			return;
 		}
@@ -1224,7 +1295,7 @@ void() checkPressCombo =
 		if (combo4 == 2)
 		{
 			if (self.dodge_time < time)
-				makeDodge(0, -96, 0, DODGE_SPEED, 0);
+				makeDodge(0, -96, 0, DODGE_SPEED, MOVE_RIGHT);
 			resetQueue();
 			return;
 		}
@@ -1233,7 +1304,6 @@ void() checkPressCombo =
 
 void() resetQueue =
 {
-	self.combo = 0;
 	self.combo_timer = 0;
 	self.combo_index = 0;
 	self.combo_index_head = 0;
@@ -1319,18 +1389,9 @@ void() catchComboInput =
 	
 	checkPressCombo();
 };
-/*
-MOVE_FORWARD
-MOVE_BACKWARD
-MOVE_RIGHT
-MOVE_LEFT
-MOVE_NONE
-*/
+
 void() checkMovementInput =
 {
-// directional keys, there are 8 possible cases (9 if we count no movement), and only one active at a time
-// full reset 
-
 	catchComboInput();
 // Important! must be set after all the input/combo checks
 // any of this shouldn't be modified outside of body of this procedure
@@ -1351,17 +1412,18 @@ void() kickFootsteps =
 	self.footstep_timer = time + 0.3;
 	
 	if (self.movementflags & MF_LEFTLEG)
-		addPunchVelocity(-60*intensity,-30*intensity,-10*intensity);
+		addShake(-60*intensity,-30*intensity,-10*intensity);
 	else
-		addPunchVelocity(-60*intensity,30*intensity,10*intensity);
+		addShake(-60*intensity,30*intensity,10*intensity);
 	self.movementflags ^= MF_LEFTLEG;
 };
 
+// touch procedure
 void() playerBump =
 {
 	vector direction;
 	float angle_difference;
-	//dprint3("Touch:", other.classname, "\n");
+
 	if (other.flags & FL_MONSTER && other.takedamage)
 	{
 		makevectors(self.v_angle);
@@ -1370,18 +1432,12 @@ void() playerBump =
 		angle_difference = direction * v_forward;
 		if (angle_difference > 0.5)
 		{
-			T_Damage (other, self, self, 100);
-			//self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			T_Damage (other, self, self, 100, 0);
 			self.touch = SUB_Null;
 		}
 	}
 	if (self.katana_finished < time)
-	{
 		self.touch = SUB_Null;
-		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
-		if (!self.b_slide)
-			SetMovementParams_Standard();
-	}
 };
 
 /*================
@@ -1400,17 +1456,60 @@ void() PlayerPreThink =
 	if (self.view_ofs == '0 0 0')
 		return;		// intermission or finale
 	
+	if (self.deadflag >= DEAD_DEAD)
+	{
+		if (slowmotion)
+			ResetSlowmotion();
+		PlayerDeathThink ();
+		return;
+	}
+	
+	if (self.deadflag == DEAD_DYING)
+		return;	// dying, so do nothing
+	
+	if (self.movementflags & MF_NOAIRACCELERATION)
+	{
+		if (self.noairacceleration_timer < time)
+		{
+			self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
+			self.phys_airacceleration = self.current_airacceleration;
+		}
+	}
+	
+	if (self.movementflags & MF_NOACCELERATION)
+	{
+		if (self.noacceleration_timer < time)
+		{
+			self.movementflags -= self.movementflags & MF_NOACCELERATION;
+			self.phys_acceleration = self.current_acceleration;
+		}
+	}
+	
+	if (self.movementflags & MF_FORCEDSLIDE)
+	{
+		if (self.forcedslide_timer < time)
+		{
+			self.movementflags -= self.movementflags & MF_FORCEDSLIDE;
+			self.phys_friction = 8;
+		}
+	}
+	
 	checkMovementInput();
 	
 	self.current_speed = vlen([self.velocity_x,self.velocity_y, 0]);
 	
-	if (self.movementflags & MF_JUMPDISABLED && self.katana_finished < time)
+	if (self.movementflags & MF_JUMPDISABLED)
 	{
-		self.touch = SUB_Null;
-		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
-		if (!self.b_slide)
-			SetMovementParams_Standard();
+		if (self.katana_finished < time)
+		{
+			self.touch = SUB_Null;
+			self.movementflags -= self.movementflags & MF_JUMPDISABLED;
+			if (!self.b_slide)
+				SetMovementParams_Standard(); // not ok
+			StartAcceleration();
+		}
 	}
+// swap to and away from Katana
 	if (self.sprawlflags & SFL_NEEDTOSETSPEED)
 	{
 		if (self.weapon == IT_AXE)
@@ -1418,15 +1517,13 @@ void() PlayerPreThink =
 		else
 			self.speedmodifier = 1;
 		self.sprawlflags -= self.sprawlflags & SFL_NEEDTOSETSPEED;
-		SetMovementParams_Standard();
+		SetMovementParams_Standard(); // not ok
 	}
-	
+//	Katana sprint
 	if (self.weapon == IT_AXE && self.flags & FL_ONGROUND)
 	{
 		if (self.wallrun || self.b_slide)
-		{
 			self.speedmodifier = 1.25;
-		}
 		else
 		{
 			if (!(self.engineflags & ENF_ADRENALINE_OFF) && self.sprawlflags & SFL_SPRINT)
@@ -1450,7 +1547,8 @@ void() PlayerPreThink =
 				self.speedmodifier = 1.25;
 			
 			self.phys_speed = 320 * self.speedmodifier;
-			self.phys_acceleration = 13 - self.speedmodifier * 2;
+			if (!(self.movementflags & MF_NOACCELERATION))
+				self.phys_acceleration = 1 - (self.speedmodifier - 1)*0.25;
 		}
 	}
 	
@@ -1504,17 +1602,6 @@ void() PlayerPreThink =
 
 	if (self.waterlevel == 2)
 		CheckWaterJump ();
-
-	if (self.deadflag >= DEAD_DEAD)
-	{
-		if (slowmotion)
-			ResetSlowmotion();
-		PlayerDeathThink ();
-		return;
-	}
-	
-	if (self.deadflag == DEAD_DYING)
-		return;	// dying, so do nothing
 
 	if (self.button2)
 		PlayerJump();
@@ -1573,7 +1660,6 @@ void() PlayerPreThink =
 			slowmotion_time = 0;
 	}
 	
-	
 	local vector velocity2d;
 	local float boostspeed;
 
@@ -1591,6 +1677,7 @@ void() PlayerPreThink =
 				self.movementflags |= MF_INSLIDE;
 				self.crouch_timer = time + 0.2;
 				SetMovementParams_Slide();
+				//StopAcceleration(-1);
 				
 				// we on the ground and it's first frame when we press the slide button, so do the slide initial boost
 				if (self.current_speed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
@@ -1600,19 +1687,13 @@ void() PlayerPreThink =
 					velocity2d = normalize(velocity2d);
 					if (!(self.movementflags & MF_CROUCHINAIR))
 					{
-						// ground boost
-						if (self.weapon == IT_AXE && !(self.engineflags & ENF_ADRENALINE_OFF))
-						{
-							boostspeed = 270 * self.speedmodifier;
-							consumeAdrenaline(0, 0.15);
-						}
-						else 
-							boostspeed = 270;
-						addPunchVelocity(-60,0,0);
+						boostspeed = 270;
+						addShake(-60,0,0);
 					}
 					else
 					{
 						boostspeed = 150 * self.speedmodifier;
+						addShake(-30,0,0);
 						//boost after we land while holding crouch
 						//already have viewpunch from landing
 					}
@@ -1627,6 +1708,7 @@ void() PlayerPreThink =
 			else if (self.current_speed < SLIDE_STOPSPEED)
 			{
 				SetMovementParams_Crouchwalk();
+				//StartAcceleration();
 			}
 		}
 		
@@ -1643,7 +1725,8 @@ void() PlayerPreThink =
 		// so reset movement parameters, and get rid of the slide state
 		if (self.movementflags & MF_INSLIDE)
 		{
-			SetMovementParams_Standard();
+			SetMovementParams_Standard(); //ok
+			//StartAcceleration();
 			self.movementflags -= self.movementflags & MF_INSLIDE; 
 			self.crouch_timer = time + 0.2; // save time for view offset lerping
 		}
@@ -1696,12 +1779,12 @@ void() PlayerPostThink =
 		float progress;
 		
 		progress = clamp(0, (time - self.deploy_time) * 4, 1); // 0.4 sec
-		self.viewmodeloffset_angles_x= lerp(-60, 0, progress);
-		self.viewmodeloffset_angles_z= lerp(-30, 0, progress);
+		//self.viewmodeloffset_angles_x= lerp(-60, 0, progress);
+		//self.viewmodeloffset_angles_z= lerp(-30, 0, progress);
 
 		if (progress == 1)
 		{
-			self.viewmodeloffset_angles_x = 0;
+			//self.viewmodeloffset_angles_x = 0;
 			self.deploy_time = 0;
 			self.sprawlflags -= self.sprawlflags & SFL_VMOFFSET;
 		}
@@ -1728,18 +1811,18 @@ void() PlayerPostThink =
 			sound (self, CHAN_BODY, "player/h2ojump.wav", 1, ATTN_NORM);
 		else if (self.jump_flag < -650)
 		{
-			//T_Damage (self, world, world, 5); // no fall damage in qsprawl
-			addPunchVelocity(-150,-40,0);
+			//T_Damage (self, world, world, 5, 0); // no fall damage in qsprawl
+			addShake(-150,-40,0);
 			sound (self, CHAN_VOICE, "player/land2.wav", 1, ATTN_NORM);
 			self.deathtype = "falling";
 		}
 		else if (self.jump_flag < -300)
 		{
-			addPunchVelocity(-50,-10,0);
+			addShake(-50,-10,0);
 			sound (self, CHAN_VOICE, "player/land.wav", 1, ATTN_NORM);
 		}
 		else
-			addPunchVelocity(0,0,-20);
+			addShake(0,0,-20);
 
 		self.jump_flag = 0;
 	}

@@ -124,7 +124,7 @@ T_Damage
 The damage is coming from inflictor, but get mad at attacker
 This should be the only function that ever reduces health.
 ============*/
-void(entity targ, entity inflictor, entity attacker, float damage) T_Damage=
+void(entity targ, entity inflictor, entity attacker, float damage, float dflags) T_Damage=
 {
 	local	vector	dir;
 	local	entity	oldself;
@@ -137,6 +137,8 @@ void(entity targ, entity inflictor, entity attacker, float damage) T_Damage=
 	//gnounc -- shub kill crash fix.
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
+	
+	dprint4("Damage:", ftos(damage), " Target: ", targ.classname);endl();
 
 	// used by buttons and triggers to set activator for target firing
 	damage_attacker = attacker;
@@ -196,12 +198,31 @@ void(entity targ, entity inflictor, entity attacker, float damage) T_Damage=
 		return;
 
 	// do the damage
-	targ.health = targ.health - take;
-			
+	if (dflags & DF_HEADSHOT)
+	{
+		targ.health_head -= take;
+		targ.monsterflags |= MFL_PAIN_HEADSHOT;
+	}
+	else
+		targ.health -= take;
+	
 	if (targ.health <= 0)
 	{
 		Killed (targ, attacker);
 		return;
+	}
+	
+	if (targ.monsterflags & MFL_HASHEAD && targ.health_head <= 0)
+	{
+		targ.monsterflags |= MFL_LOST_HEAD;
+		targ.monsterflags -= targ.monsterflags & MFL_HASHEAD;
+		self.pain_finished = 0;
+		if (targ.monsterflags & MFL_HEADKILLS)
+		{
+			targ.health = -1;
+			Killed (targ, attacker);
+			return;
+		}
 	}
 
 	//react to the damage
@@ -269,10 +290,10 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 					{	// shambler takes half damage from all explosions
 
 						if (head.classname == "monster_shambler")						
-							T_Damage (head, inflictor, attacker, points*0.5);
+							T_Damage (head, inflictor, attacker, points*0.5, 0);
 
 						else
-							T_Damage (head, inflictor, attacker, points);
+							T_Damage (head, inflictor, attacker, points, 0);
 					}
 				}
 			}
@@ -309,10 +330,10 @@ void(entity attacker, float damage) T_BeamDamage =
 				if (CanDamage (head, attacker))
 				{
 					if (head.classname == "monster_shambler")						
-						T_Damage (head, attacker, attacker, points*0.5);
+						T_Damage (head, attacker, attacker, points*0.5, 0);
 
 					else
-						T_Damage (head, attacker, attacker, points);
+						T_Damage (head, attacker, attacker, points, 0);
 				}
 			}
 		}

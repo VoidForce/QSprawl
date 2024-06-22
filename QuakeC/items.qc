@@ -265,7 +265,7 @@ void() armor_touch =
 {
 	local	float	type, value, bit;
 
-	type = 0.3;
+	type = 1;
 	value = 100;
 	bit = IT_ARMOR1;
 	
@@ -277,21 +277,21 @@ void() armor_touch =
 
 	if (self.classname == "item_armor1")
 	{
-		type = 0.3;
-		value = 100;
+		type = 1;
+		value = 50;
 		bit = IT_ARMOR1;
 	}
 
 	if (self.classname == "item_armor2")
 	{
-		type = 0.6;
-		value = 150;
+		type = 1;
+		value = 100;
 		bit = IT_ARMOR2;
 	}
 
 	if (self.classname == "item_armorInv")
 	{
-		type = 0.8;
+		type = 1;
 		value = 200;
 		bit = IT_ARMOR3;
 	}
@@ -367,17 +367,17 @@ WEAPONS
 
 void() bound_other_ammo =
 {
-	if (other.ammo_shells > 100)
-		other.ammo_shells = 100;
+	if (other.ammo_shells > MAX_SHELLS)
+		other.ammo_shells = MAX_SHELLS;
 
-	if (other.ammo_nails > 200)
-		other.ammo_nails = 200;
+	if (other.ammo_nails > MAX_NAILS)
+		other.ammo_nails = MAX_NAILS;
 
-	if (other.ammo_rockets > 100)
-		other.ammo_rockets = 100;		
+	if (other.ammo_rockets > MAX_ROCKETS)
+		other.ammo_rockets = MAX_ROCKETS;		
 
-	if (other.ammo_cells > 100)
-		other.ammo_cells = 100;		
+	if (other.ammo_cells > MAX_CELLS)
+		other.ammo_cells = MAX_CELLS;		
 };
 
 
@@ -694,7 +694,7 @@ void() ammo_touch =
 // shotgun
 	if (self.weapon == 1)
 	{
-		if (other.ammo_shells >= 100)
+		if (other.ammo_shells >= MAX_SHELLS)
 			return;
 
 		other.ammo_shells = other.ammo_shells + self.aflag;
@@ -703,7 +703,7 @@ void() ammo_touch =
 	// spikes
 	if (self.weapon == 2)
 	{
-		if (other.ammo_nails >= 200)
+		if (other.ammo_nails >= MAX_NAILS)
 			return;
 
 		other.ammo_nails = other.ammo_nails + self.aflag;
@@ -712,7 +712,7 @@ void() ammo_touch =
 	//	rockets
 	if (self.weapon == 3)
 	{
-		if (other.ammo_rockets >= 100)
+		if (other.ammo_rockets >= MAX_ROCKETS)
 			return;
 
 		other.ammo_rockets = other.ammo_rockets + self.aflag;
@@ -721,7 +721,7 @@ void() ammo_touch =
 	//	cells
 	if (self.weapon == 4)
 	{
-		if (other.ammo_cells >= 100)
+		if (other.ammo_cells >= MAX_CELLS)
 			return;
 		other.ammo_cells = other.ammo_cells + self.aflag;
 	}
@@ -779,16 +779,16 @@ void() item_shells =
 
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("maps/b_shell1.bsp");
-		setmodel (self, "maps/b_shell1.bsp");
-		self.aflag = 40;
+		precache_model ("progs/ammo/shells_big.mdl");
+		setmodel (self, "progs/ammo/shells_big.mdl");
+		self.aflag = 10;
 	}
 
 	else
 	{
-		precache_model ("maps/b_shell0.bsp");
-		setmodel (self, "maps/b_shell0.bsp");
-		self.aflag = 20;
+		precache_model ("progs/ammo/shells.mdl");
+		setmodel (self, "progs/ammo/shells.mdl");
+		self.aflag = 5;
 	}
 
 	self.weapon = 1;
@@ -805,16 +805,16 @@ void() item_spikes =
 
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("maps/b_nail1.bsp");
-		setmodel (self, "maps/b_nail1.bsp");
-		self.aflag = 50;
+		precache_model ("progs/ammo/nails.mdl");
+		setmodel (self, "progs/ammo/nails.mdl");
+		self.aflag = 100;
 	}
 
 	else
 	{
-		precache_model ("maps/b_nail0.bsp");
-		setmodel (self, "maps/b_nail0.bsp");
-		self.aflag = 25;
+		precache_model ("progs/ammo/nails.mdl");
+		setmodel (self, "progs/ammo/nails.mdl");
+		self.aflag = 50;
 	}
 
 	self.weapon = 2;
@@ -831,16 +831,16 @@ void() item_rockets =
 
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("maps/b_rock1.bsp");
-		setmodel (self, "maps/b_rock1.bsp");
-		self.aflag = 10;
+		precache_model ("progs/ammo/rockets_big.mdl");
+		setmodel (self, "progs/ammo/rockets_big.mdl");
+		self.aflag = 6;
 	}
 
 	else
 	{
-		precache_model ("maps/b_rock0.bsp");
-		setmodel (self, "maps/b_rock0.bsp");
-		self.aflag = 5;
+		precache_model ("progs/ammo/rockets.mdl");
+		setmodel (self, "progs/ammo/rockets.mdl");
+		self.aflag = 2;
 	}
 
 	self.weapon = 3;
@@ -858,16 +858,16 @@ void() item_cells =
 
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("maps/b_batt1.bsp");
-		setmodel (self, "maps/b_batt1.bsp");
-		self.aflag = 12;
+		precache_model ("progs/ammo/cells_big.mdl");
+		setmodel (self, "progs/ammo/cells_big.mdl");
+		self.aflag = 9;
 	}
 
 	else
 	{
-		precache_model ("maps/b_batt0.bsp");
-		setmodel (self, "maps/b_batt0.bsp");
-		self.aflag = 6;
+		precache_model ("progs/ammo/cells.mdl");
+		setmodel (self, "progs/ammo/cells.mdl");
+		self.aflag = 3;
 	}
 
 	self.weapon = 4;
@@ -892,15 +892,15 @@ void() item_weapon =
 	{
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("maps/b_shell1.bsp");
-			setmodel (self, "maps/b_shell1.bsp");
+			precache_model ("progs/ammo/shells_big.mdl");
+			setmodel (self, "progs/ammo/shells_big.mdl");
 			self.aflag = 40;
 		}
 
 		else
 		{
-			precache_model ("maps/b_shell0.bsp");
-			setmodel (self, "maps/b_shell0.bsp");
+			precache_model ("progs/ammo/shells.mdl");
+			setmodel (self, "progs/ammo/shells.mdl");
 			self.aflag = 20;
 		}
 		self.weapon = 1;
@@ -911,15 +911,15 @@ void() item_weapon =
 	{
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("maps/b_nail1.bsp");
-			setmodel (self, "maps/b_nail1.bsp");
+			precache_model ("progs/ammo/nails.mdl");
+			setmodel (self, "progs/ammo/nails.mdl");
 			self.aflag = 40;
 		}
 
 		else
 		{
-			precache_model ("maps/b_nail0.bsp");
-			setmodel (self, "maps/b_nail0.bsp");
+			precache_model ("progs/ammo/nails.mdl");
+			setmodel (self, "progs/ammo/nails.mdl");
 			self.aflag = 20;
 		}
 		self.weapon = 2;
@@ -930,15 +930,15 @@ void() item_weapon =
 	{
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("maps/b_rock1.bsp");
-			setmodel (self, "maps/b_rock1.bsp");
+			precache_model ("progs/ammo/rockets_big.mdl");
+			setmodel (self, "progs/ammo/rockets_big.mdl");
 			self.aflag = 10;
 		}
 
 		else
 		{
-			precache_model ("maps/b_rock0.bsp");
-			setmodel (self, "maps/b_rock0.bsp");
+			precache_model ("progs/ammo/rockets.mdl");
+			setmodel (self, "progs/ammo/rockets.mdl");
 			self.aflag = 5;
 		}
 		self.weapon = 3;

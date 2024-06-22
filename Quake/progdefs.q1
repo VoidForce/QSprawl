@@ -75,6 +75,8 @@ typedef struct
 	vec3_t	avelocity;
 	vec3_t	punchangle;
 	vec3_t	punchvelocity;
+	vec3_t	shakeangle;
+	vec3_t	shakevelocity;
 	string_t	classname;
 	string_t	model;
 	float	frame;
@@ -162,10 +164,9 @@ typedef struct
 	float		wallrun;
 	vec3_t		wall_normal;
 	float		wall_jumps;
-	vec3_t		viewmodeloffset_origin;
 	vec3_t		viewmodeloffset_angles;
 	float		adrenaline;
 	float		engineflags;
 } entvars_t;
 
-#define PROGHEADER_CRC 32221
+#define PROGHEADER_CRC 56207

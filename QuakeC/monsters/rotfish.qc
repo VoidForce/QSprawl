@@ -107,7 +107,7 @@ void() fish_melee =
 		
 	sound (self, CHAN_VOICE, "fish/bite.wav", 1, ATTN_NORM);
 	ldmg = (random() + random()) * 3;
-	T_Damage (self.enemy, self, self, ldmg);
+	T_Damage (self.enemy, self, self, ldmg, 0);
 };
 
 void() f_attack1        =[      $attack1,       f_attack2 ] {ai_charge(10);};

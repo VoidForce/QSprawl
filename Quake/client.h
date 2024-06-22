@@ -258,9 +258,11 @@ typedef struct
 	qboolean	forceunderwater;	// force underwater warping/sound distortion even when camera is not submerged (e.g. alk1.2 liquidbrush)
 // qsprawl
 	int			engineflags;
-	vec3_t		viewmodeloffset_origin; // qsprawl
 	vec3_t		viewmodeloffset_angles; // qsprawl
 	vec3_t		punchvelocity;		// temporary offset's velocity
+	vec3_t		shakeangle;
+	vec3_t		shakevelocity;
+	double		shaketime;
 } client_state_t;
 
 

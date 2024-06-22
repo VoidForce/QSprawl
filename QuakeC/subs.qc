@@ -670,10 +670,15 @@ void(vector a, float type) sendMessageVec =
 
 void(vector offset) setHead =
 {
-	//self.origin_old = self.origin;
-	//self.lasttick_time = time;
-	//self.head_offset_old = self.head_offset;
+	self.origin_old = self.origin;
+	self.lasttick_time = time;
+	self.offset_old = self.head_offset;
 	self.head_offset = offset;
+	if (self.headmodel)
+	{
+		makevectors2(self.angles);
+		setorigin (self.headmodel, self.origin + self.head_offset_x * v_forward + self.head_offset_y * v_right + self.head_offset_z * v_up);
+	}
 };
 
 vector(entity target) findHeadPosition =
@@ -694,8 +699,7 @@ vector(entity target) findHeadPosition =
 	*/
 	
 	makevectors2(target.angles);
-	result = target.origin + v_forward * target.head_offset_x + v_right * target.head_offset_y;
-	result_z += target.head_offset_z;
+	result = target.origin + v_forward * target.head_offset_x + v_right * target.head_offset_y + v_up * target.head_offset_z;
 	
 	return result;
 };
@@ -710,4 +714,134 @@ void weaponThink(void() thinkfunc, float timer) =
 	}
 	self.think = thinkfunc;
 	self.nextthink = time + timer;
+};
+
+void runAsSelf(entity who, .void() what) =
+{
+	local entity oldself;
+	
+	oldself = self;
+	self = who;
+	self.what();
+	self = oldself;
+};
+
+
+vector(float dm) VelocityForDamage =
+{
+	local vector v;
+
+	v_x = 100 * crandom();
+	v_y = 100 * crandom();
+	v_z = 200 + 100 * random();
+
+	if (dm > -50)
+	{
+		v = v * 0.7;
+	}
+
+	else if (dm > -200)
+	{
+		v = v * 2;
+	}
+
+	else
+		v = v * 10;
+
+	return v;
+};
+
+void(string gibname, vector direction) ThrowGibDirection =
+{
+	local	entity new;
+
+	new = spawn();
+	new.origin = self.origin;
+	setmodel (new, gibname);
+	setsize (new, '0 0 0', '0 0 0');
+	new.velocity = direction * (random()*100 + 100);
+	new.movetype = MOVETYPE_BOUNCE;
+	new.solid = SOLID_NOT;
+	new.avelocity_x = random()*600;
+	new.avelocity_y = random()*600;
+	new.avelocity_z = random()*600;
+	new.think = SUB_Remove;
+	new.ltime = time;
+	new.nextthink = time + 10 + random()*10;
+	new.frame = 0;
+	new.flags = 0;
+};
+
+void(string gibname, vector direction) ThrowHeadGib =
+{
+	local	entity new;
+
+	new = spawn();
+	new.origin = self.origin + self.head_offset;
+	setmodel (new, gibname);
+	setsize (new, '0 0 0', '0 0 0');
+	new.velocity = direction;
+	new.movetype = MOVETYPE_BOUNCE;
+	new.solid = SOLID_NOT;
+	new.avelocity_x = random()*600;
+	new.avelocity_y = random()*600;
+	new.avelocity_z = random()*600;
+	new.think = SUB_Remove;
+	new.ltime = time;
+	new.nextthink = time + 10 + random()*10;
+	new.frame = 0;
+	new.flags = 0;
+};
+
+void(string gibname, float dm) ThrowGib =
+{
+	local	entity new;
+
+	new = spawn();
+	new.origin = self.origin;
+	setmodel (new, gibname);
+	setsize (new, '0 0 0', '0 0 0');
+	new.velocity = VelocityForDamage (dm);
+	new.movetype = MOVETYPE_BOUNCE;
+	new.solid = SOLID_NOT;
+	new.avelocity_x = random()*600;
+	new.avelocity_y = random()*600;
+	new.avelocity_z = random()*600;
+	new.think = SUB_Remove;
+	new.ltime = time;
+	new.nextthink = time + 10 + random()*10;
+	new.frame = 0;
+	new.flags = 0;
+};
+
+void(string gibname, float dm) ThrowHead =
+{
+	setmodel (self, gibname);
+	self.frame = 0;
+	self.nextthink = -1;
+	self.movetype = MOVETYPE_BOUNCE;
+	self.takedamage = DAMAGE_NO;
+	self.solid = SOLID_NOT;
+	self.view_ofs = '0 0 8';
+	setsize (self, '-16 -16 0', '16 16 56');
+	self.velocity = VelocityForDamage (dm);
+	self.origin_z = self.origin_z - 24;
+	self.flags = self.flags - (self.flags & FL_ONGROUND);
+	self.avelocity = crandom() * '0 600 0';
+};
+
+void (entity targ, vector direction, float force, float pflags) Knockback =
+{
+// direction must be normalized
+	if (targ.flags & FL_MONSTER )
+	{
+		if (targ.flags & FL_ONGROUND)
+		{
+			//setorigin(targ, targ.origin + '0 0 5');
+			targ.origin_z += 1;
+			targ.flags -= targ.flags & FL_ONGROUND;
+		}
+		targ.velocity = direction * force;
+		targ.velocity_z = 100;
+	}
 };

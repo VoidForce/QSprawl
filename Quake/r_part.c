@@ -40,6 +40,8 @@ static float circley[36] = { 1.00000, 0.98481, 0.93969, 0.86603, 0.76604, 0.6427
 static int	ramp1[8] = {0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61};
 static int	ramp2[8] = {0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66};
 static int	ramp3[8] = {0x6d, 0x6b, 6, 5, 4, 3};
+static int	rampgrenade[8] = { 0xeb, 0xe6, 0xe2, 5, 4, 3 };
+static int	rampinner[10] = {0x6f, 0x6d, 0xeb, 0xe8, 0xe6, 0xe4, 0xe2, 0x04, 0x02, 0x00};
 static int	rampcore[11] = {0xf6 ,0xf5, 0xf4, 0xef, 0xed, 0xeb, 0xe9, 0xe7, 0xe5, 0xe3, 0xe1};
 static int	smoke[16] = {0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 static int	spark[16] = {0xef, 0xee, 0xed, 0xec, 0xeb, 0xea, 0xe9, 0xe8, 0xe7, 0xe6, 0xe5, 0xe4, 0xe3, 0xe2, 0xe1, 0xe0 };
@@ -305,33 +307,52 @@ R_ParticleExplosion
 void R_ParticleExplosion (vec3_t org)
 {
 	int			i, j;
+	int	indexA, indexB;
 	particle_t	*p;
-
-	for (i=0 ; i<1024 ; i++)
+	float lvelocity;
+	// spherecal coordinates
+	// x = sin A cos B
+	// y = sin A sin B
+	// z = cos A
+	for (i = 0; i < 18; i++)
 	{
-		if (!(p = R_AllocParticle ()))
-			return;
-
-		p->die = cl.time + 5;
-		p->color = ramp1[0];
-		p->ramp = rand()&3;
-		if (i & 1)
+		indexA = i * 2+1;
+		for (j = 0; j < 18; j++)
 		{
+			indexB = j * 2+1;
+			// inner slower ring
+			if (!(p = R_AllocParticle()))
+				return;
+			p->die = cl.time + 5;
+			p->color = rampinner[0];
+			p->ramp = rand() & 3;
 			p->type = pt_explode;
-			for (j=0 ; j<3 ; j++)
-			{
-				p->org[j] = org[j] + ((rand()%32)-16);
-				p->vel[j] = (rand()%512)-256;
-			}
-		}
-		else
-		{
+
+			lvelocity = (rand() % 512) - 256;
+			p->org[0] = org[0] + ((rand() % 16) - 8);
+			p->org[1] = org[1] + ((rand() % 16) - 8);
+			p->org[2] = org[2] + ((rand() % 16) - 8);
+
+			p->vel[0] = circlex[indexA] * circley[indexB] * lvelocity;
+			p->vel[1] = circlex[indexA] * circlex[indexB] * lvelocity;
+			p->vel[2] = circley[indexA] * lvelocity;
+			
+			// outer/faster ring
+			if (!(p = R_AllocParticle()))
+				return;
+			p->die = cl.time + 5;
+			p->color = ramp1[0];
+			p->ramp = rand() & 3;
 			p->type = pt_explode2;
-			for (j=0 ; j<3 ; j++)
-			{
-				p->org[j] = org[j] + ((rand()%32)-16);
-				p->vel[j] = (rand()%512)-256;
-			}
+
+			lvelocity = 900 + (rand() % 512) - 256;
+			p->org[0] = org[0];
+			p->org[1] = org[1];
+			p->org[2] = org[2];
+
+			p->vel[0] = circlex[indexA] * circley[indexB] * lvelocity;
+			p->vel[1] = circlex[indexA] * circlex[indexB] * lvelocity;
+			p->vel[2] = circley[indexA] * lvelocity;
 		}
 	}
 }
@@ -583,11 +604,12 @@ void R_RocketTrail (vec3_t start, vec3_t end, int type)
 				break;
 
 			case 1:	// smoke smoke
-				p->ramp = (rand()&3) + 2;
-				p->color = ramp3[(int)p->ramp];
+				p->flag = 1;
+				p->ramp = rand() & 2;
+				p->color = rampgrenade[(int)p->ramp];
 				p->type = pt_fire;
-				for (j=0 ; j<3 ; j++)
-					p->org[j] = start[j] + ((rand()%6)-3);
+				for (j = 0; j < 3; j++)
+					p->org[j] = start[j] + ((rand() % 6) - 3);
 				break;
 
 			case 2:	// blood
@@ -715,13 +737,21 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 
 void R_GaussTrail(vec3_t start, vec3_t end)
 {
+	
 	particle_t* p;
-	vec3_t vec, org, dir;
+	vec3_t vec, org, dir, side, up, offset_side, offset_up;
 	float len;
 	int j;
+	int circle = 0;
 
 	VectorSubtract(end, start, vec);
 	len = VectorNormalize(vec);
+
+	VectorCopy(start, side);
+	VectorPerpendicular(vec, side);
+	VectorNormalize(side);
+	CrossProduct(side, vec, up); //second vector orthogonal to trail's direction
+	VectorNormalize(up);
 
 	while (len > 0)
 	{
@@ -735,10 +765,17 @@ void R_GaussTrail(vec3_t start, vec3_t end)
 		VectorCopy(vec3_origin, p->vel); // zero velocity
 		VectorScale(vec, len, dir);
 		VectorAdd(start, dir, org);
-		VectorCopy(org, p->org);
+
+		circle++;
+		if (circle > 35)
+			circle = 0;
+
+		VectorScale(side, circlex[circle]*20, offset_side);
+		VectorScale(up, circley[circle]*20, offset_up);
+		VectorAdd(offset_side, offset_up, offset_side);
+		VectorAdd(org, offset_side, p->org);
 		for (j = 0; j < 3; j++)
 		{
-			//p->org[j] += (rand() % 6) - 3;
 			p->vel[j] = (rand() % 200) - 100;
 		}
 		// central beam
@@ -750,11 +787,16 @@ void R_GaussTrail(vec3_t start, vec3_t end)
 		p->die = 99999;// cl.time + ((rand() % 20) - 10) * 0.2;;
 		p->type = pt_gaussmain;
 		VectorCopy(vec3_origin, p->vel); // zero velocity
+		VectorScale(side, circlex[circle] * 20, offset_side);
+		VectorScale(up, circley[circle] * 20, offset_up);
+		VectorAdd(offset_side, offset_up, offset_side);
+		VectorCopy(offset_side, p->wish_vel);
 		VectorCopy(org, p->org);
 
 		len -= 10;
 		//Con_DPrintf("trail particle = [%f %f %f] count:%d \n", org[0], org[1], org[2], count);
 	}
+	
 }
 
 void R_Muzzle(vec3_t start, vec3_t vel, int type)
@@ -766,27 +808,47 @@ void R_Muzzle(vec3_t start, vec3_t vel, int type)
 impact - point of impact, no offset away from a wall but monsters will have one
 shooter - trace start coordinates
 */
+
 void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 {
 	particle_t* p;
-	vec3_t direction;
+	vec3_t direction, inversed_direction, offset;
 	vec3_t side, up;
-	vec3_t offset;
-	int i, j, k, odd, lookup_index;
-	float additionalvelocity;
+	//vec3_t offset;
+	int i, j, k, odd, lookup_index, count;
+
+	float degree;
+	vec3_t reflect;
 
 	VectorSubtract(shooter, impact, direction);
 	VectorNormalize(direction);
 	VectorCopy(impact, side);
+	VectorCopy(direction, inversed_direction);
+	VectorInverse(inversed_direction);
+	if (normal[0] == 0 && normal[1] == 0 && normal[2] == 0)
+		VectorCopy(inversed_direction, normal);
 	VectorPerpendicular(normal, side);
 	VectorNormalize(side);
 	CrossProduct(side, normal, up); //second vector orthogonal to normal
 	VectorNormalize(up);
 
+// reflecting direction over normal, Use reflect vector as new direction for explosion effects
+	VectorCopy(vec3_origin, reflect); // initialising
+	degree = -DotProduct(normal, direction);
+
+	if (degree < 0.86 && degree > 0.25) //~30 degrees 
+	{
+		VectorScale(normal, 2.0 * degree, reflect);
+		VectorAdd(reflect, direction, reflect);
+		degree = 1; // we don't need it anymore, use it as boolean flag for need of using reflect vector instedad of direction
+	}
+	else
+		degree = 0;
+
 // hole generation
 	for (i = 0; i < 4; i++)
 	{
-		odd = i % 2;
+		odd = i % 1;
 		for (j = 0; j < 18; j++)
 		{
 			if (!(p = R_AllocParticle()))
@@ -822,48 +884,64 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 			VectorCopy(vec3_origin, p->vel);
 		}
 	}
+// sparks -----------------------------------------------------
 
-// sparks
+	count = 2;
+	// sparks
 	switch (type)
 	{
-	default:
-	case IMPACT_GAUSS_FINAL: // solid, endpoint
-			for (i = 0; i < 20; i++)
+		default:
+		case IMPACT_GAUSS_FINAL: // solid, endpoint
+			count = 8;
+		case IMPACT_GAUSS_ENTRANCE:
+			//VectorCopy(direction, offset);
+			if (degree)
+				VectorCopy(reflect, offset);
+			else
+				VectorCopy(direction, offset);
+			VectorScale(offset, 300, offset);
+			//VectorScale(offset, (rand() % 100) + 150, offset);
+			for (j = 0; j < 16; j++)
+			{
+
+				//VectorScale(offset, (rand() % (25 * (j+1))) + 25 * j, offset);
+				for (i = 0; i < count; i++)
+				{
+					if (!(p = R_AllocParticle()))
+						return;
+
+					p->ramp = -i * 0.2;
+					p->color = spark[(int)(rand() % 5)];
+					p->type = pt_gaussexit;
+					p->die = cl.time + 100;
+					p->flag = 1;
+
+					VectorCopy(impact, p->org);
+					VectorCopy(vec3_origin, p->vel);
+					VectorCopy(offset, p->wish_vel);
+				}
+			}
+			break;
+		case IMPACT_GAUSS_EXIT: // solid, penetrating, exit hole
+			// high intensity forward blast with gravity, glow
+
+			VectorCopy(inversed_direction, offset);
+			for (i = 0; i < 32; i++)
 			{
 				if (!(p = R_AllocParticle()))
 					return;
-				p->ramp = 0;
-				p->color = spark[0];
-				p->die = cl.time + 2;
-				p->type = pt_grav;
+
+				p->ramp = -1 - i * 0.5;
+				p->color = spark[(int)(rand() % 5)];
+				p->type = pt_gaussexit;
+				p->die = cl.time + 100;
+				p->flag = 0;
+
 				VectorCopy(impact, p->org);
 				VectorCopy(vec3_origin, p->vel);
+				VectorScale(offset, (rand() % 10) * 100, p->wish_vel);
 			}
-		break;
-	case IMPACT_GAUSS_ENTRANCE: // solid, penetrating, entrance hole
-		// low intensity entry blast, glow
-
-		break;
-	case IMPACT_GAUSS_EXIT: // solid, penetrating, exit hole
-		// high intensity forward blast with gravity, glow
-		VectorInverse(direction);
-		for (i = 0; i < 64; i++)
-		{
-			if (!(p = R_AllocParticle()))
-				return;
-
-			p->ramp = -5 - i;
-			p->color = 0x0f;
-			p->type = pt_gaussexit;
-			//p->type = pt_grav;
-			VectorAdd(impact, direction, offset);
-			VectorCopy(offset, p->org);
-			//VectorCopy(vec3_origin, p->vel);
-			additionalvelocity = 10;
-			VectorCopy(direction, p->vel);
-			VectorScale(p->vel, additionalvelocity, p->vel);
-		}
-		break;
+			break;
 	}
 }
 
@@ -886,50 +964,6 @@ void R_Impact(vec3_t org, vec3_t dir, int type)
 		default:
 			break;
 	}
-	/*
-	int i;
-	particle_t* p;
-	vec3_t offset, neworg;
-
-	for (i = 0; i < 48; i++)
-	{
-		VectorCopy(vec3_origin, offset);
-
-		if (!(p = R_AllocParticle()))
-			return;
-
-		if (i < 16)
-		{
-			offset[2] -= i;
-			p->color = 0xd0;
-		}
-		else if (i < 32)
-		{
-			offset[1] -= i - 16;
-			p->color = 0xf3;
-		}
-		else
-		{
-			offset[0] -= i - 32;
-			p->color = 0xfb;
-		}
-
-		p->die = cl.time + 1;
-		//p->color = 0xfe;
-		p->type = pt_static;//pt_gauss;//pt_static;
-		VectorCopy(vec3_origin, p->vel); // zero velocity
-		VectorAdd(org, offset, neworg);
-		VectorCopy(neworg, p->org);
-	}
-
-	if (!(p = R_AllocParticle()))
-		return;
-
-	p->die = cl.time + 1;
-	p->color = 0xfb;
-	p->type = pt_static;//pt_gauss;//pt_static;
-	VectorCopy(vec3_origin, p->vel); // zero velocity
-	VectorCopy(dir, p->org);	*/
 }
 
 /*
@@ -1014,10 +1048,12 @@ void CL_RunParticles (void)
 {
 	particle_t		*p;
 	int				i, cur, active;
-	float			time1, time2, time3, dvel, frametime, grav, save;
+	float			time1, time2, time3, time4, time5, dvel, frametime, grav;
 	extern	cvar_t	sv_gravity;
 
 	frametime = cl.time - cl.oldtime;
+	time5 = frametime * 60;
+	time4 = frametime * 30;
 	time3 = frametime * 15;
 	time2 = frametime * 10;
 	time1 = frametime * 5;
@@ -1068,11 +1104,14 @@ void CL_RunParticles (void)
 
 			if ((int)p->ramp == 5)
 			{
-				p->vel[0] = p->vel[1] = (rand() % 100) - 50;
-				p->vel[2] += p->vel[0] * 0.5;
+				//p->vel[0] = p->vel[1] = (rand() % 100) - 50;
+				//p->vel[2] += p->vel[0] * 0.5;
+				p->vel[0] = p->wish_vel[0];
+				p->vel[1] = p->wish_vel[1];
+				p->vel[2] = p->wish_vel[2];
 				p->ramp = 6;
 			}
-			p->vel[2] -= grav;
+			//p->vel[2] -= grav;
 
 			break;
 		case pt_holegauss:
@@ -1085,41 +1124,57 @@ void CL_RunParticles (void)
 			break;
 
 		case pt_gaussexit:
-			p->ramp += time1;
-			if (p->ramp > 40)
+			short spread;
+			p->ramp += time5;
+			if (p->ramp > 60)
 				p->die = -1;
 			if ((int)p->ramp == 0)
 			{
-				p->vel[0] += (rand() % 40) - 20;
-				p->vel[1] += (rand() % 40) - 20;
-				p->vel[2] += (rand() % 40) - 20;
+				p->ramp = 1; //be sure to execute only once
+				VectorCopy( p->wish_vel, p->vel );
+				if (p->flag)
+					spread = 100;
+				else
+					spread = 10;
+				//p->vel[0] += (rand() % (spread*2)) - spread;
+				//p->vel[1] += (rand() % (spread*2)) - spread;
+				//p->vel[2] += (rand() % (spread*2)) - spread;
 			}
 			if (p->ramp > 0)
-			{
-				save = p->vel[2];
-				//VectorScale(p->vel, 0.99, p->vel);
-				p->vel[2] = save - grav * (int)p->ramp * 0.1;
-			}
+				p->vel[2] -= grav*2;
 			break;
 
 		case pt_fire:
-			p->ramp += time1;
-			if (p->ramp >= 6)
-				p->die = -1;
+			
+			if (p->flag)
+			{
+				p->vel[0] += (rand() % 100) - 50;
+				p->vel[1] += (rand() % 100) - 50;
+				p->vel[2] += (rand() % 100) - 50;
+				p->ramp += time4;
+				if (p->ramp >= 6)
+					p->die = -1;
+				else
+					p->color = rampgrenade[(int)p->ramp];
+			}
 			else
-				p->color = ramp3[(int)p->ramp];
+			{
+				p->ramp += time2;
+				if (p->ramp >= 6)
+					p->die = -1;
+				else
+					p->color = ramp3[(int)p->ramp];
+			}
+
 			p->vel[2] += grav;
 			break;
 
 		case pt_explode:
 			p->ramp += time2;
-			if (p->ramp >=8)
+			if (p->ramp >=9)
 				p->die = -1;
 			else
-				p->color = ramp1[(int)p->ramp];
-			for (i=0 ; i<3 ; i++)
-				p->vel[i] += p->vel[i]*dvel;
-			p->vel[2] -= grav;
+				p->color = rampinner[(int)p->ramp];
 			break;
 
 		case pt_explode2:
@@ -1128,9 +1183,6 @@ void CL_RunParticles (void)
 				p->die = -1;
 			else
 				p->color = ramp2[(int)p->ramp];
-			for (i=0 ; i<3 ; i++)
-				p->vel[i] -= p->vel[i]*frametime;
-			p->vel[2] -= grav;
 			break;
 
 		case pt_blob:
@@ -1187,11 +1239,11 @@ static void R_FlushParticleBatch (void)
 R_DrawParticles_Real -- johnfitz -- moved all non-drawing code to CL_RunParticles
 ===============
 */
-static void R_DrawParticles_Real (qboolean alpha, qboolean showtris)
+static void R_DrawParticles_Real(qboolean alpha, qboolean showtris)
 {
-	particle_t		*p;
-	particlevert_t	*v;
-	GLubyte			color[4] = {255, 255, 255, 255}, *c; //johnfitz -- particle transparency
+	particle_t* p;
+	particlevert_t* v;
+	GLubyte			color[4] = { 255, 255, 255, 255 }, * c; //johnfitz -- particle transparency
 	extern	cvar_t	r_particles; //johnfitz
 	extern	cvar_t	r_oit;
 	//float			alpha; //johnfitz -- particle transparency
@@ -1209,49 +1261,49 @@ static void R_DrawParticles_Real (qboolean alpha, qboolean showtris)
 	if (!showtris && alpha != ((int)r_particles.value != 2))
 		return;
 
-	GL_BeginGroup ("Particles");
+	GL_BeginGroup("Particles");
 
 	dither = (softemu == SOFTEMU_COARSE && !showtris);
 	oit = (alpha && r_oit.value != 0.f);
-	GL_UseProgram (glprogs.particles[oit][dither]);
+	GL_UseProgram(glprogs.particles[oit][dither]);
 
 	// compensate for apparent size of different particle textures
 	// this bakes in the additional scaling of vup and vright by 1.5f for billboarding,
 	// then down by 0.25f for quad particles
 	scalex = scaley = texturescalefactor * 0.375f;
 	// projection factors (see GL_FrustumMatrix), negated to make things easier in the shader
-	scalex *=  r_matproj[1*4 + 0]; // -1 / tan (fovx/2)
-	scaley *= -r_matproj[2*4 + 1]; // -1 / tan (fovy/2)
-	GL_Uniform3fFunc (0, scalex, scaley, uvscale);
+	scalex *= r_matproj[1 * 4 + 0]; // -1 / tan (fovx/2)
+	scaley *= -r_matproj[2 * 4 + 1]; // -1 / tan (fovy/2)
+	GL_Uniform3fFunc(0, scalex, scaley, uvscale);
 
 	if (alpha)
-		GL_SetState (GLS_BLEND_ALPHA_OIT | GLS_NO_ZWRITE | GLS_CULL_NONE | GLS_ATTRIBS (2) | GLS_INSTANCED_ATTRIBS (2));
+		GL_SetState(GLS_BLEND_ALPHA_OIT | GLS_NO_ZWRITE | GLS_CULL_NONE | GLS_ATTRIBS(2) | GLS_INSTANCED_ATTRIBS(2));
 	else
-		GL_SetState (GLS_BLEND_OPAQUE | GLS_CULL_NONE | GLS_ATTRIBS (2) | GLS_INSTANCED_ATTRIBS (2));
+		GL_SetState(GLS_BLEND_OPAQUE | GLS_CULL_NONE | GLS_ATTRIBS(2) | GLS_INSTANCED_ATTRIBS(2));
 
 	numpartverts = 0;
 	for (i = 0, p = particles; i < r_numactiveparticles; i++, p++)
 	{
 		if (numpartverts == countof(partverts))
-			R_FlushParticleBatch ();
+			R_FlushParticleBatch();
 
 		v = &partverts[numpartverts++];
-		VectorCopy (p->org, v->pos);
+		VectorCopy(p->org, v->pos);
 
 		//johnfitz -- particle transparency and fade out
-		c = showtris ? color : (GLubyte *) &d_8to24table[(int)p->color];
+		c = showtris ? color : (GLubyte*)&d_8to24table[(int)p->color];
 		*(uint32_t*)&v->color = *(uint32_t*)c;
 		v->color[0] = c[0];
 		v->color[1] = c[1];
 		v->color[2] = c[2];
-		alpha = CLAMP(0, p->die + 1 - cl.time, 1); // + 0.5
-		v->color[3] = (int)(alpha * 255);//c[3]; //(int)(alpha * 255);
+		//alpha = CLAMP(0, p->die + 0.5 - cl.time, 1);
+		v->color[3] = c[3]; //(int)(alpha * 255);
 		//johnfitz
 	}
 
-	R_FlushParticleBatch ();
+	R_FlushParticleBatch();
 
-	GL_EndGroup ();
+	GL_EndGroup();
 }
 
 /*

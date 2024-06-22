@@ -70,6 +70,7 @@ cvar_t	r_viewmodel_quake = {"r_viewmodel_quake", "0", CVAR_ARCHIVE};
 
 extern	int			in_forward, in_forward2, in_back;
 vec3_t	v_punchangles[2]; //johnfitz -- copied from cl.punchangle.  0 is current, 1 is previous value. never the same unless map just loaded
+vec3_t	v_shakeangles[2]; //qSprawl 
 
 /*
 ===============
@@ -861,7 +862,6 @@ void V_CalcRefdef (void)
 	view->origin[2] += bob;
 
 	View_ModelDrift(view->origin, view->angles);
-	VectorAdd(view->origin, cl.viewmodeloffset_origin, view->origin);
 	VectorAdd(view->angles, cl.viewmodeloffset_angles, view->angles);
 
 	//johnfitz -- removed all gun position fudging code (was used to keep gun from getting covered by sbar)
@@ -899,17 +899,24 @@ void V_CalcRefdef (void)
 	blend[0] = v_punchangles[1][0] + (v_punchangles[0][0] - v_punchangles[1][0]) * punchblend;
 	blend[1] = v_punchangles[1][1] + (v_punchangles[0][1] - v_punchangles[1][1]) * punchblend;
 	blend[2] = v_punchangles[1][2] + (v_punchangles[0][2] - v_punchangles[1][2]) * punchblend;
-	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
-	//blend[0] *= -1;
-	//VectorAdd(view->angles, blend, view->angles);
-	blend[0] *= 1;
-	blend[1] *= -1;
-	blend[2] = 0;
-	VectorAdd(view->angles, blend, view->angles);
-	//VectorScale(blend, 10, blend);
-	//AngleVectors(blend, forward, right, up);
 
-	//VectorAdd(view->origin, blend, view->origin);
+	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
+	blend[0] *= -1;
+	VectorAdd(view->angles, blend, view->angles);
+// add view shake
+	punchblend = (cl.time - cl.shaketime) / 0.1f;
+	if (punchblend < 0.0f) punchblend = 0.0f;
+	if (punchblend > 1.0f) punchblend = 1.0f;
+
+	blend[0] = v_shakeangles[1][0] + (v_shakeangles[0][0] - v_shakeangles[1][0]) * punchblend;
+	blend[1] = v_shakeangles[1][1] + (v_shakeangles[0][1] - v_shakeangles[1][1]) * punchblend;
+	blend[2] = v_shakeangles[1][2] + (v_shakeangles[0][2] - v_shakeangles[1][2]) * punchblend;
+	
+	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
+
+	blend[1] *= -1;
+	VectorScale(blend, 2, blend);
+	VectorAdd(view->angles, blend, view->angles);
 
 //johnfitz
 

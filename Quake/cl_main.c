@@ -71,6 +71,7 @@ extern cvar_t	r_lerpmodels, r_lerpmove; //johnfitz
 extern float	host_netinterval;	//Spike
 
 extern vec3_t	v_punchangles[2];
+extern vec3_t	v_shakeangles[2];
 
 void CL_FreeState(void)
 {
@@ -117,6 +118,7 @@ void CL_ClearState (void)
 	//johnfitz
 
 	memset (v_punchangles, 0, sizeof (v_punchangles));
+	memset (v_shakeangles, 0, sizeof (v_shakeangles));
 }
 
 /*

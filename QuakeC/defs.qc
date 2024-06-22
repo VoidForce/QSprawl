@@ -132,6 +132,8 @@ void		end_sys_globals;		// flag for structure dumping
 
 .vector		punchangle;		// temp angle adjust from damage or recoil
 .vector		punchvelocity;
+.vector		shakeangle;
+.vector		shakevelocity;
 
 .string		classname;		// spawn function
 .string		model;
@@ -247,7 +249,6 @@ void		end_sys_globals;		// flag for structure dumping
 .float		wallrun;
 .vector		wall_normal;
 .float 		wall_jumps;
-.vector		viewmodeloffset_origin;
 .vector     viewmodeloffset_angles;
 .float		adrenaline; // [0 .. 1]
 .float		engineflags;
@@ -299,7 +300,7 @@ const float	MOVETYPE_NOCLIP			= 8;
 const float	MOVETYPE_FLYMISSILE		= 9;	// fly with extra size against monsters
 const float	MOVETYPE_BOUNCE			= 10;
 const float	MOVETYPE_BOUNCEMISSILE	= 11;	// bounce with extra size
-
+const float	MOVETYPE_GIB			= 11;	// 2021 rerelease gibs
 // edict.solid values
 const float	SOLID_NOT				= 0;	// no interaction with other objects
 const float	SOLID_TRIGGER			= 1;	// touch on edge, but not blocking
@@ -458,8 +459,11 @@ float	slowmotion;
 float	slowmotion_time;
 
 float	skill;
-entity	multi_ent;
-float	multi_damage;
+entity	multi_head;
+// fields related to global multi damage 
+.float	multi_damage;
+.float	multi_damagehead;
+.entity multi_chain;
 
 
 //================================================
@@ -481,6 +485,10 @@ float	multi_damage;
 .float		light_lev;		// not used by game, but parsed by light util
 .float		style;
 .float		gravity;
+
+.vector	saved_forward;
+.vector	saved_right;
+.vector saved_up;
 
 //
 // monster ai
@@ -516,10 +524,20 @@ const float	AS_MISSILE		= 4;
 #define IGNOREMONSTERS 1
 #define ALLOWMONSTERS 0
 #define COMBO_RESET_TIME 0.25
+#define FOREVER -1
+
+#define MAX_SHELLS 40
+#define MAX_NAILS 250
+#define MAX_ROCKETS 6
+#define MAX_CELLS 16
+const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
+const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
+const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
+const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
 // ENGINE FLAGS, USED ON THE ENGINE SIDE FOR THINGS, ALWAYS SENT
 const float ENF_HITMARKER = 1;
 const float ENF_ADRENALINE_OFF = 2;
-
+const float ENF_NOWALLRUN = 4;
 
 const float IMPACT_NORMAL = 0;
 const float IMPACT_GAUSS_FINAL = 1; // solid, endpoint
@@ -538,6 +556,10 @@ const float MF_CROUCHINAIR = 1;
 const float	MF_INSLIDE = 2;
 const float MF_LEFTLEG = 4;
 const float MF_JUMPDISABLED = 8;
+const float MF_NOACCELERATION = 16;
+const float MF_NOAIRACCELERATION = 32;
+const float MF_FORCEDSLIDE = 64;
+
 //muzzleflash
 const float	MF_PISTOL = 1;
 const float	MF_SHOTGUN = 2;
@@ -568,6 +590,16 @@ const float SFL_INERTIA = 64;
 const float SFL_VMOFFSET = 128; // TODO: i need to make something about viewmodel
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
+const float SFLP_GRENADE_CHARGED = 1;
+const float SFLP_GRENADE_NOTOUCH = 2;
+
+//monsterflags, should be only set on monsters
+const float MFL_ISMONSTER = 1; // should be always set by default to every monster
+const float MFL_HASHEAD = 2;
+const float MFL_HEADKILLS = 4;
+const float MFL_PAIN_HEADSHOT = 8;
+const float MFL_LOST_HEAD = 16;
+
 // movement inputs
 const float MOVE_FORWARD = 1;
 const float MOVE_BACKWARD = 2;
@@ -575,12 +607,25 @@ const float MOVE_RIGHT = 4;
 const float MOVE_LEFT = 8;
 const float MOVE_NONE = 0;
 
-const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
-const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
-const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
-const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
+//damage flags
+const float DF_HEADSHOT = 1;
+
+//monstertype
+const float TYPE_SOLDIER = 1;
+const float TYPE_ENFORCER = 2;
+const float TYPE_KNIGHT = 4;
+const float TYPE_HELLKNIGHT = 8;
+const float TYPE_DOG = 16;
+const float TYPE_FIEND = 32;
+const float TYPE_SCRAG = 64;
+const float TYPE_OGRE = 128;
+const float TYPE_SHAMBLER = 256;
+const float TYPE_ZOMBIE = 512;
+
 //
+
 .float		sprawlflags;
+.float		movementflags;
 .float		katana_finished;
 .float		katanasound_finished;
 .float		pistol_finished;
@@ -591,6 +636,10 @@ const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.92
 .float		chaingun_speed;
 .float		chaingun_frame;
 //.float		chaingun_barrel;
+.float		slide_active;
+.float 		jump_timer;
+.float		crouch_timer;
+.float		footstep_timer;
 
 .vector		punch_fast;
 .vector		punch_normal;
@@ -608,27 +657,53 @@ entity		grenade_handler; // global
 .string		quickmelee_model; // stores the current weapon model;
 .float		quickmelee_weapon;
 .float		hitmarker_time;
+.float		katana_charges;
+.float		slash_list;
 
-.float		current_speed;
-.float		speedmodifier;
-.float		adrenaline_regentimer;
-.float		dodge_time;
-.float		combo;
-.float		combo_index;
+.float		forcedslide_timer; // no friction until timer ends
+.float		noairacceleration_timer; // same for air acceleration
+.float		current_airacceleration; // save previous state to restore to it
+.float		noacceleration_timer; // same
+.float		current_acceleration;
+.float		nowallrun_timer; // forbids wallrunning
+.float		current_speed; //
+.float		speedmodifier; // changes speed when katana in hands
+.float		adrenaline_regentimer; 
+.float		dodge_time; // time until next dodge can be performed
+.float		combo_index; // 
 .float		combo_index_head;
 .vector		combo_queue;
 .float		combo_timer;
 .float		saved_inputs;
 .float		saved_inputs_old;
+
 // monsters stuff ----------------------------------------------------------------------------------------------------------
+.float		monstertype;
+
+// head sphere debug
+.vector		origin_old;
+.vector 	offset_old; 
+.float		lasttick_time; // used for head sphere, last frame change
+.entity 	headmodel; // head sphere entity
+.float 		alpha;
+// end
 .vector		head_offset;
 .float		head_size;
-.float		bodytype;
+.float		monsterflags;
+.float		bodytype; //flesh or robot used BT_ flag ? should use monsterflag instead ?
+.float		gib_threshold; // amount of damage required to gib the monster
+.float 		lasthit_damage; //save amount of damage from last damage taken, used for gibs logic
+.vector		lasthit_direction; // direction to launch the gibs
+//.float		health_body;
+.float		health_head; // head has separate healthpool, it still can kill the monster or made him headless
+.float		armorclass_body;
+.float		armorclass_head;
+
 //
 // extra utility fields, to meet all the needs for complex stuff
-.float		fA, fB, fC, fD, fE, fF, fG, fH, fI, fJ, fK, fL, fM, fN, fO, fP; // 16 floats 
-.vector		vA, vB, vC, vD, vE, vF, vG, vH, vI, vJ, vK, vL, vM, vN, vO, vP; // 48 floats
-.entity		eA, eB, eC, eD, eE, eF, eG, eH, eI, eJ, eK, eL, eM, eN, eO, eP; // 16 ints
+//.float		fA, fB, fC, fD, fE, fF, fG, fH, fI, fJ, fK, fL, fM, fN, fO, fP; // 16 floats 
+//.vector		vA, vB, vC, vD, vE, vF, vG, vH, vI, vJ, vK, vL, vM, vN, vO, vP; // 48 floats
+//.entity		eA, eB, eC, eD, eE, eF, eG, eH, eI, eJ, eK, eL, eM, eN, eO, eP; // 16 ints
 
 .float		walkframe;
 
@@ -656,11 +731,6 @@ entity		grenade_handler; // global
 .float		air_finished;	// when time > air_finished, start drowning
 .float		bubble_count;	// keeps track of the number of bubbles
 .string		deathtype;		// keeps track of how the player died
-.float		slide_active;
-.float 		jump_timer;
-.float		crouch_timer;
-.float		footstep_timer;
-.float		movementflags;
 
 //
 // object stuff

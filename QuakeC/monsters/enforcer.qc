@@ -209,13 +209,26 @@ void(entity attacker, float damage)	enf_pain =
 	if (self.pain_finished > time)
 		return;
 
-	
 	if (r < 0.5)
 		sound (self, CHAN_VOICE, "enforcer/pain1.wav", 1, ATTN_NORM);
-
 	else
 		sound (self, CHAN_VOICE, "enforcer/pain2.wav", 1, ATTN_NORM);
-
+	
+	if (self.monsterflags & MFL_PAIN_HEADSHOT)
+	{
+		if (r < 0.5)
+		{
+			self.pain_finished = time + 2;
+			enf_paind1 ();
+		}
+		else
+		{
+			self.pain_finished = time + 1;
+			enf_painc1 ();
+		}
+		return;
+	}
+	
 	if (r < 0.2)
 	{
 		self.pain_finished = time + 1;
@@ -233,46 +246,30 @@ void(entity attacker, float damage)	enf_pain =
 		self.pain_finished = time + 1;
 		enf_painc1 ();
 	}
-
-	else
-	{
-		self.pain_finished = time + 2;
-		enf_paind1 ();
-	}
 };
 
 //============================================================================
 
-void()	enf_die1	=[	$death1,	enf_die2	] {};
-void()	enf_die2	=[	$death2,	enf_die3	] {};
-void()	enf_die3	=[	$death3,	enf_die4	]
-{
-	self.ammo_cells = 5;
-	DropBackpack();
-};
-
-void()	enf_die4	=[	$death4,	enf_die5	] {ai_forward(14);};
-void()	enf_die5	=[	$death5,	enf_die6	] {ai_forward(2);};
+void()	enf_die1	=[	$death1,	enf_die2	] {ai_velocity(40);};
+void()	enf_die2	=[	$death2,	enf_die3	] {ai_velocity(30);};
+void()	enf_die3	=[	$death3,	enf_die4	] {ai_velocity(20);};
+void()	enf_die4	=[	$death4,	enf_die5	] {ai_velocity(20);};
+void()	enf_die5	=[	$death5,	enf_die6	] {ai_velocity(20);};
 void()	enf_die6	=[	$death6,	enf_die7	] {};
 void()	enf_die7	=[	$death7,	enf_die8	] {};
 void()	enf_die8	=[	$death8,	enf_die9	] {};
-void()	enf_die9	=[	$death9,	enf_die10	] {ai_forward(3);};
-void()	enf_die10	=[	$death10,	enf_die11	] {ai_forward(5);};
-void()	enf_die11	=[	$death11,	enf_die12	] {ai_forward(5);};
-void()	enf_die12	=[	$death12,	enf_die13	] {ai_forward(5);};
+void()	enf_die9	=[	$death9,	enf_die10	] {};
+void()	enf_die10	=[	$death10,	enf_die11	] {};
+void()	enf_die11	=[	$death11,	enf_die12	] {};
+void()	enf_die12	=[	$death12,	enf_die13	] {};
 void()	enf_die13	=[	$death13,	enf_die14	] {};
 void()	enf_die14	=[	$death14,	enf_die14	] {};
 
-void()	enf_fdie1	=[	$fdeath1,	enf_fdie2	] {};
-void()	enf_fdie2	=[	$fdeath2,	enf_fdie3	] {};
-void()	enf_fdie3	=[	$fdeath3,	enf_fdie4	] 
-{
-	self.solid = SOLID_NOT;self.ammo_cells = 5;
-	DropBackpack();
-};
-
-void()	enf_fdie4	=[	$fdeath4,	enf_fdie5	] {};
-void()	enf_fdie5	=[	$fdeath5,	enf_fdie6	] {};
+void()	enf_fdie1	=[	$fdeath1,	enf_fdie2	] {ai_velocity(40);};
+void()	enf_fdie2	=[	$fdeath2,	enf_fdie3	] {ai_velocity(30);};
+void()	enf_fdie3	=[	$fdeath3,	enf_fdie4	] {ai_velocity(20);};
+void()	enf_fdie4	=[	$fdeath4,	enf_fdie5	] {ai_velocity(20);};
+void()	enf_fdie5	=[	$fdeath5,	enf_fdie6	] {ai_velocity(20);};
 void()	enf_fdie6	=[	$fdeath6,	enf_fdie7	] {};
 void()	enf_fdie7	=[	$fdeath7,	enf_fdie8	] {};
 void()	enf_fdie8	=[	$fdeath8,	enf_fdie9	] {};
@@ -280,33 +277,35 @@ void()	enf_fdie9	=[	$fdeath9,	enf_fdie10	] {};
 void()	enf_fdie10	=[	$fdeath10,	enf_fdie11	] {};
 void()	enf_fdie11	=[	$fdeath11,	enf_fdie11	] {};
 
-
 void() enf_die =
 {
 	self.solid = SOLID_NOT;
-	setHead('0 0 0');
+	self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.health < -35)
+	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_mega.mdl", self.health);
 		ThrowGib ("progs/gib1.mdl", self.health);
 		ThrowGib ("progs/gib2.mdl", self.health);
 		ThrowGib ("progs/gib3.mdl", self.health);
-
 		return;
 	}
-
-	// regular death
-	sound (self, CHAN_VOICE, "enforcer/death1.wav", 1, ATTN_NORM);
-
-	if (random() > 0.5)
-		enf_die1 ();
-
+	
+	if (self.health_head <= 0)
+	{
+		setmodel (self, "progs/enforcer_headless.mdl");
+		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
+		for (float i = 0; i < 5; i++)
+		{
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+		}
+	}
 	else
-		enf_fdie1 ();
+		sound (self, CHAN_VOICE, "enforcer/death1.wav", 1, ATTN_NORM);
+	
+	enf_fdie1 ();
 };
-
 
 /*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
 
@@ -319,6 +318,8 @@ void() monster_enforcer =
 	}
 	
 	precache_model2 ("progs/enforcer.mdl");
+	precache_model2 ("progs/enforcer_headless.mdl");
+	
 	precache_model2 ("progs/h_mega.mdl");
 	//precache_model2 ("progs/laser.mdl");
 	precache_sound ("soldier/sattck1.wav");
@@ -349,9 +350,16 @@ void() monster_enforcer =
 
 	setsize (self, '-16 -16 -24', '16 16 34');//40
 	self.head_offset = '-4 2 29';//'-4 2 29';
-	self.head_size = 10;
-	self.health = 120;
-	self.max_health = 120;
+	self.head_size = 12;
+	self.health = 150;
+	self.max_health = 150;
+	//self.health_body = ;
+	self.health_head = 50;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
+	self.monstertype = TYPE_ENFORCER;
+	self.armorclass_body = 20;
+	self.armorclass_head = 5;
+	self.gib_threshold = 100;
 
 	self.th_stand = enf_stand1;
 	self.th_walk = enf_walk1;
@@ -359,6 +367,6 @@ void() monster_enforcer =
 	self.th_pain = enf_pain;
 	self.th_die = enf_die;
 	self.th_missile = enf_atk1;
-
+		
 	walkmonster_start();
 };

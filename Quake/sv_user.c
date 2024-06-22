@@ -175,58 +175,13 @@ void SV_Accelerate (float wish_speed, vec3_t wish_direction)
 	addspeed = wish_speed - dotspeed;
 	if (addspeed <= 0)
 		return;
-	accelspeed = sv_player->v.phys_acceleration * host_frametime * wish_speed;
+	accelspeed = (13 * sv_player->v.phys_acceleration) * host_frametime * wish_speed;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
 		velocity[i] += accelspeed * wish_direction[i];
 }
-
-/*
-//Qsprawl: Does both acceleration and braking deceleration in one go
-void SV_AirAccelerate(vec3_t wish_velocity)
-{
-	int i;
-	vec3_t acceleration = { 0, 0, 0 };
-	float result;
-	float reach; // distance to reach the wished velocity value
-
-	SV_UserFriction(sv_player->v.phys_airfriction);
-	VectorScale(wish_velocity, host_frametime * sv_player->v.phys_airacceleration, acceleration);
-	for (i = 0; i < 2; i++)
-	{
-		// in case of zero, we just skip	
-		if (wish_velocity[i] != 0)
-		{
-			// so, if curent value is more than maximum limit, keep it unchanged.
-			result = velocity[i];
-
-			// if reach have opposite sign of wish_velocity, that means that current speed already more 
-			// than maximum speed, that's how we know that we don't want to add anything more
-			reach = wish_velocity[i] - velocity[i];
-			// case in which we have some distance to travel to wished value
-			//positive values
-			if ((wish_velocity[i] > 0) && reach > 0)
-			{
-				// add acceleration
-				result = velocity[i] + acceleration[i];
-				// limit to max speed
-				result = q_min_f(result, wish_velocity[i]);
-			}
-			//negative values
-			else if ((wish_velocity[i] < 0) && reach < 0)
-			{
-				// add acceleration
-				result = velocity[i] + acceleration[i];
-				// limit to max speed
-				result = q_max_f(result, wish_velocity[i]);
-			}
-
-			velocity[i] = result;
-		}
-	}
-}*/
 
 void SV_AirAccelerate(float wishspeed, vec3_t wishveloc)
 {
@@ -241,7 +196,7 @@ void SV_AirAccelerate(float wishspeed, vec3_t wishveloc)
 	if (addspeed <= 0)
 		return;
 	//	accelspeed = sv_accelerate.value * host_frametime;
-	accelspeed = sv_player->v.phys_airacceleration * wishspeed * host_frametime;
+	accelspeed = (10 * sv_player->v.phys_airacceleration) * wishspeed * host_frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -259,7 +214,7 @@ void SV_Q2AirAccelerate(float wishspeed, vec3_t wishdir)
 	if (addspeed <= 0)
 		return;
 
-	accelspeed = host_frametime * wishspeed;
+	accelspeed = host_frametime * wishspeed * sv_player->v.phys_airacceleration;
 
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
@@ -276,7 +231,7 @@ void SV_WallRunDetection()
 	int i;
 	float WallDetectionDistance;
 
-	if (onground)
+	if (onground || ((int)sv_player->v.engineflags & ENF_NOWALLRUN))
 	{
 		sv_player->v.wallrun = 0; //reset
 		return;
@@ -372,6 +327,47 @@ void DropPunchAngle (void)
 	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);*/
 }
 
+#define SHAKE_DAMPING		9.0f	
+#define SHAKE_SPRING_CONSTANT	120.0f	
+void DropShakeAngle(void)
+{
+	vec3_t temp;
+	float damping, magnitude;
+
+	if (DotProduct(sv_player->v.shakeangle, sv_player->v.shakeangle) > 0.01
+		|| DotProduct(sv_player->v.shakevelocity, sv_player->v.shakevelocity) > 0.01)
+	{
+		VectorScale(sv_player->v.shakevelocity, host_frametime, temp);
+		VectorAdd(sv_player->v.shakeangle, temp, sv_player->v.shakeangle);
+		damping = q_max_f(0, 1 - (SHAKE_DAMPING * host_frametime));
+		VectorScale(sv_player->v.shakevelocity, damping, sv_player->v.shakevelocity);
+		magnitude = clamp_f(0, SHAKE_SPRING_CONSTANT * host_frametime, 2);
+		VectorScale(sv_player->v.shakeangle, magnitude, temp);
+		VectorSubtract(sv_player->v.shakevelocity, temp, sv_player->v.shakevelocity);
+
+		sv_player->v.shakeangle[0] = clamp_f(-89, sv_player->v.shakeangle[0], 89);
+		sv_player->v.shakeangle[1] = clamp_f(-179, sv_player->v.shakeangle[1], 179);
+		sv_player->v.shakeangle[2] = clamp_f(-89, sv_player->v.shakeangle[2], 89);
+	}
+	else
+	{
+		//reset to 0
+		VectorCopy(vec3_origin, sv_player->v.shakeangle);
+		VectorCopy(vec3_origin, sv_player->v.shakevelocity);
+	}
+}
+
+void DropModelOffset(void)
+{
+	float len;
+	//VectorAdd(view->angles, cl.viewmodeloffset_angles, view->angles);
+	len = VectorNormalize (sv_player->v.viewmodeloffset_angles);
+	len -= (180 + len * 2) * host_frametime;
+	if (len < 0)
+		len = 0;
+	VectorScale (sv_player->v.viewmodeloffset_angles, len, sv_player->v.viewmodeloffset_angles);
+}
+
 /*
 ===================
 SV_WaterMove
@@ -430,7 +426,7 @@ void SV_WaterMove (void)
 		return;
 
 	VectorNormalize (wishvel);
-	accelspeed = sv_player->v.phys_acceleration * wishspeed * host_frametime;
+	accelspeed = (13 * sv_player->v.phys_acceleration) * wishspeed * host_frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -614,6 +610,8 @@ void SV_ClientThink (void)
 	velocity = sv_player->v.velocity;
 
 	DropPunchAngle ();
+	DropShakeAngle ();
+	DropModelOffset ();
 
 //
 // if dead, behave differently

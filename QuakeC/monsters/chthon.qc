@@ -259,6 +259,7 @@ void(vector p) boss_missile =
 
 void() boss_awake =
 {
+	self.flags |= FL_MONSTER;
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
 	self.takedamage = DAMAGE_NO;

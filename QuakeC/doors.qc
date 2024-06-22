@@ -45,7 +45,7 @@ void() door_go_up;
 
 void() door_blocked =
 {
-	T_Damage (other, self, self, self.dmg);
+	T_Damage (other, self, self, self.dmg, 0);
 	
 	// if a door has a negative wait, it would never come back if blocked,
 	// so let it just squash the object to death real fast
@@ -732,7 +732,7 @@ void () secret_blocked =
 		return;
 
 	self.attack_finished = time + 0.5;
-	T_Damage (other, self, self, self.dmg);
+	T_Damage (other, self, self, self.dmg, 0);
 };
 
 /*================

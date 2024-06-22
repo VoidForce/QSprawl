@@ -159,7 +159,7 @@ void() ZombieGrenadeTouch =
 
 	if (other.takedamage)
 	{
-		T_Damage (other, self, self.owner, 10 );
+		T_Damage (other, self, self.owner, 10, 0);
 		sound (self, CHAN_WEAPON, "zombie/z_hit.wav", 1, ATTN_NORM);
 		remove (self);
 		return;
@@ -176,15 +176,21 @@ void() ZombieGrenadeTouch =
 ZombieFireGrenade
 ================
 */
-void(vector st) ZombieFireGrenade =
+void(vector st) ZombieFireHead =
 {
 	local	entity missile;
 	local	vector	org;
-
-	sound (self, CHAN_WEAPON, "zombie/z_shot1.wav", 1, ATTN_NORM);
+	self.monsterflags -= self.monsterflags & MFL_HASHEAD;
+	setmodel (self, "progs/zombie_headless.mdl");
+	
+	// gp into one of the fast pain animations	
+	self.pain_finished = time + 3;
+	self.inpain = 2;
+	self.solid = SOLID_NOT;
+	zombie_paine1 ();
 
 	missile = spawn ();
-	missile.classname = "zombie_grenade";	//gnounc
+	missile.classname = "zombie_head";	//gnounc
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
@@ -197,6 +203,49 @@ void(vector st) ZombieFireGrenade =
 	makevectors2 (self.angles);
 
 	missile.velocity = normalize(self.enemy.origin - org);
+	missile.velocity = missile.velocity * 600;
+	missile.velocity_z = 200;
+
+	missile.avelocity = '300 100 200';
+
+	missile.touch = OgreGrenadeExplode;
+	
+	// set missile duration
+	missile.nextthink = time + 2.5;
+	missile.think = SUB_Remove;
+
+	setmodel (missile, "progs/h_zombie.mdl");
+	setsize (missile, '0 0 0', '0 0 0');		
+	setorigin (missile, org);
+};
+
+void(vector st) ZombieFireGrenade =
+{
+	local	entity missile;
+	local	vector	org;
+
+	sound (self, CHAN_WEAPON, "zombie/z_shot1.wav", 1, ATTN_NORM);
+	if (self.monsterflags & MFL_HASHEAD && self.health < 50)
+	{
+		ZombieFireHead(st);
+		return;
+	}
+	missile = spawn ();
+	missile.classname = "zombie_grenade";	//gnounc
+	missile.owner = self;
+	missile.movetype = MOVETYPE_BOUNCE;
+	missile.solid = SOLID_BBOX;
+
+	// calc org
+	org = self.origin + st_x * v_forward + st_y * v_right + (st_z - 24) * v_up;
+	
+	// set missile speed	
+
+	makevectors2 (self.angles);
+	if (self.monsterflags & MFL_HASHEAD)
+		missile.velocity = normalize(self.enemy.origin - org);
+	else
+		missile.velocity = normalize([self.enemy.origin_x + crandom()*64,self.enemy.origin_y + crandom()*64,self.enemy.origin_z + crandom()*64] - org);
 	missile.velocity = missile.velocity * 600;
 	missile.velocity_z = 200;
 
@@ -226,7 +275,7 @@ void() zombie_atta9		=[	$atta9,		zombie_atta10	] {setHead('6 4 19');ai_face();};
 void() zombie_atta10	=[	$atta10,	zombie_atta11	] {setHead('3 2 19');ai_face();}; //62
 void() zombie_atta11	=[	$atta11,	zombie_atta12	] {setHead('0 0 17');ai_face();}; //63
 void() zombie_atta12	=[	$atta12,	zombie_atta13	] {setHead('7 0 14');ai_face();}; //64
-void() zombie_atta13	=[	$atta13,	zombie_run1	] 	  {setHead('13 2 6');ai_face();ZombieFireGrenade('-10 -22 30');}; //65
+void() zombie_atta13	=[	$atta13,	zombie_run1	] 	  {setHead('13 2 6');ai_face();ZombieFireGrenade('9 -8 31');}; //65
 
 void() zombie_attb1		=[	$attb1,		zombie_attb2	] {setHead('-1 0 21');ai_face();}; //66
 void() zombie_attb2		=[	$attb2,		zombie_attb3	] {setHead('-5 -2 20');ai_face();}; //67
@@ -241,7 +290,7 @@ void() zombie_attb10	=[	$attb10,	zombie_attb11	] {setHead('-1 4 13');ai_face();}
 void() zombie_attb11	=[	$attb11,	zombie_attb12	] {setHead('-2 5 14');ai_face();}; //76
 void() zombie_attb12	=[	$attb12,	zombie_attb13	] {setHead('-2 5 14');ai_face();}; //77
 void() zombie_attb13	=[	$attb13,	zombie_attb14	] {setHead('7 2 12');ai_face();}; //78
-void() zombie_attb14	=[	$attb13,	zombie_run1	] 	  {setHead('13 1 7');ai_face();ZombieFireGrenade('-10 -24 29');}; //79
+void() zombie_attb14	=[	$attb13,	zombie_run1	] 	  {setHead('13 1 7');ai_face();ZombieFireGrenade('3 6 31');}; //79
 
 void() zombie_attc1		=[	$attc1,		zombie_attc2	] {setHead('-1 0 21');ai_face();}; //80
 void() zombie_attc2		=[	$attc2,		zombie_attc3	] {setHead('-2 1 21');ai_face();}; //81
@@ -254,7 +303,7 @@ void() zombie_attc8		=[	$attc8,		zombie_attc9	] {setHead('-1 9 20');ai_face();};
 void() zombie_attc9		=[	$attc9,		zombie_attc10	] {setHead('-1 -1 20');ai_face();}; //88
 void() zombie_attc10	=[	$attc10,	zombie_attc11	] {setHead('-7 0 19');ai_face();}; //89
 void() zombie_attc11	=[	$attc11,	zombie_attc12	] {setHead('10 3 11');ai_face();}; //90
-void() zombie_attc12	=[	$attc12,	zombie_run1		] {setHead('14 3 2');ai_face();ZombieFireGrenade('-12 -19 29');}; //91
+void() zombie_attc12	=[	$attc12,	zombie_run1		] {setHead('14 3 2');ai_face();ZombieFireGrenade('-12 -15 29');}; //91
 
 void() zombie_missile =
 {
@@ -356,17 +405,25 @@ void() zombie_paine1	=[	$paine1,	zombie_paine2	] {setHead('0 0 24');   //163
 sound (self, CHAN_VOICE, "zombie/z_pain.wav", 1, ATTN_NORM);};
 void() zombie_paine2	=[	$paine2,	zombie_paine3	] {setHead('6 0 26');ai_pain(8);}; //164
 void() zombie_paine3	=[	$paine3,	zombie_paine4	] {setHead('5 0 26');ai_pain(5);}; //165
-void() zombie_paine4	=[	$paine4,	zombie_paine5	] {setHead('1 0 23');ai_pain(3);}; //166
-void() zombie_paine5	=[	$paine5,	zombie_paine6	] {setHead('-1 0 17');ai_pain(1);}; //167
-void() zombie_paine6	=[	$paine6,	zombie_paine7	] {setHead('-4 0 10');ai_pain(2);}; //168
-void() zombie_paine7	=[	$paine7,	zombie_paine8	] {setHead('-8 0 1');ai_pain(1);}; //169
-void() zombie_paine8	=[	$paine8,	zombie_paine9	] {setHead('-12 0 -6');ai_pain(1);}; //170
-void() zombie_paine9	=[	$paine9,	zombie_paine10	] {setHead('-15 0 -11');ai_pain(2);}; //171
+void() zombie_paine4	=[	$paine4,	zombie_paine5	] {setHead('1 0 23');self.nextthink = time + 0.05; ai_pain(3);}; //166
+void() zombie_paine5	=[	$paine5,	zombie_paine6	] {setHead('-1 0 17');self.nextthink = time + 0.05;ai_pain(1);}; //167
+void() zombie_paine6	=[	$paine6,	zombie_paine7	] {setHead('-4 0 10');self.nextthink = time + 0.05;ai_pain(2);}; //168
+void() zombie_paine7	=[	$paine7,	zombie_paine8	] {setHead('-8 0 1');self.nextthink = time + 0.05;ai_pain(1);}; //169
+void() zombie_paine8	=[	$paine8,	zombie_paine9	] {setHead('-12 0 -6');self.nextthink = time + 0.05;ai_pain(1);}; //170
+void() zombie_paine9	=[	$paine9,	zombie_paine10	] {setHead('-15 0 -11');self.nextthink = time + 0.05;ai_pain(2);}; //171
 void() zombie_paine10	=[	$paine10,	zombie_paine11	] {setHead('-16 1 -17');				 //172
 sound (self, CHAN_BODY, "zombie/z_fall.wav", 1, ATTN_NORM);};
-void() zombie_paine11	=[	$paine11,	zombie_paine12	] {setHead('-16 1 -21');}; //173
+void() zombie_paine11	=[	$paine11,	zombie_paine12	] {setHead('-16 1 -21'); self.nextthink = self.nextthink + 1;}; //173
 void() zombie_paine12	=[	$paine12,	zombie_paine13	] {setHead('-16 1 -22'); //174
-sound (self, CHAN_VOICE, "zombie/z_idle.wav", 1, ATTN_IDLE);};
+	self.solid = SOLID_SLIDEBOX;
+	if (!walkmove (0, 0))
+	{
+		self.think = zombie_die;
+		self.solid = SOLID_NOT;
+		return;
+	}
+	sound (self, CHAN_VOICE, "zombie/z_idle.wav", 1, ATTN_IDLE);
+};
 void() zombie_paine13	=[	$paine13,	zombie_paine14	] {setHead('-16 1 -22');}; //175
 void() zombie_paine14	=[	$paine14,	zombie_paine15	] {setHead('-16 1 -22');}; //176
 void() zombie_paine15	=[	$paine15,	zombie_paine16	] {setHead('-16 1 -22');}; //177
@@ -390,9 +447,13 @@ void() zombie_die =
 {
 	sound (self, CHAN_VOICE, "zombie/z_gib.wav", 1, ATTN_NORM);
 	ThrowHead ("progs/h_zombie.mdl", self.health);
-	ThrowGib ("progs/gib1.mdl", self.health);
-	ThrowGib ("progs/gib2.mdl", self.health);
-	ThrowGib ("progs/gib3.mdl", self.health);
+	ThrowGib ("progs/m_gib_01.mdl", self.health);
+	ThrowGib ("progs/m_gib_02.mdl", self.health);
+	ThrowGib ("progs/m_gib_03.mdl", self.health);
+	ThrowGib ("progs/m_gib_04.mdl", self.health);
+	ThrowGib ("progs/m_gib_05.mdl", self.health);
+	self.think = SUB_Null;
+	self.nextthink = -1;
 };
 
 /*
@@ -418,56 +479,62 @@ void(entity attacker, float take) zombie_pain =
 {
 	local float r;
 
-	if (take >= 190)
+	if (take > 189)
 	{
 		zombie_die();
 		return;
 	}
 	
-	if (take < 60)
+	if (self.monsterflags & MFL_LOST_HEAD)
+	{
+		self.monsterflags -= self.monsterflags & MFL_LOST_HEAD;
+		setmodel (self, "progs/zombie_headless.mdl");
+		
+		if (self.health > 50)
+			self.health = 50;
+		
+		T_RadiusDamage (self, self, 40, self);
+		
+		// gp into one of the fast pain animations	
+		self.pain_finished = time + 3;
+		self.inpain = 2;
+		self.solid = SOLID_NOT;
+		zombie_paine1 ();
+		
+		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+		WriteByte (MSG_BROADCAST, TE_EXPLOSION);
+		WriteCoord (MSG_BROADCAST, self.origin_x + self.head_offset_x);
+		WriteCoord (MSG_BROADCAST, self.origin_y + self.head_offset_y);
+		WriteCoord (MSG_BROADCAST, self.origin_z + self.head_offset_z);
+		return;
+	}
+	
+	if (take < 20)
 		return;				// totally ignore
 
 	if (self.inpain == 2)
 		return;			// down on ground, so don't reset any counters
 
-	// go down immediately if a big enough hit
-	if (take >= 120 || self.health < 100)
-	{
-		self.inpain = 2;
-		zombie_paine1 ();
-		return;
-	}
-	
-	if (self.inpain)
-	{
-		// if hit again in next gre seconds while not in pain frames, definately drop
-		self.pain_finished = time + 3;
-		return;			// currently going through an animation, don't change
-	}
-	
-	if (self.pain_finished > time)
-	{
-		// hit again, so drop down
-		self.inpain = 2;
-		zombie_paine1 ();
-		return;
-	}
-
 	// gp into one of the fast pain animations	
+	if (self.pain_finished > time)
+		return;
 	self.inpain = 1;
+	self.pain_finished = time + 2;
 
 	r = random();
 	if (r < 0.25)
 		zombie_paina1 ();
-
 	else if (r <  0.5)
 		zombie_painb1 ();
-
 	else if (r <  0.75)
 		zombie_painc1 ();
-
 	else
 		zombie_paind1 ();
+};
+
+void() zombie_loosehead =
+{
+
 };
 
 //============================================================================
@@ -485,6 +552,7 @@ void() monster_zombie =
 	}
 
 	precache_model ("progs/zombie.mdl");
+	precache_model ("progs/zombie_headless.mdl");
 	precache_model ("progs/h_zombie.mdl");
 	precache_model ("progs/zom_gib.mdl");
 
@@ -511,9 +579,14 @@ void() monster_zombie =
 
 	setsize (self, '-16 -16 -24', '16 16 26'); //40
 	self.head_offset = '-2 -1 23';
-	self.head_size = 12;
-	self.health = 400;
-	self.max_health = 400;
+	self.head_size = 8;
+	self.health = 200;
+	self.monsterflags |= MFL_HASHEAD;
+	self.monstertype = TYPE_ZOMBIE;
+	self.health_head = 70;
+	self.armorclass_body = 25;
+	self.armorclass_head = 25;
+	self.max_health = 200;
 	self.bodytype = BT_ROBOT;
 	
 	self.th_stand = zombie_stand1;
@@ -526,6 +599,7 @@ void() monster_zombie =
 	if (self.spawnflags & SPAWN_CRUCIFIED)
 	{
 		self.movetype = MOVETYPE_NONE;
+		self.solid = SOLID_NOT;
 		zombie_cruc1 ();
 	}
 	else
