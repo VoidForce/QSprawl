@@ -772,7 +772,7 @@ void(string gibname, vector direction) ThrowGibDirection =
 	new.flags = 0;
 };
 
-void(string gibname, vector direction) ThrowHeadGib =
+void(string gibname, vector direction, float flag) ThrowHeadGib =
 {
 	local	entity new;
 
@@ -783,9 +783,20 @@ void(string gibname, vector direction) ThrowHeadGib =
 	new.velocity = direction;
 	new.movetype = MOVETYPE_BOUNCE;
 	new.solid = SOLID_NOT;
-	new.avelocity_x = random()*600;
-	new.avelocity_y = random()*600;
-	new.avelocity_z = random()*600;
+	
+	if (flag)
+	{
+		new.angles = self.angles;
+		new.avelocity_x = random()*100;
+		new.avelocity_y = random()*40;
+		//new.avelocity_z = random()*100;
+	}
+	else
+	{
+		new.avelocity_x = random()*600;
+		new.avelocity_y = random()*600;
+		new.avelocity_z = random()*600;
+	}
 	new.think = SUB_Remove;
 	new.ltime = time;
 	new.nextthink = time + 10 + random()*10;
@@ -845,3 +856,24 @@ void (entity targ, vector direction, float force, float pflags) Knockback =
 		targ.velocity_z = 100;
 	}
 };
+
+void (entity who) flyDeath =
+{
+	who.lasthit_damage = min(40, who.lasthit_damage);
+	who.nextthinkA = time + 0.1;
+	who.thinkA = flyDeathLoop;
+	who.cnt = 5;
+};
+
+void () flyDeathLoop =
+{
+	if (self.cnt < 1 || self.lasthit_damage < 1)
+		return;
+		
+	self.nextthinkA = time + 0.1;
+	self.thinkA = flyDeathLoop;
+	self.cnt--;
+	
+	ai_velocity(self.lasthit_damage);
+	self.lasthit_damage -= 10;
+}; 

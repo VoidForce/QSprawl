@@ -142,17 +142,17 @@ void() dog_run1		=[	$run1  ,	dog_run2	]
 	ai_run(16);
 };
 
-void() dog_run2		=[	$run2  ,	dog_run3	] {ai_run(32);};
-void() dog_run3		=[	$run3  ,	dog_run4	] {ai_run(32);};
+void() dog_run2		=[	$run2  ,	dog_run3	] {ai_run(24);};
+void() dog_run3		=[	$run3  ,	dog_run4	] {ai_run(24);};
 void() dog_run4		=[	$run4  ,	dog_run5	] {ai_run(20);};
-void() dog_run5		=[	$run5  ,	dog_run6	] {ai_run(64);};
-void() dog_run6		=[	$run6  ,	dog_run7	] {ai_run(32);};
+void() dog_run5		=[	$run5  ,	dog_run6	] {ai_run(24);};
+void() dog_run6		=[	$run6  ,	dog_run7	] {ai_run(22);};
 void() dog_run7		=[	$run7  ,	dog_run8	] {ai_run(16);};
-void() dog_run8		=[	$run8  ,	dog_run9	] {ai_run(32);};
-void() dog_run9		=[	$run9  ,	dog_run10	] {ai_run(32);};
+void() dog_run8		=[	$run8  ,	dog_run9	] {ai_run(22);};
+void() dog_run9		=[	$run9  ,	dog_run10	] {ai_run(22);};
 void() dog_run10	=[	$run10  ,	dog_run11	] {ai_run(20);};
-void() dog_run11	=[	$run11  ,	dog_run12	] {ai_run(64);};
-void() dog_run12	=[	$run12  ,	dog_run1	] {ai_run(32);};
+void() dog_run11	=[	$run11  ,	dog_run12	] {ai_run(24);};
+void() dog_run12	=[	$run12  ,	dog_run1	] {ai_run(22);};
 
 void() dog_atta1	=[	$attack1,	dog_atta2	] {ai_charge(10);};
 void() dog_atta2	=[	$attack2,	dog_atta3	] {ai_charge(10);};
@@ -176,7 +176,7 @@ void() dog_leap2	=[	$leap2,		dog_leap3	]
 	self.touch = Dog_JumpTouch;
 	makevectors2 (self.angles);
 	self.origin_z = self.origin_z + 1;
-	self.velocity = v_forward * 300 + '0 0 200';
+	self.velocity = v_forward * 500 + '0 0 200';
 
 	if (self.flags & FL_ONGROUND)
 		self.flags = self.flags - FL_ONGROUND;
@@ -374,7 +374,7 @@ void() monster_dog =
 	//gnounc
 	self.noise = "dog/dsight.wav";	
 	self.netname = "Rottweiler";
-	self.killstring = " was mauled by a Rottweiler\n";
+	self.killstring = " was pacified by combat drone Okami\n";
 
 	setsize (self, '-32 -32 -24', '32 32 20');//40
 	self.head_offset = '0 0 0';

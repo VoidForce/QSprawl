@@ -470,6 +470,19 @@ void CL_SendMove (const usercmd_t *cmd)
 			bits |= 256;
 		in_adrenaline.state &= ~2;
 
+		if (in_forward.state & 3)
+			bits |= 512;
+		in_forward.state &= ~2;
+		if (in_back.state & 3)
+			bits |= 1024;
+		in_back.state &= ~2;
+		if (in_moveright.state & 3)
+			bits |= 2048;
+		in_moveright.state &= ~2;
+		if (in_moveleft.state & 3)
+			bits |= 4096;
+		in_moveleft.state &= ~2;
+
 		MSG_WriteShort (&buf, bits);
 
 		MSG_WriteByte (&buf, in_impulse);

@@ -758,14 +758,14 @@ void CL_ParseClientdata (void)
 		}
 	}
 
-	/*
+	
 	//johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & SU_EXTEND1)
 		bits |= (MSG_ReadByte() << 16);
 	if (bits & SU_EXTEND2)
 		bits |= (MSG_ReadByte() << 24);
 	//johnfitz
-	*/
+	
 
 	if (bits & SU_VIEWHEIGHT)
 		cl.viewheight = MSG_ReadChar (); //9
@@ -933,6 +933,8 @@ void CL_ParseClientdata (void)
 	else
 		cl.viewent.alpha = ENTALPHA_DEFAULT;
 	//johnfitz
+	if (bits & SU_WEAPONSKIN)
+		cl.viewent.skinnum = MSG_ReadByte();
 
 	CL_SetHudStat (STAT_WEAPONFRAME);
 	CL_SetHudStat (STAT_ARMOR);

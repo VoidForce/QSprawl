@@ -900,7 +900,7 @@ void V_CalcRefdef (void)
 	blend[1] = v_punchangles[1][1] + (v_punchangles[0][1] - v_punchangles[1][1]) * punchblend;
 	blend[2] = v_punchangles[1][2] + (v_punchangles[0][2] - v_punchangles[1][2]) * punchblend;
 
-	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
+	//VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
 	blend[0] *= -1;
 	VectorAdd(view->angles, blend, view->angles);
 // add view shake
@@ -915,7 +915,7 @@ void V_CalcRefdef (void)
 	VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
 
 	blend[1] *= -1;
-	VectorScale(blend, 2, blend);
+	//VectorScale(blend, 2, blend);
 	VectorAdd(view->angles, blend, view->angles);
 
 //johnfitz

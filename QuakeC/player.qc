@@ -183,7 +183,7 @@ void() animatePistolFire =
 {
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	self.weaponframe = 1;
-	weaponThink(loopPistolFire, 0.1);
+	weaponThink(loopPistolFire, 0.085);
 };
 
 void() loopPistolFire =
@@ -192,11 +192,11 @@ void() loopPistolFire =
 
 	if (self.weaponframe > 9)
 	{
-		weaponThink(player_run, 0.1);
-		self.sprawlflags |= SFL_RESETWEAPONFRAME;
+		weaponThink(player_run, 0.085);
+		//self.sprawlflags |= SFL_RESETWEAPONFRAME;
 	}
 	else
-		weaponThink(loopPistolFire, 0.1);
+		weaponThink(loopPistolFire, 0.085);
 	
 };
 //------------------------------------------
@@ -213,7 +213,8 @@ void() loopShotgunFire =
 	self.weaponframe++;
 	
 	if (self.weaponframe == 10)
-		makePunch([0,-8,0], [0,-5,0], [0,0,0]);
+		addShake(80, -50, 0);
+		//makePunch([0,-8,0], [0,-5,0], [0,0,0]);
 	if (self.weaponframe == 13)
 	{
 		launchCasing(self.origin, v_forward * 12 + v_right * 6 + v_up * (self.view_ofs_z-2), 1);
@@ -285,6 +286,38 @@ void() loopGrenadeFire =
 // Gauss
 const float GAUSS_FIREFRAME = 21;
 
+void() setGaussSkin =
+{
+	switch (self.weaponframe)
+	{
+		case 25:
+			self.weapon_skin = 5;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+		case 21:
+			self.weapon_skin = 4;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+		case 17:
+			self.weapon_skin = 3;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+		case 13:
+			self.weapon_skin = 2;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+		case 9:
+			self.weapon_skin = 1;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+		case 5:
+		case 40:
+			self.weapon_skin = 0;
+			self.engineflags |= ENF_CHANGESKIN;
+			break;
+	}
+};
+
 void() heatupGauss =
 {
 	// we holding fire when post fire sequence is playing, reset
@@ -301,10 +334,12 @@ void() heatupGauss =
 void() heatupGaussLoop = 
 {
 	self.weaponframe++;
-	
+	addPunchVelocity(crandom()*6,crandom()*6,0);
+	setGaussSkin();
 	if (self.weaponframe > GAUSS_FIREFRAME)
 	{
 		W_FireGauss();
+		self.effects |= EF_MUZZLEFLASH;
 		weaponThink(postGaussFire, 0.03);
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 		self.gauss_finished = time + 1;
@@ -320,6 +355,7 @@ void() heatupGaussLoop =
 void() cooldownGaussLoop =
 {
 	self.weaponframe--;
+	setGaussSkin();
 	if (self.weaponframe < 1)
 		weaponThink(player_run, 0.03);
 	else
@@ -329,6 +365,7 @@ void() cooldownGaussLoop =
 void() postGaussFire =
 {
 	self.weaponframe++;
+	setGaussSkin();
 	if (self.weaponframe > 47)
 	{
 		weaponThink(player_run, 0.05);

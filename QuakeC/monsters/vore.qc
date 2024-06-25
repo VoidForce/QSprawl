@@ -266,7 +266,7 @@ void() monster_shalrath =
 	self.netname = "Vore";
 	self.killstring = " was exploded by a Vore\n";
 
-	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
+	setsize (self, VEC_HULL2_MIN, '32 32 16');
 	self.health = 400;
 	self.max_health = 400;
 

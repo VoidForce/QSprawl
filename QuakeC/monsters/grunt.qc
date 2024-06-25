@@ -270,22 +270,22 @@ void() army_fire =
 	LaunchLaser(org, self.enemy.origin - self.origin);
 };
 
-void()	army_die1	=[	$death1,	army_die2	] {ai_velocity(50);};
-void()	army_die2	=[	$death2,	army_die3	] {ai_velocity(40);};
-void()	army_die3	=[	$death3,	army_die4	] {ai_velocity(30);};
-void()	army_die4	=[	$death4,	army_die5	] {ai_velocity(20);};
-void()	army_die5	=[	$death5,	army_die6	] {ai_velocity(20);};
+void()	army_die1	=[	$death1,	army_die2	] {};
+void()	army_die2	=[	$death2,	army_die3	] {};
+void()	army_die3	=[	$death3,	army_die4	] {};
+void()	army_die4	=[	$death4,	army_die5	] {};
+void()	army_die5	=[	$death5,	army_die6	] {};
 void()	army_die6	=[	$death6,	army_die7	] {};
 void()	army_die7	=[	$death7,	army_die8	] {};
 void()	army_die8	=[	$death8,	army_die9	] {};
 void()	army_die9	=[	$death9,	army_die10	] {};
 void()	army_die10	=[	$death10,	army_die10	] {};
 
-void()	army_cdie1	=[	$deathc1,	army_cdie2	] {ai_velocity(50);};
-void()	army_cdie2	=[	$deathc2,	army_cdie3	] {ai_velocity(40);};
-void()	army_cdie3	=[	$deathc3,	army_cdie4	] {ai_velocity(30);};
-void()	army_cdie4	=[	$deathc4,	army_cdie5	] {ai_velocity(20);};
-void()	army_cdie5	=[	$deathc5,	army_cdie6	] {ai_velocity(20);};
+void()	army_cdie1	=[	$deathc1,	army_cdie2	] {};
+void()	army_cdie2	=[	$deathc2,	army_cdie3	] {};
+void()	army_cdie3	=[	$deathc3,	army_cdie4	] {};
+void()	army_cdie4	=[	$deathc4,	army_cdie5	] {};
+void()	army_cdie5	=[	$deathc5,	army_cdie6	] {};
 void()	army_cdie6	=[	$deathc6,	army_cdie7	] {};
 void()	army_cdie7	=[	$deathc7,	army_cdie8	] {};
 void()	army_cdie8	=[	$deathc8,	army_cdie9	] {};
@@ -356,10 +356,12 @@ float() SoldierCheckAttack =
 void() army_die =
 {
 	self.solid = SOLID_NOT;
-	self.velocity = self.lasthit_direction;
+	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
+		self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
+		
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_guard.mdl", self.health);
 		ThrowGib ("progs/gib1.mdl", self.health);
@@ -372,13 +374,26 @@ void() army_die =
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/soldier_headless.mdl");
-		for (float i = 0; i < 5; i++)
+		setsize (self, '-16 -16 -24', '16 16 32');
+		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		//float dangle = anglemod(vectoyaw(self.lasthit_direction) + 180);
+		//self.angles_y = lerp(self.angles_y, dangle, (1 - fabs(fabs(self.angles_y - dangle) - dangle) / 90));
+		self.angles_y += crandom() * 30;
+		if (self.monsterflags & MFL_DROP_HEAD)
 		{
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
+			ThrowHeadGib ("progs/h_guard.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
+		}
+		else
+		{
+			for (float i = 0; i < 5; i++)
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		}
 	}
 	else
 		sound (self, CHAN_VOICE, "soldier/death1.wav", 1, ATTN_NORM);
+	
+	flyDeath(self); // i believe i can fly
 	if (random() < 0.5)
 		army_die1 ();
 	else
@@ -425,9 +440,9 @@ void() monster_army =
 	//gnounc
 	self.noise = "soldier/sight1.wav";	//gnounc
 	self.netname = "Grunt";
-	self.killstring = " was shot by a Grunt\n";
+	self.killstring = " was shot by Junta's MP\n";
 
-	setsize (self, '-16 -16 -24', '16 16 30');//40
+	setsize (self, '-16 -16 -24', '16 16 32');//40
 	self.head_offset = '7 0 20';
 	self.head_size = 12;
 	self.health = 100;

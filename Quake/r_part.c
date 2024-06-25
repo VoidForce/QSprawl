@@ -42,7 +42,8 @@ static int	ramp2[8] = {0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66};
 static int	ramp3[8] = {0x6d, 0x6b, 6, 5, 4, 3};
 static int	rampgrenade[8] = { 0xeb, 0xe6, 0xe2, 5, 4, 3 };
 static int	rampinner[10] = {0x6f, 0x6d, 0xeb, 0xe8, 0xe6, 0xe4, 0xe2, 0x04, 0x02, 0x00};
-static int	rampcore[11] = {0xf6 ,0xf5, 0xf4, 0xef, 0xed, 0xeb, 0xe9, 0xe7, 0xe5, 0xe3, 0xe1};
+static int	rampcore[11] = {0xf6 ,0xf5, 0xf4, 0xef, 0xed, 0xeb, 0xe9, 0xe7, 0xe5, 0xe3, 0xe1};//gauss core
+//static int	rampblood[] = {}; 0x4a + rand & 5
 static int	smoke[16] = {0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 static int	spark[16] = {0xef, 0xee, 0xed, 0xec, 0xeb, 0xea, 0xe9, 0xe8, 0xe7, 0xe6, 0xe5, 0xe4, 0xe3, 0xe2, 0xe1, 0xe0 };
 //static int	gauss_hole[16] = {};
@@ -440,7 +441,7 @@ void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 	{
 		if (!(p = R_AllocParticle ()))
 			return;
-
+		/*
 		if (count == 1024)
 		{	// rocket explosion
 			p->die = cl.time + 5;
@@ -466,7 +467,7 @@ void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 			}
 		}
 		else
-		{
+		{*/ // wtf is this?
 			p->die = cl.time + 0.1*(rand()%5);
 			p->color = (color&~7) + (rand()&7);
 			p->type = pt_slowgrav;
@@ -475,7 +476,7 @@ void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 				p->org[j] = org[j] + ((rand()&15)-8);
 				p->vel[j] = dir[j]*15;// + (rand()%300)-150;
 			}
-		}
+		//}
 	}
 }
 
@@ -614,7 +615,7 @@ void R_RocketTrail (vec3_t start, vec3_t end, int type)
 
 			case 2:	// blood
 				p->type = pt_grav;
-				p->color = 67 + (rand()&3);
+				p->color = 67 + (rand()&6);
 				for (j=0 ; j<3 ; j++)
 					p->org[j] = start[j] + ((rand()%6)-3);
 				break;
@@ -845,7 +846,7 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 	else
 		degree = 0;
 
-// hole generation
+// wall marks
 	for (i = 0; i < 4; i++)
 	{
 		odd = i % 1;
@@ -948,16 +949,61 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 
 void R_Impact(vec3_t org, vec3_t dir, int type)
 {
+	particle_t* p;
+	vec3_t offset;
+
+	int i;
 	int head;
 	switch (type)
 	{
 		case IMPACT_GAUSS_FLESH_HEADSHOT: // headshot
+			for (i = 0; i < 100; i++)
+			{
+				if (!(p = R_AllocParticle()))
+					return;
+
+				p->ramp = rand() & 3;
+				p->color = 0x4a + (rand() & 5);
+				p->type = pt_blood;
+				p->die = cl.time + 7200;
+				p->flag = 0;
+
+				VectorCopy(org, p->org);
+				offset[0] = i + (rand() % 30) - 15;
+				offset[1] = i + (rand() % 30) - 15;
+				offset[2] = 200 + (rand() % 100) - 50;
+				VectorCopy(vec3_origin, p->vel);
+				VectorCopy(offset, p->wish_vel);
+			}
 			head = 1;
+			break;
 		case IMPACT_GAUSS_FLESH: // gauss flesh, red
+			VectorCopy(dir, offset);
+			VectorInverse(offset);
+			VectorScale(offset, 200, offset);
+			for (i = 0; i < 100; i++)
+			{
+				if (!(p = R_AllocParticle()))
+					return;
+
+				p->ramp = rand() & 3;
+				p->color = 0x4a + (rand() & 5);
+				p->type = pt_grav;
+				p->die = cl.time + 7200;
+				p->flag = 0;
+
+				VectorCopy(org, p->org);
+				VectorCopy(offset, p->vel);
+				p->vel[0] += (rand() % 100) - 500;
+				p->vel[1] += (rand() % 100) - 500;
+				p->vel[2] += (rand() % 100) - 500;
+				VectorCopy(vec3_origin, p->wish_vel);
+			}
 			break;
 
 		case IMPACT_GAUSS_ROBOT_HEADSHOT: // headshot
 			head = 1;
+			break;
 		case IMPACT_GAUSS_ROBOT: // gauss robot
 			break;
 		case 0:
@@ -1143,7 +1189,19 @@ void CL_RunParticles (void)
 			if (p->ramp > 0)
 				p->vel[2] -= grav*2;
 			break;
-
+		case pt_blood:
+			p->ramp += time4;
+			if (p->ramp > 40)
+				p->die = -1;
+			if ((int)p->ramp == 3)
+			{
+				p->ramp = 4;
+				p->vel[0] = p->wish_vel[0];
+				p->vel[1] = p->wish_vel[1];
+				p->vel[2] = p->wish_vel[2];
+			}
+			p->vel[2] -= grav*4;
+			break;
 		case pt_fire:
 			
 			if (p->flag)

@@ -280,9 +280,10 @@ void()	enf_fdie11	=[	$fdeath11,	enf_fdie11	] {};
 void() enf_die =
 {
 	self.solid = SOLID_NOT;
-	self.velocity = self.lasthit_direction;
+	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
+		self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_mega.mdl", self.health);
@@ -294,11 +295,21 @@ void() enf_die =
 	
 	if (self.health_head <= 0)
 	{
-		setmodel (self, "progs/enforcer_headless.mdl");
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		for (float i = 0; i < 5; i++)
+		setmodel (self, "progs/enforcer_headless.mdl");
+		setsize (self, '-16 -16 -24', '16 16 36');
+		self.angles_y += crandom() * 30;
+		
+		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		if (self.monsterflags & MFL_DROP_HEAD)
 		{
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
+			ThrowHeadGib ("progs/h_mega.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
+		}
+		else
+		{
+			for (float i = 0; i < 5; i++)
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		}
 	}
 	else
@@ -342,13 +353,13 @@ void() monster_enforcer =
 
 	//gnounc
 	self.netname = "enforcer";
-	self.killstring = " was blasted by an Enforcer\n";
+	self.killstring = " was terminated by Oni Squad\n";
 	self.noise = "enforcer/sight1.wav";	//gnounc
 	self.noise1 = "enforcer/sight2.wav";	//gnounc
 	self.noise2 = "enforcer/sight3.wav";	//gnounc
 	self.noise3 = "enforcer/sight4.wav";	//gnounc
 
-	setsize (self, '-16 -16 -24', '16 16 34');//40
+	setsize (self, '-16 -16 -24', '16 16 36');//40
 	self.head_offset = '-4 2 29';//'-4 2 29';
 	self.head_size = 12;
 	self.health = 150;

@@ -1050,41 +1050,44 @@ void SCR_DrawCrosshair (void)
 	int gap;
 	int color;
 
-	lwidth = (int)glwidth * 0.5;
-	lheight = (int)glheight * 0.5;
-	crosshair_width = (int)glheight / 250;
-	crosshair_width = crosshair_width - (crosshair_width % 2); // should split at half
-	crosshair_length = crosshair_width * 10;
-	half_width = crosshair_width / 2;
-	gap = crosshair_width * 4;
-
-	if (cl.engineflags & 1)
-	{
-		color = 251;
-		/*
-		GL_SetCanvas(CANVAS_DEFAULT);
-		Draw_Fill(lwidth - gap * 4, lheight + gap * 4,  4, -4, 144, 255); // left top
-		Draw_Fill(lwidth - gap * 4, lheight - gap * 4,  4,  4, 144, 255); // left bottom
-		Draw_Fill(lwidth + gap * 4, lheight - gap * 4, -4,  4, 144, 255); // right bottom
-		Draw_Fill(lwidth + gap * 4, lheight + gap * 4, -4, -4, 144, 255); // right top
-		*/
-		//Draw_Fill(lwidth + 10, lheight - 1, 4, 2, 242, 255);
-		//Draw_Fill(lwidth - 10, lheight - 1, -4, 2, 242, 255);
-		//Draw_Fill(lwidth - 1, lheight + 10, 2, 4, 242, 255);
-		//Draw_Fill(lwidth - 1, lheight - 10, 2, -4, 242, 255);
-	}
-	else
-		color = 244;
-
 	if (!crosshair.value)// || scr_viewsize.value >= 130)
 		return;
-	
-	GL_SetCanvas(CANVAS_DEFAULT);
-	Draw_Fill(lwidth + gap, lheight - half_width, crosshair_length, crosshair_width, color, 255);
+
+	lwidth = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
+	lheight = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
+
+	//lwidth = (int)glwidth * 0.5;
+	//lheight = (int)glheight * 0.5;
+	crosshair_width = (int)glheight / 250;
+	if (crosshair_width < 1)
+		crosshair_width = 1;
+	crosshair_width = crosshair_width - (crosshair_width % 2); // should split at half
+	crosshair_length = crosshair_width * 8;
+	half_width = crosshair_width / 2;
+	gap = crosshair_width * 4;
+	int markergap = crosshair_width * 3;
+
+	if (cl.engineflags & ENF_HITHEAD)
+		color = 251;
+	else
+		color = 254;
+
+		GL_SetCanvas(CANVAS_DEFAULT);
+	Draw_Fill(lwidth + gap, lheight - half_width, crosshair_length, crosshair_width, 244, 255);
 	//Draw_Fill(lwidth - gap, lheight - 1, -4, 2, 242, 255);
-	Draw_Fill(lwidth - half_width, lheight + gap, crosshair_width, crosshair_length, color, 255);
-	Draw_Fill(lwidth - half_width, lheight - half_width, crosshair_width, crosshair_width, 244, 255);
+	Draw_Fill(lwidth - half_width, lheight + gap, crosshair_width, crosshair_length, 244, 255);
+	Draw_Fill(lwidth - half_width, lheight - half_width, crosshair_width, crosshair_width, 244, 255); //dot
 	//Draw_Fill(lwidth - 1, lheight - gap, 2, -4, 242, 255);
+	if (cl.engineflags & ENF_HITMARKER)
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			Draw_Fill(lwidth + markergap - i, lheight + markergap - i, 1, 1, color, 255);
+			Draw_Fill(lwidth - markergap + i, lheight + markergap - i,-1, 1, color, 255);
+			Draw_Fill(lwidth - markergap + i, lheight - markergap + i,-1,-1, color, 255);
+			Draw_Fill(lwidth + markergap - i, lheight - markergap + i, 1,-1, color, 255);
+		}
+	}
 
 	//GL_SetCanvas (CANVAS_CROSSHAIR);
 	//Draw_Character(-4, -4, crosshair_char);

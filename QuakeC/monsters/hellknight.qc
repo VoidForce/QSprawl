@@ -400,7 +400,7 @@ void() hknight_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_hellkn.mdl", self.health);
@@ -410,14 +410,23 @@ void() hknight_die =
 	
 		return;
 	}
-
+	
 	if (self.health_head <= 0)
 	{
-		setmodel (self, "progs/hknight_headless.mdl");
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		for (float i = 0; i < 5; i++)
+		setmodel (self, "progs/hknight_headless.mdl");
+		setsize (self, '-16 -16 -24', '16 16 40');
+		self.angles_y += crandom() * 15;
+		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		if (self.monsterflags & MFL_DROP_HEAD)
 		{
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
+			ThrowHeadGib ("progs/h_hellkn.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
+		}
+		else
+		{
+			for (float i = 0; i < 5; i++)
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		}
 	}
 	else
@@ -465,9 +474,9 @@ void() monster_hell_knight =
 	//gnounc
 	self.noise = "hknight/sight1.wav";	//gnounc
 	self.netname = "Hell Knight";
-	self.killstring = " was slain by a Hell Knight\n";
+	self.killstring = " was slashed by Heavy Elite Oni Squad\n";
 
-	setsize (self, '-16 -16 -24', '16 16 36'); //40
+	setsize (self, '-16 -16 -24', '16 16 40'); //40
 	self.head_offset = '9 2 32';
 	self.head_size = 12;
 	self.health = 300;

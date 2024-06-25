@@ -215,9 +215,10 @@ void()	knight_dieb11 =[ $deathb11,	knight_dieb11] {};
 void() knight_die =
 {
 	self.solid = SOLID_NOT;
-	self.velocity = self.lasthit_direction;
+	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
+		self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_knight.mdl", self.health);
@@ -230,11 +231,20 @@ void() knight_die =
 	
 	if (self.health_head <= 0)
 	{
-		setmodel (self, "progs/knight_headless.mdl");
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		for (float i = 0; i < 5; i++)
+		setmodel (self, "progs/knight_headless.mdl");
+		setsize (self, '-16 -16 -24', '16 16 32');
+		self.angles_y += crandom() * 30;
+		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		if (self.monsterflags & MFL_DROP_HEAD)
 		{
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
+			ThrowHeadGib ("progs/h_knight.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
+		}
+		else
+		{
+			for (float i = 0; i < 5; i++)
+			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		}
 	}
 	else
@@ -276,9 +286,9 @@ void() monster_knight =
 	//gnounc
 	self.noise = "knight/ksight.wav";	//gnounc
 	self.netname = "Knight";
-	self.killstring = " was slashed by a Knight\n";
+	self.killstring = " was slashed by a Junta's MP\n";
 
-	setsize (self, '-16 -16 -24', '16 16 28'); //28
+	setsize (self, '-16 -16 -24', '16 16 32'); //28
 	self.head_offset = '2 0 22';
 	self.head_size = 12;
 	self.health = 100;

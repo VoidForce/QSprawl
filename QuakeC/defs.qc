@@ -252,6 +252,7 @@ void		end_sys_globals;		// flag for structure dumping
 .vector     viewmodeloffset_angles;
 .float		adrenaline; // [0 .. 1]
 .float		engineflags;
+.float		weapon_skin;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -534,10 +535,14 @@ const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 
 const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
 const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
 const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
+
 // ENGINE FLAGS, USED ON THE ENGINE SIDE FOR THINGS, ALWAYS SENT
 const float ENF_HITMARKER = 1;
 const float ENF_ADRENALINE_OFF = 2;
 const float ENF_NOWALLRUN = 4;
+const float ENF_HITHEAD = 8;
+const float ENF_CHANGESKIN = 16;
+//-------------------------------------------------------------
 
 const float IMPACT_NORMAL = 0;
 const float IMPACT_GAUSS_FINAL = 1; // solid, endpoint
@@ -548,9 +553,6 @@ const float IMPACT_GAUSS_FLESH = 5; // red blood
 const float IMPACT_GAUSS_ROBOT_HEADSHOT = 6; 
 const float IMPACT_GAUSS_ROBOT = 7; // mech/robot sparks
 
-const float BT_FLESH_RED = 0; // human
-const float BT_FLESH_BLUE = 1; // cyborg
-const float BT_ROBOT = 2; // mech/robot
 // movement flags
 const float MF_CROUCHINAIR = 1;
 const float	MF_INSLIDE = 2;
@@ -568,6 +570,16 @@ const float	MF_GAUSS = 4;
 const float	MF_CHAINGUN = 5;
 const float	MF_GRENADE = 6;
 const float	MF_LG = 7;
+
+//monsterflags, should be only set on monsters
+const float MFL_ISMONSTER = 1; // should be always set by default to every monster
+const float MFL_HASHEAD = 2; // recieve head damage, additional logic when head is gone
+const float MFL_HEADKILLS = 4; // set this if you want healh_health < 0 to kill target
+const float MFL_PAIN_HEADSHOT = 8; // play special pain animation
+const float MFL_LOST_HEAD = 16; // mark that we just lost the head, so launch special event
+const float MFL_DROP_HEAD = 32; // we got killed with katana, spawn head model
+const float MFL_ROBOT = 64;
+
 //slowmo states
 const float SLOWMO_VALUE = 0.4;
 const float SLOWMO_FADE_TIME = 0.25;
@@ -579,7 +591,7 @@ const float TYPE_PLAYER = 1;
 const float SLIDE_OFFSET = 10;
 const float STANDART_OFFSET = 22;
 const float SLIDE_STOPSPEED		= 100;
-
+// sprawflags
 const float SFL_RESETWEAPONFRAME = 1;
 const float SFL_SEMIAUTO = 2;
 const float SFL_LEFTHAND = 4;
@@ -590,15 +602,10 @@ const float SFL_INERTIA = 64;
 const float SFL_VMOFFSET = 128; // TODO: i need to make something about viewmodel
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
+// projectile
 const float SFLP_GRENADE_CHARGED = 1;
 const float SFLP_GRENADE_NOTOUCH = 2;
-
-//monsterflags, should be only set on monsters
-const float MFL_ISMONSTER = 1; // should be always set by default to every monster
-const float MFL_HASHEAD = 2;
-const float MFL_HEADKILLS = 4;
-const float MFL_PAIN_HEADSHOT = 8;
-const float MFL_LOST_HEAD = 16;
+const float SFLP_GRENADE_CANTOUCHSOFT = 4;
 
 // movement inputs
 const float MOVE_FORWARD = 1;
@@ -608,7 +615,9 @@ const float MOVE_LEFT = 8;
 const float MOVE_NONE = 0;
 
 //damage flags
-const float DF_HEADSHOT = 1;
+const float DF_HEADSHOT = 1; // damage to the head's healthpool
+const float DF_KATANA = 2; // damage was done by katana
+const float DF_EXPLOSION = 4; // damage was done by explosion
 
 //monstertype
 const float TYPE_SOLDIER = 1;
@@ -669,13 +678,13 @@ entity		grenade_handler; // global
 .float		current_speed; //
 .float		speedmodifier; // changes speed when katana in hands
 .float		adrenaline_regentimer; 
+//combo
 .float		dodge_time; // time until next dodge can be performed
-.float		combo_index; // 
-.float		combo_index_head;
-.vector		combo_queue;
-.float		combo_timer;
-.float		saved_inputs;
-.float		saved_inputs_old;
+.float		combo_index; // write data to queu on this index position
+.float		combo_index_head; // which index is the start of the queue, cause it can wrap around 
+.vector		combo_queue; // last three inputs stored here
+.float		combo_timer; // reset combo if timer runs out
+.float		saved_inputs; // use this to find out which inputs was changed since last frame
 
 // monsters stuff ----------------------------------------------------------------------------------------------------------
 .float		monstertype;
@@ -690,7 +699,6 @@ entity		grenade_handler; // global
 .vector		head_offset;
 .float		head_size;
 .float		monsterflags;
-.float		bodytype; //flesh or robot used BT_ flag ? should use monsterflag instead ?
 .float		gib_threshold; // amount of damage required to gib the monster
 .float 		lasthit_damage; //save amount of damage from last damage taken, used for gibs logic
 .vector		lasthit_direction; // direction to launch the gibs

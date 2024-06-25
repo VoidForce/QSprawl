@@ -167,6 +167,7 @@ typedef struct
 	vec3_t		viewmodeloffset_angles;
 	float		adrenaline;
 	float		engineflags;
+	float		weapon_skin;
 } entvars_t;
 
-#define PROGHEADER_CRC 56207
+#define PROGHEADER_CRC 54890

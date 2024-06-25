@@ -84,7 +84,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_ARMOR		(1<<9)	// no data follows, the bit is it
 #define	SU_WEAPON		(1<<10)	// no data follows, the bit is it
 #define SU_ANGLES		(1<<11)
+#define SU_WEAPONSKIN	(1<<12)
 #define SU_WEAPONALPHA	(1<<14)
+#define SU_EXTEND1		(1<<15) // another byte to follow
+#define SU_EXTEND2		(1<<23) // another byte to follow
 //(1<<13)
 //(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
 //(1<<15)
@@ -108,6 +111,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ENF_HITMARKER		1
 #define ENF_ADRENALINE_OFF	(1<<1)
 #define ENF_NOWALLRUN		(1<<2)
+#define ENF_HITHEAD			(1<<3)
+#define ENF_CHANGESKIN		(1<<4)
 //#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
 /*
 #define	SU_VIEWHEIGHT	(1<<0)

@@ -138,7 +138,19 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
 	
-	dprint4("Damage:", ftos(damage), " Target: ", targ.classname);endl();
+	//dprint3(attacker.classname, " - ", targ.classname);endl();
+	if (attacker.entity_type == TYPE_PLAYER && attacker != targ)
+	{
+		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
+		{
+			attacker.engineflags |= ENF_HITHEAD;
+			sound (attacker, CHAN_AUTO, "weapons/hitmarker_head.wav", 1, ATTN_NORM);
+		}
+		else
+			sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
+		attacker.engineflags |= ENF_HITMARKER;
+		attacker.hitmarker_time = time + 0.2;
+	}
 
 	// used by buttons and triggers to set activator for target firing
 	damage_attacker = attacker;
@@ -197,8 +209,9 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	if ( (teamplay == 1) && (targ.team > 0)&&(targ.team == attacker.team) )
 		return;
 
+	targ.lasthit_damage = take;
 	// do the damage
-	if (dflags & DF_HEADSHOT)
+	if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
 	{
 		targ.health_head -= take;
 		targ.monsterflags |= MFL_PAIN_HEADSHOT;
@@ -208,6 +221,9 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	
 	if (targ.health <= 0)
 	{
+	// actually will not drop the head, but will not apply velocity to the body when killed with katana
+		if (dflags & DF_KATANA)
+			targ.monsterflags |= MFL_DROP_HEAD;
 		Killed (targ, attacker);
 		return;
 	}
@@ -216,10 +232,12 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	{
 		targ.monsterflags |= MFL_LOST_HEAD;
 		targ.monsterflags -= targ.monsterflags & MFL_HASHEAD;
+		if (dflags & DF_KATANA)
+			targ.monsterflags |= MFL_DROP_HEAD;
 		self.pain_finished = 0;
 		if (targ.monsterflags & MFL_HEADKILLS)
 		{
-			targ.health = -1;
+			//targ.health = -1;
 			Killed (targ, attacker);
 			return;
 		}
@@ -269,34 +287,27 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 	
 	while (head)
 	{
-		if (head != ignore)
+		if (head == ignore || !head.takedamage)
 		{
-			if (head.takedamage)
-			{
-				org = head.origin + (head.mins + head.maxs)*0.5;
-				points = 0.5*vlen (inflictor.origin - org);
+			head = head.chain;
+			continue;
+		}
 
-				if (points < 0)
-					points = 0;
+		org = head.origin + (head.mins + head.maxs)*0.5;
+		points = 0.5*vlen (inflictor.origin - org);
 
-				points = damage - points;
+		if (points < 0)
+			points = 0;
 
-				if (head == attacker)
-					points = points * 0.5;
+		points = damage - points;
 
-				if (points > 0)
-				{
-					if (CanDamage (head, inflictor))
-					{	// shambler takes half damage from all explosions
+		if (head == attacker)
+			points = points * 0.5;
 
-						if (head.classname == "monster_shambler")						
-							T_Damage (head, inflictor, attacker, points*0.5, 0);
-
-						else
-							T_Damage (head, inflictor, attacker, points, 0);
-					}
-				}
-			}
+		if (points > 0)
+		{
+			if (CanDamage (head, inflictor))
+				T_Damage (head, inflictor, attacker, points, 0);
 		}
 		head = head.chain;
 	}

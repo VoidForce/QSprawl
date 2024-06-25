@@ -64,6 +64,14 @@ float() crandom =
 	return 2*(random() - 0.5);
 };
 
+float() randomsign =
+{
+	if (crandom() > 0)
+		return 1;
+	else 
+		return -1;
+};
+
 float(float x, float y) pow =
 {
 	if (y < 0)

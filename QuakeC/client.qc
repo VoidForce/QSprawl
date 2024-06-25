@@ -1207,6 +1207,8 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 	addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
 	self.jump_timer = time + 0.5;
 	StopAirAcceleration(0.4);
+	StopAcceleration(0.4);
+	
 	// make jump sound here
 	/*
 	else 
@@ -1272,10 +1274,7 @@ void() checkPressCombo =
 		}
 	// left jump, combo3	
 		if (LEFTJUMP[combo3] & action)
-		{
 			combo3++;
-			//dprint(" True! ");
-		}
 		else
 			combo3 = 0;
 
@@ -1327,7 +1326,7 @@ float(float i) readQueue =
 	
 	if (j > 2)
 		j -= 3;
-	
+
 	return self.combo_queue[j];
 };
 
@@ -1345,20 +1344,13 @@ void(float value) pushQueue =
 	}
 
 	self.combo_queue[self.combo_index] = value;
-	
 	self.combo_index++;
+	
 // loop i
 	if (self.combo_index > 2)
-	{
 		self.combo_index = 0;
-		self.combo_index_head++;
-	}
-	else if (self.combo_index_head)
-		self.combo_index_head++;
-
-// loop head
-	if (self.combo_index_head > 2)
-		self.combo_index_head = 0;
+	if (self.combo_queue[2])
+		self.combo_index_head = self.combo_index; // head remains untouched until first loop (queue[2] filled)
 };
 
 void() catchComboInput =
@@ -1379,15 +1371,13 @@ void() catchComboInput =
 			if ( !(current_bit & self.saved_inputs) && current_bit & self.player_inputs) // bit was 0 became 1
 				changed_bits |= current_bit; //store it
 		}
-		
 		if (changed_bits)
 		{
 			pushQueue(changed_bits); // push all bits that was changed, this way we can check both perfect (1 key) and non-perfect combos
 			self.combo_timer = time + COMBO_RESET_TIME;
+			checkPressCombo();
 		}
 	}
-	
-	checkPressCombo();
 };
 
 void() checkMovementInput =
@@ -1432,7 +1422,7 @@ void() playerBump =
 		angle_difference = direction * v_forward;
 		if (angle_difference > 0.5)
 		{
-			T_Damage (other, self, self, 100, 0);
+			T_Damage (other, self, self, 100, DF_HEADSHOT | DF_KATANA);
 			self.touch = SUB_Null;
 		}
 	}
@@ -1514,6 +1504,8 @@ void() PlayerPreThink =
 	{
 		if (self.weapon == IT_AXE)
 			self.speedmodifier = 1.25;
+		else if (self.weapon == IT_SUPER_NAILGUN)
+			self.speedmodifier = 0.6;
 		else
 			self.speedmodifier = 1;
 		self.sprawlflags -= self.sprawlflags & SFL_NEEDTOSETSPEED;
@@ -1790,10 +1782,10 @@ void() PlayerPostThink =
 		}
 	}
 	
-	if (self.engineflags & ENF_HITMARKER)
+	if (self.engineflags & ENF_HITHEAD || self.engineflags & ENF_HITMARKER)
 	{
 		if (self.hitmarker_time < time )
-			self.engineflags -= self.engineflags & ENF_HITMARKER;
+			self.engineflags -= self.engineflags & (ENF_HITHEAD | ENF_HITMARKER);
 	}
 	
 	if (self.sprawlflags & SFL_SEMIAUTO)

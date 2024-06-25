@@ -624,7 +624,7 @@ void SV_ClientThink (void)
 // show 1/3 the pitch angle and all the roll angle
 	cmd = host_client->cmd;
 	angles = sv_player->v.angles;
-
+	/*
 	sv_player->v.player_inputs = 0;
 	if (cmd.forwardmove > 0)
 		sv_player->v.player_inputs += 1;
@@ -635,7 +635,7 @@ void SV_ClientThink (void)
 		sv_player->v.player_inputs += 4;
 	else if (cmd.sidemove < 0)
 		sv_player->v.player_inputs += 8;
-
+	*/
 	VectorAdd (sv_player->v.v_angle, sv_player->v.punchangle, v_angle);
 	angles[ROLL] = V_CalcRoll (sv_player->v.angles, sv_player->v.velocity) * 4;
 
@@ -709,6 +709,16 @@ void SV_ReadClientMove (usercmd_t *move)
 	host_client->edict->v.b_melee = (bits & 64) >> 6;
 	host_client->edict->v.b_kick = (bits & 128) >> 7;
 	host_client->edict->v.b_adrenaline = (bits & 256) >> 8;
+
+	host_client->edict->v.player_inputs = 0;
+	if (bits & 512) //forward
+		host_client->edict->v.player_inputs += 1;
+	if (bits & 1024) //back
+		host_client->edict->v.player_inputs += 2;
+	if (bits & 2048) //right
+		host_client->edict->v.player_inputs += 4;
+	if (bits & 4096) //left
+		host_client->edict->v.player_inputs += 8;
 
 	i = MSG_ReadByte ();
 	if (i)

@@ -142,10 +142,10 @@ void() item_health =
 
 	if (self.spawnflags & H_ROTTEN)
 	{
-		precache_model("maps/b_bh10.bsp");
+		precache_model("progs/health15.mdl");
 
 		precache_sound("items/r_item1.wav");
-		setmodel(self, "maps/b_bh10.bsp");
+		setmodel(self, "progs/health15.mdl");
 		self.noise = "items/r_item1.wav";
 		self.healamount = 15;
 		self.healtype = 0;
@@ -153,9 +153,9 @@ void() item_health =
 
 	else if (self.spawnflags & H_MEGA)
 	{
-		precache_model("maps/b_bh100.bsp");
+		precache_model("progs/health100.mdl");
 		precache_sound("items/r_item2.wav");
-		setmodel(self, "maps/b_bh100.bsp");
+		setmodel(self, "progs/health100.mdl");
 		self.noise = "items/r_item2.wav";
 		self.healamount = 100;
 		self.healtype = 2;
@@ -163,9 +163,9 @@ void() item_health =
 
 	else
 	{
-		precache_model("maps/b_bh25.bsp");
+		precache_model("progs/health25.mdl");
 		precache_sound("items/health1.wav");
-		setmodel(self, "maps/b_bh25.bsp");
+		setmodel(self, "progs/health25.mdl");
 		self.noise = "items/health1.wav";
 		self.healamount = 25;
 		self.healtype = 1;
@@ -512,7 +512,7 @@ void() weapon_touch =
 
 		hadammo = other.ammo_rockets;			
 		new = IT_ROCKET_LAUNCHER;
-		other.ammo_rockets = other.ammo_rockets + 5;
+		other.ammo_cells = other.ammo_cells + 10;
 	}
 
 	else if (self.classname == "weapon_grenadelauncher")
@@ -781,14 +781,14 @@ void() item_shells =
 	{
 		precache_model ("progs/ammo/shells_big.mdl");
 		setmodel (self, "progs/ammo/shells_big.mdl");
-		self.aflag = 10;
+		self.aflag = 16;
 	}
 
 	else
 	{
 		precache_model ("progs/ammo/shells.mdl");
 		setmodel (self, "progs/ammo/shells.mdl");
-		self.aflag = 5;
+		self.aflag = 8;
 	}
 
 	self.weapon = 1;
@@ -894,14 +894,14 @@ void() item_weapon =
 		{
 			precache_model ("progs/ammo/shells_big.mdl");
 			setmodel (self, "progs/ammo/shells_big.mdl");
-			self.aflag = 40;
+			self.aflag = 20;
 		}
 
 		else
 		{
 			precache_model ("progs/ammo/shells.mdl");
 			setmodel (self, "progs/ammo/shells.mdl");
-			self.aflag = 20;
+			self.aflag = 10;
 		}
 		self.weapon = 1;
 		self.netname = "shells";
@@ -913,14 +913,14 @@ void() item_weapon =
 		{
 			precache_model ("progs/ammo/nails.mdl");
 			setmodel (self, "progs/ammo/nails.mdl");
-			self.aflag = 40;
+			self.aflag = 100;
 		}
 
 		else
 		{
 			precache_model ("progs/ammo/nails.mdl");
 			setmodel (self, "progs/ammo/nails.mdl");
-			self.aflag = 20;
+			self.aflag = 50;
 		}
 		self.weapon = 2;
 		self.netname = "spikes";
@@ -932,14 +932,14 @@ void() item_weapon =
 		{
 			precache_model ("progs/ammo/rockets_big.mdl");
 			setmodel (self, "progs/ammo/rockets_big.mdl");
-			self.aflag = 10;
+			self.aflag = 6;
 		}
 
 		else
 		{
 			precache_model ("progs/ammo/rockets.mdl");
 			setmodel (self, "progs/ammo/rockets.mdl");
-			self.aflag = 5;
+			self.aflag = 6;
 		}
 		self.weapon = 3;
 		self.netname = "rockets";

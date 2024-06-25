@@ -451,7 +451,7 @@ void() ogre_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_ogre.mdl", self.health);
@@ -466,17 +466,17 @@ void() ogre_die =
 	if (self.health_head <= 0)
 	{
 		setmodel (self, "progs/ogre_headless.mdl");
+		setsize (self, '-32 -32 -24', '32 32 48');
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
-		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
-		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200]);
+		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 	}
 	else
 		sound (self, CHAN_VOICE, "ogre/ogdth.wav", 1, ATTN_NORM);
 	
 	if (random() < 0.5)
 		ogre_die1 ();
-
 	else
 		ogre_bdie1 ();
 };
@@ -591,7 +591,7 @@ void() monster_ogre =
 	//gnounc
 	self.noise = "ogre/ogwake.wav";	//gnounc
 	self.netname = "Ogre";
-	self.killstring = " was destroyed by an Ogre\n";
+	self.killstring = " was destroyed by the ohGr\n";
 
 	setsize (self, '-32 -32 -24', '32 32 48');
 	self.head_offset = '3 2 45';
@@ -601,8 +601,8 @@ void() monster_ogre =
 	self.health_head = 150;
 	self.armorclass_body = 50;
 	self.armorclass_head = 25;
-	self.gib_threshold = 200;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
+	self.gib_threshold = 180;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
 	self.monstertype = TYPE_OGRE;
 	
 	self.th_stand = ogre_stand1;
