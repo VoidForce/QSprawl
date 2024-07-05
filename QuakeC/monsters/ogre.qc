@@ -422,7 +422,6 @@ void(entity attacker, float damage)	ogre_pain =
 void()	ogre_die1	=[	$death1,	ogre_die2	] {};
 void()	ogre_die2	=[	$death2,	ogre_die3	] {};
 void()	ogre_die3	=[	$death3,	ogre_die4	] {};
-
 void()	ogre_die4	=[	$death4,	ogre_die5	] {};
 void()	ogre_die5	=[	$death5,	ogre_die6	] {};
 void()	ogre_die6	=[	$death6,	ogre_die7	] {};
@@ -433,53 +432,18 @@ void()	ogre_die10	=[	$death10,	ogre_die11	] {};
 void()	ogre_die11	=[	$death11,	ogre_die12	] {};
 void()	ogre_die12	=[	$death12,	ogre_die13	] {};
 void()	ogre_die13	=[	$death13,	ogre_die14	] {};
-void()	ogre_die14	=[	$death14,	ogre_die14	] {};
+void()	ogre_die14	=[	$death14,	decay	] {};
 
 void()	ogre_bdie1	=[	$bdeath1,	ogre_bdie2	] {};
 void()	ogre_bdie2	=[	$bdeath2,	ogre_bdie3	] {ai_forward(5);};
 void()	ogre_bdie3	=[	$bdeath3,	ogre_bdie4	] {};
-
 void()	ogre_bdie4	=[	$bdeath4,	ogre_bdie5	] {ai_forward(1);};
 void()	ogre_bdie5	=[	$bdeath5,	ogre_bdie6	] {ai_forward(3);};
 void()	ogre_bdie6	=[	$bdeath6,	ogre_bdie7	] {ai_forward(7);};
 void()	ogre_bdie7	=[	$bdeath7,	ogre_bdie8	] {ai_forward(25);};
 void()	ogre_bdie8	=[	$bdeath8,	ogre_bdie9	] {};
 void()	ogre_bdie9	=[	$bdeath9,	ogre_bdie10	] {};
-void()	ogre_bdie10	=[	$bdeath10,	ogre_bdie10	] {};
-
-void() ogre_die =
-{
-	self.solid = SOLID_NOT;
-	// check for gib
-	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
-	{
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_ogre.mdl", self.health);
-		ThrowGib ("progs/m_gib_01.mdl", self.health);
-		ThrowGib ("progs/ogre_gib_hand.mdl", self.health);
-		ThrowGib ("progs/m_gib_03.mdl", self.health);
-		ThrowGib ("progs/ogre_gib_leg.mdl", self.health);
-		ThrowGib ("progs/ogre_gib_plate.mdl", self.health);
-		return;
-	}
-	
-	if (self.health_head <= 0)
-	{
-		setmodel (self, "progs/ogre_headless.mdl");
-		setsize (self, '-32 -32 -24', '32 32 48');
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-	}
-	else
-		sound (self, CHAN_VOICE, "ogre/ogdth.wav", 1, ATTN_NORM);
-	
-	if (random() < 0.5)
-		ogre_die1 ();
-	else
-		ogre_bdie1 ();
-};
+void()	ogre_bdie10	=[	$bdeath10,	decay	] {};
 
 void() ogre_melee =
 {
@@ -555,6 +519,41 @@ float() OgreCheckAttack =
 	return TRUE;
 };
 
+void() ogre_die =
+{
+	self.solid = SOLID_NOT;
+	// check for gib
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
+	{
+		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
+		ThrowHead ("progs/h_ogre.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
+		ThrowGib ("progs/ogre_gib_hand.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+		ThrowGib ("progs/ogre_gib_leg.mdl", self.lasthit_damage);
+		ThrowGib ("progs/ogre_gib_plate.mdl", self.lasthit_damage);
+		return;
+	}
+	
+	if (self.health_head <= 0)
+	{
+		setmodel (self, "progs/ogre_headless.mdl");
+		setsize (self, '-32 -32 -24', '32 32 48');
+		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
+		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
+	}
+	else
+		sound (self, CHAN_VOICE, "ogre/ogdth.wav", 1, ATTN_NORM);
+	
+	if (random() < 0.5)
+		ogre_die1 ();
+	else
+		ogre_bdie1 ();
+};
+
 /*QUAKED monster_ogre (1 0 0) (-32 -32 -24) (32 32 64) Ambush
 
 */
@@ -596,11 +595,9 @@ void() monster_ogre =
 	setsize (self, '-32 -32 -24', '32 32 48');
 	self.head_offset = '3 2 45';
 	self.head_size = 16;
-	self.health = 400;
-	self.max_health = 400;
-	self.health_head = 150;
-	self.armorclass_body = 50;
-	self.armorclass_head = 25;
+	self.health = OGRE_HEALTH;
+	self.max_health = OGRE_HEALTH;
+	self.health_head = OGRE_HEAD;
 	self.gib_threshold = 180;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
 	self.monstertype = TYPE_OGRE;

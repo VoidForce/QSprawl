@@ -63,14 +63,14 @@ SOLDIER CODE
 
 void() army_fire;
 
-void()	army_stand1	=[	$stand1,	army_stand2	] {setHead('7 0 20');ai_stand();}; // 1
-void()	army_stand2	=[	$stand2,	army_stand3	] {setHead('7 0 20');ai_stand();}; // 2
-void()	army_stand3	=[	$stand3,	army_stand4	] {setHead('7 0 20');ai_stand();}; // 3
-void()	army_stand4	=[	$stand4,	army_stand5	] {setHead('7 0 20');ai_stand();}; // 4
-void()	army_stand5	=[	$stand5,	army_stand6	] {setHead('7 0 20');ai_stand();}; // 5
-void()	army_stand6	=[	$stand6,	army_stand7	] {setHead('7 0 20');ai_stand();}; // 6
-void()	army_stand7	=[	$stand7,	army_stand8	] {setHead('7 0 20');ai_stand();}; // 7
-void()	army_stand8	=[	$stand8,	army_stand1	] {setHead('7 0 20');ai_stand();}; // 8
+void()	army_stand1	=[ $stand1, army_stand2	] {setHead('7 0 20');ai_stand();}; // 1
+void()	army_stand2	=[ $stand2, army_stand3	] {setHead('7 0 20');ai_stand();}; // 2
+void()	army_stand3	=[ $stand3, army_stand4	] {setHead('7 0 20');ai_stand();}; // 3
+void()	army_stand4	=[ $stand4, army_stand5	] {setHead('7 0 20');ai_stand();}; // 4
+void()	army_stand5	=[ $stand5, army_stand6	] {setHead('7 0 20');ai_stand();}; // 5
+void()	army_stand6	=[ $stand6, army_stand7	] {setHead('7 0 20');ai_stand();}; // 6
+void()	army_stand7	=[ $stand7, army_stand8	] {setHead('7 0 20');ai_stand();}; // 7
+void()	army_stand8	=[ $stand8, army_stand1	] {setHead('7 0 20');ai_stand();}; // 8
 
 void()	army_walk1	=[	$prowl_1,	army_walk2	] {setHead('7 0 20'); // 91
 	if (random() < 0.2)
@@ -221,11 +221,7 @@ void() Laser_Touch =
 	}
 	else
 	{
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
+		sendMessageImpact(org, self.velocity, IMPACT_LASER, VEC_ORIGIN); 
 	}
 	
 	remove(self);	
@@ -279,7 +275,7 @@ void()	army_die6	=[	$death6,	army_die7	] {};
 void()	army_die7	=[	$death7,	army_die8	] {};
 void()	army_die8	=[	$death8,	army_die9	] {};
 void()	army_die9	=[	$death9,	army_die10	] {};
-void()	army_die10	=[	$death10,	army_die10	] {};
+void()	army_die10	=[	$death10,	decay	] {};
 
 void()	army_cdie1	=[	$deathc1,	army_cdie2	] {};
 void()	army_cdie2	=[	$deathc2,	army_cdie3	] {};
@@ -291,7 +287,7 @@ void()	army_cdie7	=[	$deathc7,	army_cdie8	] {};
 void()	army_cdie8	=[	$deathc8,	army_cdie9	] {};
 void()	army_cdie9	=[	$deathc9,	army_cdie10	] {};
 void()	army_cdie10	=[	$deathc10,	army_cdie11	] {};
-void()	army_cdie11	=[	$deathc11,	army_cdie11	] {};
+void()	army_cdie11	=[	$deathc11,	decay	] {};
 
 /*===========
 SoldierCheckAttack
@@ -361,12 +357,11 @@ void() army_die =
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
-		
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_guard.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib2.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
+		ThrowHead ("progs/h_guard.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib1.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib2.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib3.mdl", self.lasthit_damage);
 		return;
 	}
 	
@@ -375,7 +370,7 @@ void() army_die =
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/soldier_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 32');
-		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		sendMessageVec(findHeadPosition(self), TE_HEAD); // particle effect
 		//float dangle = anglemod(vectoyaw(self.lasthit_direction) + 180);
 		//self.angles_y = lerp(self.angles_y, dangle, (1 - fabs(fabs(self.angles_y - dangle) - dangle) / 90));
 		self.angles_y += crandom() * 30;
@@ -445,14 +440,12 @@ void() monster_army =
 	setsize (self, '-16 -16 -24', '16 16 32');//40
 	self.head_offset = '7 0 20';
 	self.head_size = 12;
-	self.health = 100;
-	self.max_health = 100;
-	self.health_head = 20;
+	self.health = SOLDIER_HEALTH;
+	self.max_health = SOLDIER_HEALTH;
+	self.health_head = SOLDIER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_SOLDIER;
-	self.armorclass_body = 5;
-	self.armorclass_head = 0;
-	self.gib_threshold = 100;
+	self.gib_threshold = 85;
 
 	self.th_stand = army_stand1;
 	self.th_walk = army_walk1;

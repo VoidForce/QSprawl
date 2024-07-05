@@ -277,10 +277,17 @@ void() worldspawn =
 	precache_model ("progs/player.mdl");
 	precache_model ("progs/eyes.mdl");
 	precache_model ("progs/h_player.mdl");
+	
 	precache_model ("progs/smallgib.mdl");
 	precache_model ("progs/gib1.mdl");
 	precache_model ("progs/gib2.mdl");
 	precache_model ("progs/gib3.mdl");
+	
+	precache_model ("progs/smallgib_synth.mdl");
+	precache_model ("progs/synth_gib1.mdl");
+	precache_model ("progs/synth_gib2.mdl");
+	precache_model ("progs/synth_gib3.mdl");
+	
 	precache_model ("progs/m_gib_01.mdl");
 	precache_model ("progs/m_gib_02.mdl");
 	precache_model ("progs/m_gib_03.mdl");
@@ -298,6 +305,7 @@ void() worldspawn =
 	precache_model ("progs/v_shot2.mdl");
 	precache_model ("progs/v_nail2.mdl");
 	precache_model ("progs/v_rock2.mdl");
+	precache_model ("progs/case_mg.mdl");
 	precache_model ("progs/case_shell.mdl");
 	precache_model ("progs/case_pistol.mdl");
 	

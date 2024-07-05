@@ -279,29 +279,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 // temp entity events
 //
-#define	TE_SPIKE			0
-#define	TE_SUPERSPIKE		1
-#define	TE_GUNSHOT			2
-#define	TE_EXPLOSION		3
-#define	TE_TAREXPLOSION		4
-#define	TE_LIGHTNING1		5
-#define	TE_LIGHTNING2		6
-#define	TE_WIZSPIKE			7
-#define	TE_KNIGHTSPIKE		8
-#define	TE_LIGHTNING3		9
-#define	TE_LAVASPLASH		10
-#define	TE_TELEPORT			11
-#define TE_EXPLOSION2		12
-
-// PGM 01/21/97
-#define TE_BEAM				13
-// PGM 01/21/97
-// qsprawl
-#define TE_BEAMBYNAME		14
-#define TE_BULLETTRACE		15
-#define TE_GAUSSTRACE		16
-#define TE_IMPACT			17
-#define TE_MUZZLE			18
+#define	TE_SPIKE				0
+#define	TE_EXPLOSION			1
+#define	TE_LIGHTNING1			2
+#define	TE_LIGHTNING2			3
+#define	TE_LIGHTNING3			4
+#define	TE_LAVASPLASH			5
+#define	TE_TELEPORT				6
+#define TE_ROBOTHEAD_EXPLOSION	7
+#define TE_SYNTHHEAD_EXPLOSION	8
+#define	TE_BEAMBYNAME			9
+#define	TE_BULLETTRACE			10
+#define	TE_GAUSSTRACE			11
+#define	TE_IMPACT				12
+#define TE_HEAD					13
 
 typedef struct
 {

@@ -273,6 +273,8 @@ void		end_sys_fields;			// flag for structure dumping
 
 const float	FALSE					= 0;
 const float TRUE					= 1;
+const float NOFLAGS					= 0;
+const float NULL_OFFSET				= 0.0;
 
 // edict.flags
 const float	FL_FLY					= 1;
@@ -337,7 +339,7 @@ const float	IT_SUPER_NAILGUN		= 8;
 const float	IT_GRENADE_LAUNCHER		= 16;
 const float	IT_ROCKET_LAUNCHER		= 32;
 const float	IT_LIGHTNING			= 64;
-const float	IT_EXTRA_WEAPON			= 128;
+const float	IT_BULLETS				= 128;
 const float	IT_SHELLS				= 256;
 const float	IT_NAILS				= 512;
 const float	IT_ROCKETS				= 1024;
@@ -383,24 +385,20 @@ const float	SVC_FINALE			= 31;
 const float	SVC_CDTRACK			= 32;
 const float	SVC_SELLSCREEN		= 33;
 
-
-const float	TE_SPIKE		= 0;
-const float	TE_SUPERSPIKE	= 1;
-const float	TE_GUNSHOT		= 2;
-const float	TE_EXPLOSION	= 3;
-const float	TE_TAREXPLOSION	= 4;
-const float	TE_LIGHTNING1	= 5;
-const float	TE_LIGHTNING2	= 6;
-const float	TE_WIZSPIKE		= 7;
-const float	TE_KNIGHTSPIKE	= 8;
-const float	TE_LIGHTNING3	= 9;
-const float	TE_LAVASPLASH	= 10;
-const float	TE_TELEPORT		= 11;
-const float	TE_BEAMBYNAME	= 14; //qsprawl
-const float	TE_BULLETTRACE	= 15;
-const float	TE_GAUSSTRACE	= 16;
-const float	TE_IMPACT		= 17;
-const float	TE_MUZZLE		= 18;
+#define	TE_SPIKE				0
+#define	TE_EXPLOSION			1
+#define	TE_LIGHTNING1			2
+#define	TE_LIGHTNING2			3
+#define	TE_LIGHTNING3			4
+#define	TE_LAVASPLASH			5
+#define	TE_TELEPORT				6
+#define TE_ROBOTHEAD_EXPLOSION	7
+#define TE_SYNTHHEAD_EXPLOSION 	8
+#define	TE_BEAMBYNAME			9
+#define	TE_BULLETTRACE			10
+#define	TE_GAUSSTRACE			11
+#define	TE_IMPACT				12
+#define TE_HEAD					13
 
 // sound channels
 // channel 0 never willingly overrides
@@ -462,10 +460,12 @@ float	slowmotion_time;
 float	skill;
 entity	multi_head;
 // fields related to global multi damage 
-.float	multi_damage;
-.float	multi_damagehead;
+#define M_BODY 0
+#define M_HEAD 1
+#define M_COUNT 2
+.vector	multi_damage; // x = body, y = head, z = hits count for shotgun
 .entity multi_chain;
-
+.float 		alpha;
 
 //================================================
 
@@ -531,6 +531,8 @@ const float	AS_MISSILE		= 4;
 #define MAX_NAILS 250
 #define MAX_ROCKETS 6
 #define MAX_CELLS 16
+#define MAX_BULLETS 45
+
 const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
 const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
 const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
@@ -544,14 +546,20 @@ const float ENF_HITHEAD = 8;
 const float ENF_CHANGESKIN = 16;
 //-------------------------------------------------------------
 
-const float IMPACT_NORMAL = 0;
-const float IMPACT_GAUSS_FINAL = 1; // solid, endpoint
-const float IMPACT_GAUSS_ENTRANCE = 2; // solid, penetrating, entrance hole
-const float IMPACT_GAUSS_EXIT = 3; // solid, penetrating, exit hole
-const float IMPACT_GAUSS_FLESH_HEADSHOT = 4;
-const float IMPACT_GAUSS_FLESH = 5; // red blood
-const float IMPACT_GAUSS_ROBOT_HEADSHOT = 6; 
-const float IMPACT_GAUSS_ROBOT = 7; // mech/robot sparks
+#define IMPACT_NORMAL 0
+#define IMPACT_GAUSS_FINAL 1 // solid, endpoint
+#define IMPACT_GAUSS_ENTRANCE 2 // solid, penetrating, entrance hole
+#define IMPACT_GAUSS_EXIT 3 // solid, penetrating, exit hole
+#define IMPACT_GAUSS_FLESH_HEADSHOT 4
+#define IMPACT_GAUSS_FLESH 5 // red blood
+#define IMPACT_GAUSS_ROBOT_HEADSHOT 6 
+#define IMPACT_GAUSS_ROBOT 7 // mech/robot sparks
+#define IMPACT_FLESH_HEADSHOT 8
+#define IMPACT_ROBOT_HEADSHOT 9
+#define IMPACT_FLESH 10
+#define IMPACT_ROBOT 11
+#define IMPACT_WALL 12
+#define IMPACT_LASER 13
 
 // movement flags
 const float MF_CROUCHINAIR = 1;
@@ -579,6 +587,9 @@ const float MFL_PAIN_HEADSHOT = 8; // play special pain animation
 const float MFL_LOST_HEAD = 16; // mark that we just lost the head, so launch special event
 const float MFL_DROP_HEAD = 32; // we got killed with katana, spawn head model
 const float MFL_ROBOT = 64;
+const float MFL_DEAD = 128;
+const float MFL_GIB_ME = 256;
+const float MFL_BOSS = 512;
 
 //slowmo states
 const float SLOWMO_VALUE = 0.4;
@@ -598,7 +609,7 @@ const float SFL_LEFTHAND = 4;
 const float SFL_INQUICKMELEE = 8;
 const float SFL_STOPMELEE = 16;
 const float SFL_HOLD = 32;
-const float SFL_INERTIA = 64;
+const float SFL_INERTIA = 64; // remove
 const float SFL_VMOFFSET = 128; // TODO: i need to make something about viewmodel
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
@@ -616,23 +627,91 @@ const float MOVE_NONE = 0;
 
 //damage flags
 const float DF_HEADSHOT = 1; // damage to the head's healthpool
-const float DF_KATANA = 2; // damage was done by katana
-const float DF_EXPLOSION = 4; // damage was done by explosion
+const float DF_NEVERGIB = 2;
+const float DF_ALWAYSGIB = 4;
+const float DF_KATANA = 8; // damage was done by katana
+const float DF_EXPLOSION = 16; // damage was done by explosion
 
-//monstertype
-const float TYPE_SOLDIER = 1;
-const float TYPE_ENFORCER = 2;
-const float TYPE_KNIGHT = 4;
-const float TYPE_HELLKNIGHT = 8;
-const float TYPE_DOG = 16;
-const float TYPE_FIEND = 32;
-const float TYPE_SCRAG = 64;
-const float TYPE_OGRE = 128;
-const float TYPE_SHAMBLER = 256;
-const float TYPE_ZOMBIE = 512;
+//monstertypes
+//"enum [class] [name_e]:type"
+enum monstertypes:int {
+	TYPE_SOLDIER,
+	TYPE_KNIGHT,
+	TYPE_ENFORCER,
+	TYPE_DOG,
+	TYPE_SCRAG,
+	TYPE_ZOMBIE,
+	TYPE_OGRE,
+	TYPE_FIEND,
+	TYPE_HELLKNIGHT,
+	TYPE_SHAMBLER,
+	TYPE_VORE
+};
+
+typedef struct {
+    float damage;
+    float penetration;
+	float dflags;
+} damage_t;
+
+#define PISTOL_DAMAGE			50
+#define PISTOL_PENETRATION		-0.3
+#define SMG_DAMAGE				10
+#define SMG_PENETRATION			0.3
+#define SHOTGUN_DAMAGE			20
+#define SHOTGUN_PENETRATION		-0.5
+#define CHAINGUN_DAMAGE			60
+#define CHAINGUN_PENETRATION	0.4
+#define GRENADE_EXPLOSION		150
+#define GRENADE_CUMULATIVE		170
+#define GRENADE_PENETRATION 	0.9
+
+typedef struct {
+	float body_resistance; // percent of damage to decline
+	float body_mitigation; // absolute value to subtract from resulted damage
+	float head_resistance;
+	float head_mitigation;
+	float explosives_resistance;
+} armor_t;
+
+armor_t armorstats; // global used in T_DAMAGE
+// stats for monsters		  br bm			hr hm		er
+const armor_t A_NULL 		= {0, 0,		0, 0,		0};
+const armor_t A_SOLDIER		= {0, 0,		0, 0,		0};
+const armor_t A_KNIGHT		= {0.25, 5,		0, 0,		0};
+const armor_t A_ENFORCER	= {0.2, 5,		0, 5,		0};
+const armor_t A_DOG			= {0.2, 5,		0, 0,		0.2};
+const armor_t A_SCRAG		= {0.1, 5,		0, 0,		0.2};
+const armor_t A_ZOMBIE		= {0.5, 5,		0, 5,		0.2};
+const armor_t A_OGRE		= {0.25, 30,	0.1, 5,		0.8};
+const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body car resist a lot of damage
+const armor_t A_FIEND		= {0.4, 30,		0.95, 6,	0.8};
+const armor_t A_VORE		= {0.2, 50,		0, 0,		0.8};
+const armor_t A_SHAMBLER	= {0.8, 50,		0.95, 100,	0.95};
+
+#define SOLDIER_HEALTH 		85
+#define SOLDIER_HEAD 		20
+#define KNIGHT_HEALTH		100
+#define KNIGHT_HEAD			20
+#define ENFORCER_HEALTH		150
+#define ENFORCER_HEAD		50
+#define DOG_HEALTH			100
+#define SCRAG_HEALTH		100
+#define ZOMBIE_THROWHEADHP	100
+#define ZOMBIE_HEALTH		100
+#define ZOMBIE_HEADLESS		50
+#define ZOMBIE_HEAD			50
+#define OGRE_HEALTH			400		
+#define OGRE_HEAD			150
+#define HELLKNIGHT_HEALTH	250
+#define HELLKNIGHT_HEAD		80
+#define FIEND_HEALTH		400
+#define FIEND_HEAD			100
+#define VORE_HEALTH			400
+#define SHAMBLER_HEALTH		800
+#define SHAMBLER_HEAD		400
 
 //
-
 .float		sprawlflags;
 .float		movementflags;
 .float		katana_finished;
@@ -642,10 +721,7 @@ const float TYPE_ZOMBIE = 512;
 .float		gauss_finished;
 .float		grenade_finished;
 
-.float		chaingun_speed;
 .float		chaingun_frame;
-//.float		chaingun_barrel;
-.float		slide_active;
 .float 		jump_timer;
 .float		crouch_timer;
 .float		footstep_timer;
@@ -665,16 +741,17 @@ entity		grenade_handler; // global
 
 .string		quickmelee_model; // stores the current weapon model;
 .float		quickmelee_weapon;
+.float		lastweapon;
 .float		hitmarker_time;
+.float		headmarker_time;
 .float		katana_charges;
-.float		slash_list;
 
 .float		forcedslide_timer; // no friction until timer ends
 .float		noairacceleration_timer; // same for air acceleration
 .float		current_airacceleration; // save previous state to restore to it
 .float		noacceleration_timer; // same
 .float		current_acceleration;
-.float		nowallrun_timer; // forbids wallrunning
+//var .float		nowallrun_timer; // forbids wallrunning
 .float		current_speed; //
 .float		speedmodifier; // changes speed when katana in hands
 .float		adrenaline_regentimer; 
@@ -690,11 +767,11 @@ entity		grenade_handler; // global
 .float		monstertype;
 
 // head sphere debug
-.vector		origin_old;
-.vector 	offset_old; 
-.float		lasttick_time; // used for head sphere, last frame change
-.entity 	headmodel; // head sphere entity
-.float 		alpha;
+//.vector		origin_old;
+//.vector 	offset_old; 
+//.float		lasttick_time; // used for head sphere, last frame change
+//.entity 	headmodel; // head sphere entity
+
 // end
 .vector		head_offset;
 .float		head_size;
@@ -702,16 +779,14 @@ entity		grenade_handler; // global
 .float		gib_threshold; // amount of damage required to gib the monster
 .float 		lasthit_damage; //save amount of damage from last damage taken, used for gibs logic
 .vector		lasthit_direction; // direction to launch the gibs
-//.float		health_body;
 .float		health_head; // head has separate healthpool, it still can kill the monster or made him headless
-.float		armorclass_body;
-.float		armorclass_head;
+.float 		fadecount;
 
 //
 // extra utility fields, to meet all the needs for complex stuff
-//.float		fA, fB, fC, fD, fE, fF, fG, fH, fI, fJ, fK, fL, fM, fN, fO, fP; // 16 floats 
-//.vector		vA, vB, vC, vD, vE, vF, vG, vH, vI, vJ, vK, vL, vM, vN, vO, vP; // 48 floats
-//.entity		eA, eB, eC, eD, eE, eF, eG, eH, eI, eJ, eK, eL, eM, eN, eO, eP; // 16 ints
+.float		fA, fB, fC, fD, fE;//, fF, fG, fH, fI, fJ, fK, fL, fM, fN, fO, fP; // 16 floats 
+.vector		vA, vB, vC, vD, vE;//, vF, vG, vH, vI, vJ, vK, vL, vM, vN, vO, vP; // 48 floats
+.entity		eA, eB, eC, eD, eE;//, eF, eG, eH, eI, eJ, eK, eL, eM, eN, eO, eP; // 16 ints
 
 .float		walkframe;
 

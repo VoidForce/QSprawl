@@ -39,8 +39,109 @@ $frame death1 death2 death3 death4 death5 death6 death7
 $frame	walk1 walk2 walk3 walk4 walk5 walk6 walk7 walk8 walk9 walk10
 $frame	walk11 walk12
 
-void(entity attacker, float damage) shalrath_pain;
-void() ShalMissile;
+/*
+================
+ShalMissile
+================
+*/
+void() ShalMissileTouch;
+void() ShalHome;
+void() ShalMissile =
+{
+	local	entity 	missile;
+	//local	vector	dir;
+	//local	float	dist, flytime;
+
+	//dir = normalize((self.enemy.origin + '0 0 10') - self.origin);
+	//dist = vlen (self.enemy.origin - self.origin);
+	//flytime = dist * 0.002;
+
+	//if (flytime < 0.1)
+	//	flytime = 0.1;
+
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	sound (self, CHAN_WEAPON, "shalrath/attack2.wav", 1, ATTN_NORM);
+
+	missile = spawn ();
+	missile.classname = "vore_ball";	//gnounc
+	missile.owner = self;
+
+	missile.solid = SOLID_BBOX;
+	missile.movetype = MOVETYPE_FLYMISSILE;
+	setmodel (missile, "progs/v_spike.mdl");
+
+	setsize (missile, '0 0 0', '0 0 0');		
+
+	missile.origin = self.origin + '0 0 10';
+	missile.vA = self.origin + '0 0 24';
+	missile.vB = self.origin + '0 0 100'; //vertical offset
+	missile.vC = self.enemy.origin + [0,0,self.enemy.view_ofs_z];
+	missile.fA = time; //time until fly directly to target
+	missile.fB = 100; // speed
+	//missile.vD = missile.vC - lerp3PointCurve(missile.vA, missile.vB, missile.vC, 1 - ((time + 0.1) - missile.fA));
+	missile.velocity = '0 0 400'; //normalize(missile.vD) * missile.fB;
+	//missile.velocity = dir * 400;
+	missile.avelocity = '300 300 300';
+	missile.nextthink = time + 0.1;
+	missile.think = ShalHome;
+	//missile.enemy = self.enemy;
+	missile.touch = ShalMissileTouch;
+};
+
+void() ShalHome =
+{
+	self.vD = lerp3PointCurve(self.vA, self.vB, self.vC, time + 0.1 - self.fA) - self.origin;
+	self.velocity = normalize(self.vD) * (self.fB + lerp(400,600,time - self.fA));
+	if (time - self.fA > 1)
+		return;
+/*
+	local vector	dir, vtemp;
+	vtemp = self.enemy.origin + '0 0 10';
+
+	if (self.enemy.health < 1)
+	{
+		remove(self);
+		return;
+	}
+
+	dir = normalize(vtemp - self.origin);
+
+	if (skill == 3)
+		self.velocity = dir * 350;
+
+	else
+		self.velocity = dir * 250;
+
+*/
+	self.nextthink = time + 0.1;
+	self.think = ShalHome;	
+	
+};
+
+void() ShalMissileTouch =
+{
+	if (other == self.owner)
+		return;		// don't explode on owner
+
+	if (other.classname == "monster_zombie")
+		T_Damage (other, self, self, 110, 0);	
+
+	T_RadiusDamage (self, self.owner, 40, world);
+	sound (self, CHAN_WEAPON, "weapons/r_exp3.wav", 1, ATTN_NORM);
+
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
+	WriteCoord (MSG_BROADCAST, self.origin_x);
+	WriteCoord (MSG_BROADCAST, self.origin_y);
+	WriteCoord (MSG_BROADCAST, self.origin_z);
+
+	self.velocity = '0 0 0';
+	self.touch = SUB_Null;
+	setmodel (self, "progs/s_explod.spr");
+	self.solid = SOLID_NOT;
+	s_explode1 ();
+};
+
 void() shal_stand     =[      $walk1,       shal_stand    ] {ai_stand();};
 
 void() shal_walk1     =[      $walk2,       shal_walk2    ] 
@@ -111,7 +212,7 @@ void() shal_death3      =[      $death3,        shal_death4     ] {};
 void() shal_death4      =[      $death4,        shal_death5     ] {};
 void() shal_death5      =[      $death5,        shal_death6     ] {};
 void() shal_death6      =[      $death6,        shal_death7     ] {};
-void() shal_death7      =[      $death7,        shal_death7    ] {};
+void() shal_death7      =[      $death7,        decay    ] {};
 
 
 void(entity attacker, float damage) shalrath_pain =
@@ -129,11 +230,14 @@ void() shalrath_die =
 	// check for gib
 	if (self.health < -90)
 	{
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_shal.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib2.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
+		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
+		ThrowHead ("progs/h_shal.mdl",  self.lasthit_damage);
+		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shalrath_gib_leg.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shalrath_gib_leg.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shalrath_gib_leg.mdl", self.lasthit_damage);
 
 		return;
 	}
@@ -144,94 +248,6 @@ void() shalrath_die =
 	// insert death sounds here
 };
 
-/*
-================
-ShalMissile
-================
-*/
-void() ShalMissileTouch;
-void() ShalHome;
-void() ShalMissile =
-{
-	local	entity 	missile;
-	local	vector	dir;
-	local	float	dist, flytime;
-
-	dir = normalize((self.enemy.origin + '0 0 10') - self.origin);
-	dist = vlen (self.enemy.origin - self.origin);
-	flytime = dist * 0.002;
-
-	if (flytime < 0.1)
-		flytime = 0.1;
-
-	self.effects = self.effects | EF_MUZZLEFLASH;
-	sound (self, CHAN_WEAPON, "shalrath/attack2.wav", 1, ATTN_NORM);
-
-	missile = spawn ();
-	missile.classname = "vore_ball";	//gnounc
-	missile.owner = self;
-
-	missile.solid = SOLID_BBOX;
-	missile.movetype = MOVETYPE_FLYMISSILE;
-	setmodel (missile, "progs/v_spike.mdl");
-
-	setsize (missile, '0 0 0', '0 0 0');		
-
-	missile.origin = self.origin + '0 0 10';
-	missile.velocity = dir * 400;
-	missile.avelocity = '300 300 300';
-	missile.nextthink = flytime + time;
-	missile.think = ShalHome;
-	missile.enemy = self.enemy;
-	missile.touch = ShalMissileTouch;
-};
-
-void() ShalHome =
-{
-	local vector	dir, vtemp;
-	vtemp = self.enemy.origin + '0 0 10';
-
-	if (self.enemy.health < 1)
-	{
-		remove(self);
-		return;
-	}
-
-	dir = normalize(vtemp - self.origin);
-
-	if (skill == 3)
-		self.velocity = dir * 350;
-
-	else
-		self.velocity = dir * 250;
-
-	self.nextthink = time + 0.2;
-	self.think = ShalHome;	
-};
-
-void() ShalMissileTouch =
-{
-	if (other == self.owner)
-		return;		// don't explode on owner
-
-	if (other.classname == "monster_zombie")
-		T_Damage (other, self, self, 110, 0);	
-
-	T_RadiusDamage (self, self.owner, 40, world);
-	sound (self, CHAN_WEAPON, "weapons/r_exp3.wav", 1, ATTN_NORM);
-
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
-	WriteCoord (MSG_BROADCAST, self.origin_x);
-	WriteCoord (MSG_BROADCAST, self.origin_y);
-	WriteCoord (MSG_BROADCAST, self.origin_z);
-
-	self.velocity = '0 0 0';
-	self.touch = SUB_Null;
-	setmodel (self, "progs/s_explod.spr");
-	self.solid = SOLID_NOT;
-	s_explode1 ();
-};
 
 //=================================================================
 
@@ -248,6 +264,7 @@ void() monster_shalrath =
 	precache_model2 ("progs/shalrath.mdl");
 	precache_model2 ("progs/h_shal.mdl");
 	precache_model2 ("progs/v_spike.mdl");
+	precache_model2 ("progs/shalrath_gib_leg.mdl");
 	
 	precache_sound2 ("shalrath/attack.wav");
 	precache_sound2 ("shalrath/attack2.wav");
@@ -266,10 +283,11 @@ void() monster_shalrath =
 	self.netname = "Vore";
 	self.killstring = " was exploded by a Vore\n";
 
-	setsize (self, VEC_HULL2_MIN, '32 32 16');
-	self.health = 400;
-	self.max_health = 400;
-
+	setsize (self, VEC_HULL2_MIN, '32 32 20');
+	self.health = VORE_HEALTH;
+	self.max_health = VORE_HEALTH;
+	self.monsterflags |= MFL_ROBOT;
+	self.monstertype = TYPE_VORE;
 	self.th_stand = shal_stand;
 	self.th_walk = shal_walk1;
 	self.th_run = shal_run1;

@@ -290,6 +290,7 @@ void() monster_oldone =
 
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
+	self.monsterflags |= MFL_BOSS;
 	
 	//gnounc
 	setmodel (self, "progs/oldone.mdl");

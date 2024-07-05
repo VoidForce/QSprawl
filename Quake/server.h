@@ -221,6 +221,8 @@ typedef enum
 	EF_MUZZLEFLASH 				= 2,
 	EF_BRIGHTLIGHT 				= 4,
 	EF_DIMLIGHT 				= 8,
+	EF_NOLERP					= 128,
+	EF_NOLERP2					= 256,
 } efx_t;
 
 // spawnflags

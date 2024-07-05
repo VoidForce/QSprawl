@@ -68,7 +68,7 @@ void() SetChangeParms =
 	parm2 = self.health;
 	parm3 = self.armorvalue;
 
-	if (self.ammo_shells < 25)
+	if (self.ammo_nails < 25)
 		parm4 = 25;
 
 	else
@@ -1114,6 +1114,27 @@ void() StopSlide =
 	self.movementflags -= self.movementflags & MF_FORCEDSLIDE;
 };
 
+/*
+void() StartWallrun =
+{
+	self.phys_acceleration = self.current_acceleration;
+	self.noacceleration_timer = 0;
+	self.movementflags -= self.movementflags & MF_NOACCELERATION;	
+};
+
+void(float timer) StopWallrun =
+{
+	self.current_airacceleration = self.phys_airacceleration;
+	self.phys_airacceleration = 0;
+	self.movementflags |= MF_NOAIRACCELERATION;
+	if (timer < 0)
+		self.noairacceleration_timer = time + 7200; // 2 hours
+	else
+		self.noairacceleration_timer = time + timer;
+};
+
+nowallrun_timer
+*/
 void() ResetSlowmotion =
 {
 	slowmotion_time = 0;
@@ -1504,8 +1525,6 @@ void() PlayerPreThink =
 	{
 		if (self.weapon == IT_AXE)
 			self.speedmodifier = 1.25;
-		else if (self.weapon == IT_SUPER_NAILGUN)
-			self.speedmodifier = 0.6;
 		else
 			self.speedmodifier = 1;
 		self.sprawlflags -= self.sprawlflags & SFL_NEEDTOSETSPEED;
@@ -1746,7 +1765,7 @@ void() PlayerPreThink =
 
 	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE)
 	{
-		delpoyGun(W_BestWeapon());
+		deployGun(W_BestWeapon());
 	}
 };
 
@@ -1782,12 +1801,18 @@ void() PlayerPostThink =
 		}
 	}
 	
-	if (self.engineflags & ENF_HITHEAD || self.engineflags & ENF_HITMARKER)
+	if (self.engineflags & ENF_HITMARKER)
 	{
 		if (self.hitmarker_time < time )
-			self.engineflags -= self.engineflags & (ENF_HITHEAD | ENF_HITMARKER);
+			self.engineflags -= self.engineflags & ENF_HITMARKER;
 	}
 	
+	if (self.engineflags & ENF_HITHEAD)
+	{
+		if (self.headmarker_time < time )
+			self.engineflags -= self.engineflags & ENF_HITHEAD;
+	}
+		
 	if (self.sprawlflags & SFL_SEMIAUTO)
 	{
 		if (!self.button0)

@@ -86,7 +86,10 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 
 //johnfitz -- removed RotatePointAroundVector() becuase it's no longer used and my compiler fucked it up anyway
 
-/*-----------------------------------------------------------------*/
+/*
+	find a perpendicular vector on a plane difined by normal (A), returns into (B)
+	assums that A is normalized
+*/
 void VectorPerpendicular(vec3_t A, vec3_t B)
 {
 	if (A[0] != 0)
@@ -98,6 +101,31 @@ void VectorPerpendicular(vec3_t A, vec3_t B)
 	else
 		Con_DPrintf("PANIC! VectorPerpendicular is all 0\n");
 };
+
+/*
+	Projects vector A onto vector B, writes into result
+*/
+void VectorProject(vec3_t A, vec3_t B, vec3_t result)
+{
+	vec3_t normB;
+	VectorNormalize(normB);
+	VectorScale(normB, DotProduct(A, normB), result);
+}
+
+/*
+	Projects vector A onto plane defined by vector B as non-normalized normal vector, 
+	writes into result, 
+	write VectorProject result into result_project,
+*/
+void VectorProjectOnPlane(vec3_t A, vec3_t B, vec3_t result_project, vec3_t result)
+{
+	vec3_t normB, project;
+	VectorNormalize(normB);
+	VectorScale(normB, DotProduct(A, normB), project);
+	VectorCopy(project, result_project);
+	VectorInverse(project);
+	VectorAdd(A, project, result);
+}
 
 float	anglemod(float a)
 {

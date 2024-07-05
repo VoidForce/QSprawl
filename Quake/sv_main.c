@@ -977,10 +977,8 @@ void SV_CleanupEnts (void)
 	ent = NEXT_EDICT(qcvm->edicts);
 	for (e=1 ; e<qcvm->num_edicts ; e++, ent = NEXT_EDICT(ent))
 	{
-		// Qsprawl todo: better to combine into 1 operation
-		ent->v.effects = (int)ent->v.effects & ~EF_MUZZLEFLASH;
-		ent->v.effects = (int)ent->v.effects & ~EF_NOLERP;
-		ent->v.effects = (int)ent->v.effects & ~EF_NOLERP2;
+		// Qsprawl 
+		ent->v.effects -= (int)ent->v.effects & (EF_MUZZLEFLASH | EF_NOLERP | EF_NOLERP2);
 	}
 }
 

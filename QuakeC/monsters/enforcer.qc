@@ -263,7 +263,7 @@ void()	enf_die10	=[	$death10,	enf_die11	] {};
 void()	enf_die11	=[	$death11,	enf_die12	] {};
 void()	enf_die12	=[	$death12,	enf_die13	] {};
 void()	enf_die13	=[	$death13,	enf_die14	] {};
-void()	enf_die14	=[	$death14,	enf_die14	] {};
+void()	enf_die14	=[	$death14,	decay	] {};
 
 void()	enf_fdie1	=[	$fdeath1,	enf_fdie2	] {ai_velocity(40);};
 void()	enf_fdie2	=[	$fdeath2,	enf_fdie3	] {ai_velocity(30);};
@@ -275,7 +275,7 @@ void()	enf_fdie7	=[	$fdeath7,	enf_fdie8	] {};
 void()	enf_fdie8	=[	$fdeath8,	enf_fdie9	] {};
 void()	enf_fdie9	=[	$fdeath9,	enf_fdie10	] {};
 void()	enf_fdie10	=[	$fdeath10,	enf_fdie11	] {};
-void()	enf_fdie11	=[	$fdeath11,	enf_fdie11	] {};
+void()	enf_fdie11	=[	$fdeath11,	decay ] {};
 
 void() enf_die =
 {
@@ -286,10 +286,10 @@ void() enf_die =
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_mega.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib2.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
+		ThrowHead ("progs/h_mega.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib1.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib2.mdl", self.lasthit_damage);
+		ThrowGib ("progs/gib3.mdl", self.lasthit_damage);
 		return;
 	}
 	
@@ -300,7 +300,7 @@ void() enf_die =
 		setsize (self, '-16 -16 -24', '16 16 36');
 		self.angles_y += crandom() * 30;
 		
-		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		sendMessageVec(findHeadPosition(self), TE_HEAD); // particle effect
 		if (self.monsterflags & MFL_DROP_HEAD)
 		{
 			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
@@ -362,14 +362,11 @@ void() monster_enforcer =
 	setsize (self, '-16 -16 -24', '16 16 36');//40
 	self.head_offset = '-4 2 29';//'-4 2 29';
 	self.head_size = 12;
-	self.health = 150;
-	self.max_health = 150;
-	//self.health_body = ;
-	self.health_head = 50;
+	self.health = ENFORCER_HEALTH;
+	self.max_health = ENFORCER_HEALTH;
+	self.health_head = ENFORCER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_ENFORCER;
-	self.armorclass_body = 20;
-	self.armorclass_head = 5;
 	self.gib_threshold = 100;
 
 	self.th_stand = enf_stand1;

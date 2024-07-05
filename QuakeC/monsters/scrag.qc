@@ -347,38 +347,44 @@ void()	wiz_death1	=[	$death1,		wiz_death2	]
 	//self.velocity_x = -200 + 400*random();
 	//self.velocity_y = -200 + 400*random();
 	//self.velocity_z = 100 + 100*random();
-	makevectors2(self.v_angle);
+	vector temp;
+	temp = vectoangles(self.enemy.origin - self.origin);
+	makevectors2(temp);
 	self.saved_forward = v_forward;
 	self.saved_right = v_right;
 	self.saved_up = v_up;
-	self.velocity = self.saved_forward * 500;
+	self.velocity = self.saved_forward * 600;
+	self.velocity_z = 200;
+	self.avelocity_z = 900;
 	self.flags = self.flags - (self.flags & FL_ONGROUND);
 	sound (self, CHAN_VOICE, "wizard/wdeath.wav", 1, ATTN_NORM);
 };
 
-void()	wiz_death2	=[ $death2, wiz_death3 ] {self.velocity += self.saved_forward * CIRCLEX[3 ]*100 + self.saved_right * CIRCLEY[3 ]*100;};
-void()	wiz_death3	=[ $death3, wiz_death4 ] {self.velocity += self.saved_forward * CIRCLEX[5 ]*100 + self.saved_right * CIRCLEY[5 ]*100;};
-void()	wiz_death4	=[ $death4, wiz_death5 ] {self.velocity += self.saved_forward * CIRCLEX[7 ]*100 + self.saved_right * CIRCLEY[7 ]*100;};
-void()	wiz_death5	=[ $death5, wiz_death6 ] {self.velocity += self.saved_forward * CIRCLEX[9 ]*100 + self.saved_right * CIRCLEY[9 ]*100;};
-void()	wiz_death6	=[ $death6, wiz_death7 ] {self.velocity += self.saved_forward * CIRCLEX[11]*100 + self.saved_right * CIRCLEY[11]*100;};
-void()	wiz_death7	=[ $death7, wiz_death8 ] {self.velocity += self.saved_forward * CIRCLEX[13]*100 + self.saved_right * CIRCLEY[13]*100;};
-void()	wiz_death8	=[ $death8, wiz_death8 ] {self.velocity += self.saved_forward * CIRCLEX[15]*100 + self.saved_right * CIRCLEY[15]*100;};
+void()	wiz_death2	=[ $death2, wiz_death3 ] {};//self.velocity += self.saved_forward * CIRCLEX[3 ]*20 + self.saved_right * CIRCLEY[3 ]*20;
+void()	wiz_death3	=[ $death3, wiz_death4 ] {};//self.velocity += self.saved_forward * CIRCLEX[5 ]*20 + self.saved_right * CIRCLEY[5 ]*20;
+void()	wiz_death4	=[ $death4, wiz_death5 ] {};//self.velocity += self.saved_forward * CIRCLEX[7 ]*20 + self.saved_right * CIRCLEY[7 ]*20;
+void()	wiz_death5	=[ $death5, wiz_death6 ] {};//self.velocity += self.saved_forward * CIRCLEX[9 ]*20 + self.saved_right * CIRCLEY[9 ]*20;
+void()	wiz_death6	=[ $death6, wiz_death7 ] {};//self.velocity += self.saved_forward * CIRCLEX[11]*20 + self.saved_right * CIRCLEY[11]*20;
+void()	wiz_death7	=[ $death7, wiz_death8 ] {};//self.velocity += self.saved_forward * CIRCLEX[13]*20 + self.saved_right * CIRCLEY[13]*20;
+void()	wiz_death8	=[ $death8, decay ] {};		//self.velocity += self.saved_forward * CIRCLEX[15]*100 + self.saved_right * CIRCLEY[15]*100;
 
 void() wiz_explode =
 {
 	self.touch = SUB_Null;
-	ThrowHead ("progs/h_wizard.mdl", self.health);
-	ThrowGib ("progs/m_gib_01.mdl", self.health);
-	ThrowGib ("progs/m_gib_02.mdl", self.health);
-	ThrowGib ("progs/m_gib_03.mdl", self.health);
-	ThrowGib ("progs/m_gib_04.mdl", self.health);
-	ThrowGib ("progs/m_gib_05.mdl", self.health);
+	sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
+	T_RadiusDamage (self, self, 40, world);
+	ThrowHead("progs/h_wizard.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
 	SUB_Remove();
 };
 
 void() wiz_die =
 {
-	self.solid = SOLID_NOT;
+	//self.solid = SOLID_NOT;
 // check for gib
 	if (self.lasthit_damage > self.gib_threshold)
 	{
@@ -443,8 +449,8 @@ void() monster_wizard =
 	setsize (self, '-16 -16 -24', '16 16 24');// 24 48
 	//self.head_offset = '0 0 28';
 	self.head_size = 0;
-	self.health = 100;
-	self.max_health = 100;
+	self.health = SCRAG_HEALTH;
+	self.max_health = SCRAG_HEALTH;
 	self.gib_threshold = 80;
 	self.monstertype = TYPE_SCRAG;
 

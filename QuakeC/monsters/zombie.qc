@@ -232,7 +232,7 @@ void(vector st) ZombieFireGrenade =
 	local	vector	org;
 
 	sound (self, CHAN_WEAPON, "zombie/z_shot1.wav", 1, ATTN_NORM);
-	if (self.monsterflags & MFL_HASHEAD && self.health < 150)
+	if (self.monsterflags & MFL_HASHEAD && self.health < ZOMBIE_THROWHEADHP)
 	{
 		ZombieFireHead(st, 0);
 		return;
@@ -432,7 +432,7 @@ void() zombie_paine12	=[	$paine12,	zombie_paine13	] {setHead('-16 1 -22'); //174
 	}
 	sound (self, CHAN_VOICE, "zombie/z_idle.wav", 1, ATTN_IDLE);
 };
-void() zombie_paine13	=[	$paine13,	zombie_paine14	] {setHead('-16 1 -22');}; //175
+void() zombie_paine13	=[	$paine13,	zombie_paine14	] {setHead('-16 1 -22');self.solid = SOLID_SLIDEBOX;}; //175
 void() zombie_paine14	=[	$paine14,	zombie_paine15	] {setHead('-16 1 -22');}; //176
 void() zombie_paine15	=[	$paine15,	zombie_paine16	] {setHead('-16 1 -22');}; //177
 void() zombie_paine16	=[	$paine16,	zombie_paine17	] {setHead('-16 1 -22');}; //178
@@ -453,13 +453,19 @@ void() zombie_paine30	=[	$paine30,	zombie_run1		] {setHead('0 0 24');}; //192
 
 void() zombie_die =
 {
-	sound (self, CHAN_VOICE, "zombie/z_gib.wav", 1, ATTN_NORM);
-	ThrowHead ("progs/h_zombie.mdl", self.health);
-	ThrowGib ("progs/m_gib_01.mdl", self.health);
-	ThrowGib ("progs/m_gib_02.mdl", self.health);
-	ThrowGib ("progs/m_gib_03.mdl", self.health);
-	ThrowGib ("progs/m_gib_04.mdl", self.health);
-	ThrowGib ("progs/m_gib_05.mdl", self.health);
+	//sound (self, CHAN_VOICE, "zombie/z_gib.wav", 1, ATTN_NORM);
+	
+	sendMessageVec(self.origin, TE_EXPLOSION);
+	
+	if (self.monsterflags & MFL_HASHEAD)
+		ThrowHead ("progs/h_zombie.mdl", self.lasthit_damage);
+	else
+		ThrowHead ("progs/m_gib_02.mdl", self.lasthit_damage);
+	
+	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
+	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
+
 	self.think = SUB_Null;
 	self.nextthink = -1;
 };
@@ -487,7 +493,7 @@ void(entity attacker, float take) zombie_pain =
 {
 	local float r;
 
-	if (take > 189)
+	if (take > 150)
 	{
 		zombie_die();
 		return;
@@ -499,8 +505,8 @@ void(entity attacker, float take) zombie_pain =
 		setmodel (self, "progs/zombie_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 32');
 		
-		if (self.health > 50)
-			self.health = 50;
+		if (self.health > ZOMBIE_HEADLESS)
+			self.health = ZOMBIE_HEADLESS;
 
 		// gp into one of the fast pain animations	
 		self.pain_finished = time + 3;
@@ -514,11 +520,7 @@ void(entity attacker, float take) zombie_pain =
 		else
 		{
 			T_RadiusDamage (self, self, 40, self);
-			WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-			WriteByte (MSG_BROADCAST, TE_EXPLOSION);
-			WriteCoord (MSG_BROADCAST, self.origin_x + self.head_offset_x);
-			WriteCoord (MSG_BROADCAST, self.origin_y + self.head_offset_y);
-			WriteCoord (MSG_BROADCAST, self.origin_z + self.head_offset_z);
+			sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
 		}
 		return;
 		
@@ -595,13 +597,12 @@ void() monster_zombie =
 	setsize (self, '-16 -16 -24', '16 16 28'); //40
 	self.head_offset = '-2 -1 23';
 	self.head_size = 8;
-	self.health = 200;
+	self.health = ZOMBIE_HEALTH;
+	self.max_health = ZOMBIE_HEALTH;
+	self.health_head = ZOMBIE_HEAD;
+
 	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;
 	self.monstertype = TYPE_ZOMBIE;
-	self.health_head = 55;
-	self.armorclass_body = 25;
-	self.armorclass_head = 25;
-	self.max_health = 200;
 	
 	self.th_stand = zombie_stand1;
 	self.th_walk = zombie_walk1;

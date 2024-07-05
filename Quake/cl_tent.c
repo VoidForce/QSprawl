@@ -134,34 +134,17 @@ void CL_ParseTEnt (void)
 	vec3_t	pos, pos2, pos3;
 	dlight_t	*dl;
 	int		rnd;
-	int		colorStart, colorLength;
 	const char* str; //qsprawl
 	float	staytime;
 
 	type = MSG_ReadByte ();
 	switch (type)
 	{
-	case TE_WIZSPIKE:			// spike hitting wall
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_RunParticleEffect (pos, vec3_origin, 20, 30);
-		S_StartSound (-1, 0, cl_sfx_wizhit, pos, 1, 1);
-		break;
-
-	case TE_KNIGHTSPIKE:			// spike hitting wall
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_RunParticleEffect (pos, vec3_origin, 226, 20);
-		S_StartSound (-1, 0, cl_sfx_knighthit, pos, 1, 1);
-		break;
-
 	case TE_SPIKE:			// spike hitting wall
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_RunParticleEffect (pos, vec3_origin, 0, 10);
+		R_RunParticleEffect (pos, vec3_origin, 0, 20);
 		if ( rand() % 5 )
 			S_StartSound (-1, 0, cl_sfx_tink1, pos, 1, 1);
 		else
@@ -174,32 +157,6 @@ void CL_ParseTEnt (void)
 			else
 				S_StartSound (-1, 0, cl_sfx_ric3, pos, 1, 1);
 		}
-		break;
-	case TE_SUPERSPIKE:			// super spike hitting wall
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_RunParticleEffect (pos, vec3_origin, 0, 20);
-
-		if ( rand() % 5 )
-			S_StartSound (-1, 0, cl_sfx_tink1, pos, 1, 1);
-		else
-		{
-			rnd = rand() & 3;
-			if (rnd == 1)
-				S_StartSound (-1, 0, cl_sfx_ric1, pos, 1, 1);
-			else if (rnd == 2)
-				S_StartSound (-1, 0, cl_sfx_ric2, pos, 1, 1);
-			else
-				S_StartSound (-1, 0, cl_sfx_ric3, pos, 1, 1);
-		}
-		break;
-
-	case TE_GUNSHOT:			// bullet hitting wall
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_RunParticleEffect (pos, vec3_origin, 0, 20);
 		break;
 
 	case TE_EXPLOSION:			// rocket explosion
@@ -215,15 +172,6 @@ void CL_ParseTEnt (void)
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
 		break;
 
-	case TE_TAREXPLOSION:			// tarbaby explosion
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_BlobExplosion (pos);
-
-		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
-		break;
-
 	case TE_LIGHTNING1:				// lightning bolts
 		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true), 0.2);
 		break;
@@ -236,17 +184,13 @@ void CL_ParseTEnt (void)
 		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true), 0.2);
 		break;
 
-// PGM 01/21/97
-	case TE_BEAM:				// grappling hook beam
-		CL_ParseBeam (Mod_ForName("progs/beam.mdl", true), 0.2);
-		break;
-// PGM 01/21/97
 //qsprawl
 	case TE_BEAMBYNAME:
 		str = MSG_ReadString ();
 		staytime = MSG_ReadCoord(cl.protocolflags);
 		CL_ParseBeam(Mod_ForName(str, true), staytime);
 		break;
+
 	case TE_GAUSSTRACE:
 		pos[0] = MSG_ReadCoord(cl.protocolflags);
 		pos[1] = MSG_ReadCoord(cl.protocolflags);
@@ -287,17 +231,6 @@ void CL_ParseTEnt (void)
 			R_Impact(pos, pos2, flag);
 		break;
 
-	case TE_MUZZLE:
-		pos[0] = MSG_ReadCoord(cl.protocolflags);
-		pos[1] = MSG_ReadCoord(cl.protocolflags);
-		pos[2] = MSG_ReadCoord(cl.protocolflags);
-		pos2[0] = MSG_ReadCoord(cl.protocolflags);
-		pos2[1] = MSG_ReadCoord(cl.protocolflags);
-		pos2[2] = MSG_ReadCoord(cl.protocolflags);
-		flag = MSG_ReadByte();
-		R_Muzzle(pos, pos2, flag);
-		break;
-
 	case TE_LAVASPLASH:
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
@@ -312,21 +245,49 @@ void CL_ParseTEnt (void)
 		R_TeleportSplash (pos);
 		break;
 
-	case TE_EXPLOSION2:				// color mapped explosion
-		pos[0] = MSG_ReadCoord (cl.protocolflags);
-		pos[1] = MSG_ReadCoord (cl.protocolflags);
-		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		colorStart = MSG_ReadByte ();
-		colorLength = MSG_ReadByte ();
-		R_ParticleExplosion2 (pos, colorStart, colorLength);
-		dl = CL_AllocDlight (0);
-		VectorCopy (pos, dl->origin);
+	case TE_HEAD:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		R_ParticleHead(pos, 1); // 1 means flesh
+		break;
+
+	case TE_SYNTHHEAD_EXPLOSION:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		R_ParticleHead(pos, 2); // 2 means synth
+		break;
+
+	case TE_ROBOTHEAD_EXPLOSION:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		R_ParticleHead(pos, 0); // 0 means robotic
+
+		dl = CL_AllocDlight(0);
+		VectorCopy(pos, dl->origin);
 		dl->radius = 350;
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
-		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+		S_StartSound(-1, 0, cl_sfx_r_exp3, pos, 1, 1);
 		break;
 
+	/*
+	case TE_ROBOT_EXPLOSION:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		R_ParticleRobotExplosion(pos);
+
+		dl = CL_AllocDlight(0);
+		VectorCopy(pos, dl->origin);
+		dl->radius = 350;
+		dl->die = cl.time + 0.5;
+		dl->decay = 300;
+		S_StartSound(-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+		break;
+	*/
 	default:
 		Sys_Error ("CL_ParseTEnt: bad type");
 	}

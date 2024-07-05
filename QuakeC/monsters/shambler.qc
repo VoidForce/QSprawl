@@ -54,49 +54,49 @@ $frame pain1 pain2 pain3 pain4 pain5 pain6
 $frame death1 death2 death3 death4 death5 death6 
 $frame death7 death8 death9 death10 death11
 
-void() sham_stand1	=[	$stand1,	sham_stand2	] {setHead('16 2 43');ai_stand();}; // 1
-void() sham_stand2	=[	$stand2,	sham_stand3	] {setHead('16 2 43');ai_stand();}; // 2
-void() sham_stand3	=[	$stand3,	sham_stand4	] {setHead('16 2 43');ai_stand();}; // 3
-void() sham_stand4	=[	$stand4,	sham_stand5	] {setHead('16 2 43');ai_stand();}; // 4
-void() sham_stand5	=[	$stand5,	sham_stand6	] {setHead('16 2 43');ai_stand();}; // 5
-void() sham_stand6	=[	$stand6,	sham_stand7	] {setHead('16 2 43');ai_stand();}; // 6
-void() sham_stand7	=[	$stand7,	sham_stand8	] {setHead('16 2 43');ai_stand();}; // 7
-void() sham_stand8	=[	$stand8,	sham_stand9	] {setHead('16 2 43');ai_stand();}; // 8
-void() sham_stand9	=[	$stand9,	sham_stand10] {setHead('16 2 43');ai_stand();}; // 9
-void() sham_stand10	=[	$stand10,	sham_stand11] {setHead('16 2 43');ai_stand();}; // 10
-void() sham_stand11	=[	$stand11,	sham_stand12] {setHead('16 2 43');ai_stand();}; // 11
-void() sham_stand12	=[	$stand12,	sham_stand13] {setHead('16 2 43');ai_stand();}; // 12
-void() sham_stand13	=[	$stand13,	sham_stand14] {setHead('16 2 43');ai_stand();}; // 13
-void() sham_stand14	=[	$stand14,	sham_stand15] {setHead('16 2 43');ai_stand();}; // 14
-void() sham_stand15	=[	$stand15,	sham_stand16] {setHead('16 2 43');ai_stand();}; // 15
-void() sham_stand16	=[	$stand16,	sham_stand17] {setHead('16 2 43');ai_stand();}; // 16
-void() sham_stand17	=[	$stand17,	sham_stand1	] {setHead('16 2 43');ai_stand();}; // 17
+void() sham_stand1	=[ $stand1,  sham_stand2 ] {setHead('16 2 43');ai_stand();}; // 1
+void() sham_stand2	=[ $stand2,  sham_stand3 ] {setHead('16 2 43');ai_stand();}; // 2
+void() sham_stand3	=[ $stand3,  sham_stand4 ] {setHead('16 2 43');ai_stand();}; // 3
+void() sham_stand4	=[ $stand4,  sham_stand5 ] {setHead('16 2 43');ai_stand();}; // 4
+void() sham_stand5	=[ $stand5,  sham_stand6 ] {setHead('16 2 43');ai_stand();}; // 5
+void() sham_stand6	=[ $stand6,  sham_stand7 ] {setHead('16 2 43');ai_stand();}; // 6
+void() sham_stand7	=[ $stand7,  sham_stand8 ] {setHead('16 2 43');ai_stand();}; // 7
+void() sham_stand8	=[ $stand8,  sham_stand9 ] {setHead('16 2 43');ai_stand();}; // 8
+void() sham_stand9	=[ $stand9,  sham_stand10] {setHead('16 2 43');ai_stand();}; // 9
+void() sham_stand10	=[ $stand10, sham_stand11] {setHead('16 2 43');ai_stand();}; // 10
+void() sham_stand11	=[ $stand11, sham_stand12] {setHead('16 2 43');ai_stand();}; // 11
+void() sham_stand12	=[ $stand12, sham_stand13] {setHead('16 2 43');ai_stand();}; // 12
+void() sham_stand13	=[ $stand13, sham_stand14] {setHead('16 2 43');ai_stand();}; // 13
+void() sham_stand14	=[ $stand14, sham_stand15] {setHead('16 2 43');ai_stand();}; // 14
+void() sham_stand15	=[ $stand15, sham_stand16] {setHead('16 2 43');ai_stand();}; // 15
+void() sham_stand16	=[ $stand16, sham_stand17] {setHead('16 2 43');ai_stand();}; // 16
+void() sham_stand17	=[ $stand17, sham_stand1 ] {setHead('16 2 43');ai_stand();}; // 17
 
-void() sham_walk1		=[      $walk1,        sham_walk2 ] {setHead('17 2 37');ai_walk(10);};  // 18
-void() sham_walk2       =[      $walk2,        sham_walk3 ] {setHead('17 2 41');ai_walk(9);};   // 19
-void() sham_walk3       =[      $walk3,        sham_walk4 ] {setHead('18 2 44');ai_walk(9);};   // 20
-void() sham_walk4       =[      $walk4,        sham_walk5 ] {setHead('18 1 44');ai_walk(5);};   // 21
-void() sham_walk5       =[      $walk5,        sham_walk6 ] {setHead('18 0 44');ai_walk(6);};   // 22
-void() sham_walk6       =[      $walk6,        sham_walk7 ] {setHead('19 -1 35');ai_walk(12);};  // 23
-void() sham_walk7       =[      $walk7,        sham_walk8 ] {setHead('18 0 30');ai_walk(8);};   // 24
-void() sham_walk8       =[      $walk8,        sham_walk9 ] {setHead('17 0 37');ai_walk(3);};   // 25
-void() sham_walk9       =[      $walk9,        sham_walk10] {setHead('16 -1 43');ai_walk(13);};  // 26
-void() sham_walk10      =[      $walk10,       sham_walk11] {setHead('16 1 41');ai_walk(9);};   // 27
-void() sham_walk11      =[      $walk11,       sham_walk12] {setHead('17 2 38');ai_walk(7);};   // 28
-void() sham_walk12      =[      $walk12,       sham_walk1 ] {setHead('17 1 36');                // 29
+void() sham_walk1  =[ $walk1,  sham_walk2 ] {setHead('17 2 37');ai_walk(10);};  // 18
+void() sham_walk2  =[ $walk2,  sham_walk3 ] {setHead('17 2 41');ai_walk(9);};   // 19
+void() sham_walk3  =[ $walk3,  sham_walk4 ] {setHead('18 2 44');ai_walk(9);};   // 20
+void() sham_walk4  =[ $walk4,  sham_walk5 ] {setHead('18 1 44');ai_walk(5);};   // 21
+void() sham_walk5  =[ $walk5,  sham_walk6 ] {setHead('18 0 44');ai_walk(6);};   // 22
+void() sham_walk6  =[ $walk6,  sham_walk7 ] {setHead('19 -1 35');ai_walk(12);};  // 23
+void() sham_walk7  =[ $walk7,  sham_walk8 ] {setHead('18 0 30');ai_walk(8);};   // 24
+void() sham_walk8  =[ $walk8,  sham_walk9 ] {setHead('17 0 37');ai_walk(3);};   // 25
+void() sham_walk9  =[ $walk9,  sham_walk10] {setHead('16 -1 43');ai_walk(13);};  // 26
+void() sham_walk10 =[ $walk10, sham_walk11] {setHead('16 1 41');ai_walk(9);};   // 27
+void() sham_walk11 =[ $walk11, sham_walk12] {setHead('17 2 38');ai_walk(7);};   // 28
+void() sham_walk12 =[ $walk12, sham_walk1 ] {setHead('17 1 36');                // 29
 	ai_walk(7);
 
 	if (random() > 0.8)
 		sound (self, CHAN_VOICE, "shambler/sidle.wav", 1, ATTN_IDLE);
 };
 
-void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41');ai_run(20);}; // 30
-void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_run(20);}; // 31
-void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39');ai_run(20);}; // 32
-void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43');ai_run(20);}; // 33
-void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40');ai_run(20);}; // 34
+void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41');ai_run(25);}; // 30
+void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_run(25);}; // 31
+void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39');ai_run(25);}; // 32
+void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43');ai_run(25);}; // 33
+void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40');ai_run(25);}; // 34
 void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  // 35
-	ai_run(20);
+	ai_run(25);
 	self.nextthink = time + 0.05;
 	if (random() > 0.8)
 		sound (self, CHAN_VOICE, "shambler/sidle.wav", 1, ATTN_IDLE);
@@ -303,7 +303,7 @@ void() sham_death7      =[      $death7,       sham_death8     ] {};
 void() sham_death8      =[      $death8,       sham_death9     ] {};
 void() sham_death9      =[      $death9,       sham_death10    ] {};
 void() sham_death10     =[      $death10,      sham_death11    ] {};
-void() sham_death11     =[      $death11,      sham_death11    ] {};
+void() sham_death11     =[      $death11,      decay    ] {};
 
 void() sham_die =
 {
@@ -311,16 +311,16 @@ void() sham_die =
 	// check for gib
 	if (self.lasthit_damage > self.gib_threshold)
 	{
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_shams.mdl", self.health);
-		ThrowGib ("progs/m_gib_01.mdl", self.health);
-		ThrowGib ("progs/m_gib_02.mdl", self.health);
-		ThrowGib ("progs/m_gib_03.mdl", self.health);
-		ThrowGib ("progs/m_gib_04.mdl", self.health);
-		ThrowGib ("progs/m_gib_05.mdl", self.health);
-		ThrowGib ("progs/shambler_gib_leg_up.mdl", self.health);
-		ThrowGib ("progs/shambler_gib_leg_bottom.mdl", self.health);
-		ThrowGib ("progs/shambler_gib_shield.mdl", self.health);
+		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
+		ThrowHead ("progs/h_shams.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shambler_gib_leg_up.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shambler_gib_leg_bottom.mdl", self.lasthit_damage);
+		ThrowGib ("progs/shambler_gib_shield.mdl", self.lasthit_damage);
 		return;
 	}
 
@@ -425,17 +425,14 @@ void() monster_shambler =
 	self.netname = "Shambler";
 	self.killstring = " was obliterated by the Berzerker\n";
 
-
 	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
-	self.health = 1000;
-	self.max_health = 1000;
-	self.monstertype = TYPE_SHAMBLER;
 	self.head_offset = '16 2 43';
 	self.head_size = 24;
-	self.health_head = 300;
-	self.armorclass_body = 60;
-	self.armorclass_head = 80;
+	self.health_head = SHAMBLER_HEAD;
+	self.health = SHAMBLER_HEALTH;
+	self.max_health = SHAMBLER_HEALTH;
 	self.gib_threshold = 300;
+	self.monstertype = TYPE_SHAMBLER;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
 
 	self.th_stand = sham_stand1;

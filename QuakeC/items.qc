@@ -264,6 +264,7 @@ ARMOR
 void() armor_touch =
 {
 	local	float	type, value, bit;
+	local string str;
 
 	type = 1;
 	value = 100;
@@ -280,27 +281,43 @@ void() armor_touch =
 		type = 1;
 		value = 50;
 		bit = IT_ARMOR1;
+		str = "You got the light armor\n";
 	}
 
 	if (self.classname == "item_armor2")
 	{
-		type = 1;
+		type = 2;
 		value = 100;
 		bit = IT_ARMOR2;
+		str = "You got the combat armor\n";
 	}
 
 	if (self.classname == "item_armorInv")
 	{
-		type = 1;
+		type = 3;
 		value = 200;
 		bit = IT_ARMOR3;
+		str = "You got the assault armor\n";
 	}
 
-	if (other.armortype*other.armorvalue >= type*value)
-		return;
-		
-	other.armortype = type;
-	other.armorvalue = value;
+	if (type == 1 || type == 2)
+	{
+		if (other.armorvalue >= 100)
+			return;
+	}
+	else if (type == 3)
+	{
+		if (other.armorvalue >= 200)
+			return;
+	}
+
+	other.armortype = 1;
+	if (type == 1)
+	{
+		other.armorvalue += value;
+		other.armorvalue = min(100, other.armorvalue);
+	}
+	else other.armorvalue = value;
 	other.items = other.items - (other.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) + bit;
 
 	self.solid = SOLID_NOT;
@@ -311,7 +328,8 @@ void() armor_touch =
 
 	self.think = SUB_regen;
 
-	sprint(other, "You got armor\n");
+	//sprint(other, "You got armor\n");
+	sprint(other, str);
 	// armor touch sound
 	sound(other, CHAN_ITEM, "items/armor1.wav", 1, ATTN_NORM);
 	stuffcmd (other, "bf\n");
@@ -377,7 +395,10 @@ void() bound_other_ammo =
 		other.ammo_rockets = MAX_ROCKETS;		
 
 	if (other.ammo_cells > MAX_CELLS)
-		other.ammo_cells = MAX_CELLS;		
+		other.ammo_cells = MAX_CELLS;
+	
+	if (other.ammo_bullets > MAX_BULLETS)
+		other.ammo_bullets = MAX_BULLETS;
 };
 
 
@@ -443,7 +464,7 @@ void(float old, float new) Deathmatch_Weapon =
 	nr = RankForWeapon (new);
 
 	if ( nr < or )
-		delpoyGun(new);
+		deployGun(new);
 };
 
 /*=============
@@ -453,21 +474,13 @@ float() W_BestWeapon;
 
 void() weapon_touch =
 {
-	local	float	hadammo, best, new, old;
-	local	entity	stemp;
+	local	float	hadammo, new, old;
 	local	float	leave;
 
 	new = other.items;
 
 	if (!(other.flags & FL_CLIENT))
 		return;
-
-// if the player was using his best weapon, change up to the new one if better		
-	stemp = self;
-	self = other;
-	best = W_BestWeapon();
-	self = stemp;
-
 
 	if (deathmatch == 2 || coop)
 		leave = 1;
@@ -492,7 +505,7 @@ void() weapon_touch =
 
 		hadammo = other.ammo_rockets;			
 		new = IT_SUPER_NAILGUN;
-		other.ammo_nails = other.ammo_nails + 30;
+		other.ammo_bullets = other.ammo_bullets + 21;
 	}
 
 	else if (self.classname == "weapon_supershotgun")
@@ -502,7 +515,7 @@ void() weapon_touch =
 
 		hadammo = other.ammo_rockets;			
 		new = IT_SUPER_SHOTGUN;
-		other.ammo_shells = other.ammo_shells + 5;
+		other.ammo_shells = other.ammo_shells + 10;
 	}
 
 	else if (self.classname == "weapon_rocketlauncher")
@@ -522,7 +535,7 @@ void() weapon_touch =
 
 		hadammo = other.ammo_rockets;			
 		new = IT_GRENADE_LAUNCHER;
-		other.ammo_rockets = other.ammo_rockets + 5;
+		other.ammo_rockets = other.ammo_rockets + 6;
 	}
 
 	else if (self.classname == "weapon_lightning")
@@ -532,7 +545,7 @@ void() weapon_touch =
 
 		hadammo = other.ammo_rockets;			
 		new = IT_LIGHTNING;
-		other.ammo_cells = other.ammo_cells + 15;
+		other.ammo_cells = other.ammo_cells + 16;
 	}
 
 	else
@@ -551,18 +564,6 @@ void() weapon_touch =
 	old = other.items;
 	other.items = other.items | new;
 	
-	stemp = self;
-	self = other;
-	
-	if (!deathmatch)
-		delpoyGun(new);
-	else
-		Deathmatch_Weapon (old, new);
-
-	W_SetCurrentAmmo();
-
-	self = stemp;
-
 	if (leave)
 		return;
 
@@ -587,7 +588,7 @@ void() weapon_supershotgun =
 	precache_model ("progs/g_shot.mdl");
 	setmodel (self, "progs/g_shot.mdl");
 	self.weapon = IT_SUPER_SHOTGUN;
-	self.netname = "Double-barrelled Shotgun";
+	self.netname = "Megatech A8";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -601,7 +602,7 @@ void() weapon_nailgun =
 	precache_model ("progs/g_nail.mdl");
 	setmodel (self, "progs/g_nail.mdl");
 	self.weapon = IT_NAILGUN;
-	self.netname = "Nailgun";
+	self.netname = "Seburo-Sendai C390 x 2";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -615,7 +616,7 @@ void() weapon_supernailgun =
 	precache_model ("progs/g_nail2.mdl");
 	setmodel (self, "progs/g_nail2.mdl");
 	self.weapon = IT_SUPER_NAILGUN;
-	self.netname = "Super Nailgun";
+	self.netname = "Megatech HAW201";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -629,7 +630,7 @@ void() weapon_grenadelauncher =
 	precache_model ("progs/g_rock.mdl");
 	setmodel (self, "progs/g_rock.mdl");
 	self.weapon = IT_GRENADE_LAUNCHER;
-	self.netname = "Grenade Launcher";
+	self.netname = "Shogo-Kenbishi Auto-Load";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -643,7 +644,7 @@ void() weapon_rocketlauncher =
 	precache_model ("progs/g_rock2.mdl");
 	setmodel (self, "progs/g_rock2.mdl");
 	self.weapon = IT_ROCKET_LAUNCHER;
-	self.netname = "Rocket Launcher";
+	self.netname = "Hiro-Enki Y.T. Prototype v2";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -658,7 +659,7 @@ void() weapon_lightning =
 	precache_model ("progs/g_light.mdl");
 	setmodel (self, "progs/g_light.mdl");
 	self.weapon = IT_LIGHTNING;
-	self.netname = "Thunderbolt";
+	self.netname = "Lightning Rod";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
 	StartItem ();
@@ -683,13 +684,6 @@ void() ammo_touch =
 
 	if (other.health <= 0)
 		return;
-/*
-// if the player was using his best weapon, change up to the new one if better		
-	stemp = self;
-	self = other;
-	best = W_BestWeapon();
-	self = stemp;
-*/
 
 // shotgun
 	if (self.weapon == 1)
@@ -725,6 +719,13 @@ void() ammo_touch =
 			return;
 		other.ammo_cells = other.ammo_cells + self.aflag;
 	}
+	
+	if (self.weapon == 5)
+	{
+		if (other.ammo_bullets >= MAX_BULLETS)
+			return;
+		other.ammo_bullets = other.ammo_bullets + self.aflag;
+	}
 
 	bound_other_ammo ();
 	
@@ -741,7 +742,7 @@ void() ammo_touch =
 	{
 		stemp = self;
 		self = other;
-		delpoyGun(W_BestWeapon());
+		deployGun(W_BestWeapon());
 		W_SetCurrentAmmo ();
 		self = stemp;
 	}
@@ -792,7 +793,7 @@ void() item_shells =
 	}
 
 	self.weapon = 1;
-	self.netname = "shells";
+	self.netname = "shotgun shells";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -805,8 +806,8 @@ void() item_spikes =
 
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("progs/ammo/nails.mdl");
-		setmodel (self, "progs/ammo/nails.mdl");
+		precache_model ("progs/ammo/nails_big.mdl");
+		setmodel (self, "progs/ammo/nails_big.mdl");
 		self.aflag = 100;
 	}
 
@@ -818,7 +819,7 @@ void() item_spikes =
 	}
 
 	self.weapon = 2;
-	self.netname = "nails";
+	self.netname = ".45 ACP rounds";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -844,7 +845,7 @@ void() item_rockets =
 	}
 
 	self.weapon = 3;
-	self.netname = "rockets";
+	self.netname = "40mm grenades";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -871,11 +872,30 @@ void() item_cells =
 	}
 
 	self.weapon = 4;
-	self.netname = "cells";
+	self.netname = "energy cells";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
 
+/*QUAKED item_bullets (0 .5 .8) (0 0 0) (32 32 32) big*/
+
+void() item_bullets =
+{
+	self.touch = ammo_touch;
+
+	precache_model ("progs/ammo/bullets.mdl");
+	setmodel (self, "progs/ammo/bullets.mdl");
+	
+	if (self.spawnflags & WEAPON_BIG2)
+		self.aflag = 40;
+	else
+		self.aflag = 20;
+
+	self.weapon = 5;
+	self.netname = ".50 BMG rounds";
+	setsize (self, '0 0 0', '32 32 56');
+	StartItem ();
+};
 
 /*QUAKED item_weapon (0 .5 .8) (0 0 0) (32 32 32) shotgun rocket spikes big
 DO NOT USE THIS!!!! IT WILL BE REMOVED!*/
@@ -904,7 +924,7 @@ void() item_weapon =
 			self.aflag = 10;
 		}
 		self.weapon = 1;
-		self.netname = "shells";
+		self.netname = "shotgun shells";
 	}
 
 	if (self.spawnflags & WEAPON_SPIKES)
@@ -923,7 +943,7 @@ void() item_weapon =
 			self.aflag = 50;
 		}
 		self.weapon = 2;
-		self.netname = "spikes";
+		self.netname = ".45 ACP rounds";
 	}
 
 	if (self.spawnflags & WEAPON_ROCKET)
@@ -942,7 +962,7 @@ void() item_weapon =
 			self.aflag = 6;
 		}
 		self.weapon = 3;
-		self.netname = "rockets";
+		self.netname = "40mm Grenades";
 	}
 	
 	setsize (self, '0 0 0', '32 32 56');

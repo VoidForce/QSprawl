@@ -241,7 +241,7 @@ void() dog_die5		=[	$death5,	dog_die6	] {};
 void() dog_die6		=[	$death6,	dog_die7	] {};
 void() dog_die7		=[	$death7,	dog_die8	] {};
 void() dog_die8		=[	$death8,	dog_die9	] {};
-void() dog_die9		=[	$death9,	dog_die9	] {};
+void() dog_die9		=[	$death9,	decay	] {};
 
 void() dog_dieb1		=[	$deathb1,	dog_dieb2	] {};
 void() dog_dieb2		=[	$deathb2,	dog_dieb3	] {};
@@ -251,7 +251,7 @@ void() dog_dieb5		=[	$deathb5,	dog_dieb6	] {};
 void() dog_dieb6		=[	$deathb6,	dog_dieb7	] {};
 void() dog_dieb7		=[	$deathb7,	dog_dieb8	] {};
 void() dog_dieb8		=[	$deathb8,	dog_dieb9	] {};
-void() dog_dieb9		=[	$deathb9,	dog_dieb9	] {};
+void() dog_dieb9		=[	$deathb9,	decay	] {};
 
 
 void() dog_die =
@@ -260,13 +260,13 @@ void() dog_die =
 	// check for gib
 	if (self.lasthit_damage > self.gib_threshold)
 	{
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowGib ("progs/m_gib_01.mdl", self.health);
-		ThrowGib ("progs/m_gib_02.mdl", self.health);
-		ThrowGib ("progs/m_gib_03.mdl", self.health);
-		ThrowGib ("progs/m_gib_04.mdl", self.health);
-		ThrowGib ("progs/m_gib_05.mdl", self.health);
-		ThrowHead ("progs/h_dog.mdl", self.health);
+		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
+		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
+		ThrowHead ("progs/h_dog.mdl", self.lasthit_damage);
 		return;
 	}
 
@@ -379,10 +379,11 @@ void() monster_dog =
 	setsize (self, '-32 -32 -24', '32 32 20');//40
 	self.head_offset = '0 0 0';
 	self.head_size = 0;
-	self.health = 100;
-	self.max_health = 100;
-	self.armorclass_body = 5;
+	self.health = DOG_HEALTH;
+	self.max_health = DOG_HEALTH;
+	//self.armorclass_body = 5;
 	self.monstertype = TYPE_DOG;
+	self.monsterflags |= MFL_ROBOT;
 	self.gib_threshold = 100;
 
 	self.th_stand = dog_stand1;

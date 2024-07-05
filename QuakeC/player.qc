@@ -470,142 +470,60 @@ void() quickMeleeLoop =
 		self.attack_finished = time + 0.2;
 		self.effects = self.effects | EF_NOLERP;
 		self.sprawlflags -= self.sprawlflags & SFL_INQUICKMELEE;
-		delpoyGun(self.weapon);
+		deployGun(self.weapon);
 	}
 	else
 		self.think = quickMeleeLoop;
 };
 //------------------------------------------
 // Chaingun
+
+#define CG_STARTFRAME 76
+#define CG_FIRST 42
+#define CG_SECOND 55
+#define CG_THIRD 65
+#define CG_FOURTH 72
+#define CG_FIFTH 78
+#define CG_SIXTH 84
+#define CG_LAST 90
+#define CG_ENDFRAME 114
+
 void() animateChaingun =
 {
 	self.sprawlflags |= SFL_HOLD;
-	weaponThink(spinChaingunLoop, 0.02);
-};
-
-const float SPIN_STARTFRAME = 1;
-const float SPIN_FIRST = 1;
-const float SPIN_SECOND = 13;
-const float SPIN_THIRD = 27;
-const float SPIN_ENDFRAME = 40;
-const float FIRE_FIRST = 71;
-const float FIRE_SECOND = 77;
-const float FIRE_THIRD = 84;
-const float FIRE_ENDFRAME = 90;
-
-float(float current) findCorrectChainFrame =
-{
-	if (current < FIRE_SECOND)
-		return 11;
-	else if (current < FIRE_THIRD)
-		return 23;
-	else if (current < FIRE_ENDFRAME)
-		return 1;
-	return 0;
+	self.weaponframe = CG_STARTFRAME;
+	weaponThink(spinChaingunLoop, 0.05);
 };
 
 void() spinChaingunLoop =
 {
-	if (!self.button0)
+	self.weaponframe+=2;
+
+	switch (self.weaponframe)
 	{
-		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
-		weaponThink(spinDownLoop, 0.02);
-		return;
-	}
-	self.weaponframe++;
-	
-	if (self.chaingun_speed < 1)
-		self.chaingun_speed += 0.05;
-	if (self.chaingun_speed > 1)
-		self.chaingun_speed = 1;
-	
-	if (self.weaponframe == SPIN_ENDFRAME)
-	{
-		if (self.chaingun_speed == 1)
-		{
-		// fast enough and the end of loo, fire first barrel
-			self.weaponframe = FIRE_FIRST;
-			self.sprawlflags |= SFL_INERTIA;
-		}
-		else
-			self.weaponframe = SPIN_STARTFRAME;
-	}
-	
-	if (self.weaponframe == FIRE_ENDFRAME)
-		self.weaponframe = 70;
-	
-	// we use self.chaingun_barrel to know to what frame we need to inert
-	if (self.weaponframe == FIRE_FIRST || self.weaponframe == FIRE_SECOND || self.weaponframe == FIRE_THIRD)
-	{
-		W_FireChaingun();
-		self.effects = self.effects | EF_MUZZLEFLASH;
+		//case CG_FIRST:
+		//case CG_SECOND:
+		//case CG_THIRD:
+		//case CG_FOURTH:
+		case CG_FIFTH:
+		case CG_SIXTH:
+		case CG_LAST:
+			W_FireChaingun();
+			self.effects = self.effects | EF_MUZZLEFLASH;
+			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			self.attack_finished = time + 0.3;
+			break;
+		case CG_ENDFRAME:
+			self.effects |= EF_NOLERP;
+			self.weaponframe = CG_STARTFRAME;
+			self.think = player_run;
+			self.nextthink = time + 0.1;
+			return;
 	}
 
-	self.chaingun_frame = self.weaponframe;
-
-	if (self.weaponframe < SPIN_ENDFRAME)
-		weaponThink(spinChaingunLoop, 0.02 + 0.04 * (1 - self.chaingun_speed));
-	else
-		weaponThink(spinChaingunLoop, 0.02);
+	weaponThink(spinChaingunLoop, 0.025);
 };
 
-void() spinDownLoop =
-{
-	self.weaponframe++;
-	
-	if (self.weaponframe == (FIRE_SECOND-1))
-		self.weaponframe = 11;
-	else if (self.weaponframe == (FIRE_THIRD-2))
-		self.weaponframe = 23;
-	else if (self.weaponframe == (FIRE_ENDFRAME))
-		self.weaponframe = SPIN_FIRST;
-	// loop animation
-	if (self.weaponframe == SPIN_ENDFRAME)
-		self.weaponframe = SPIN_FIRST;
-	
-	self.chaingun_speed -= 0.05;
-	if (self.chaingun_speed < 0)
-		self.chaingun_speed = 0;
-	
-	if (self.chaingun_speed == 0)
-		weaponThink(player_run, 0.05);
-	else
-		weaponThink(spinDownLoop, 0.02 + 0.04 * (1 - self.chaingun_speed));
-
-	self.chaingun_frame = self.weaponframe;
-};
-
-void()	player_shot1 =	[$shotatt1, player_shot2	] 
-{
-	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP2;
-};
-
-void()	player_shot2 =	[$shotatt2, player_shot3	] {self.weaponframe=2;};
-void()	player_shot3 =	[$shotatt3, player_shot4	] {self.weaponframe=3;};
-void()	player_shot4 =	[$shotatt4, player_shot5	] {self.weaponframe=4;};
-void()	player_shot5 =	[$shotatt5, player_shot6	] {self.weaponframe=5;};
-void()	player_shot6 =	[$shotatt6, player_run	] {self.weaponframe=6; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-
-void()	player_axe1 =	[$axatt1, player_axe2	] {self.weaponframe=1;};
-void()	player_axe2 =	[$axatt2, player_axe3	] {self.weaponframe=2;};
-void()	player_axe3 =	[$axatt3, player_axe4	] {self.weaponframe=3;W_FireAxe();};
-void()	player_axe4 =	[$axatt4, player_run	] {self.weaponframe=4; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-
-void()	player_axeb1 =	[$axattb1, player_axeb2	] {self.weaponframe=5;};
-void()	player_axeb2 =	[$axattb2, player_axeb3	] {self.weaponframe=6;};
-void()	player_axeb3 =	[$axattb3, player_axeb4	] {self.weaponframe=7;W_FireAxe();};
-void()	player_axeb4 =	[$axattb4, player_run	] {self.weaponframe=8; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-
-void()	player_axec1 =	[$axattc1, player_axec2	] {self.weaponframe=1;};
-void()	player_axec2 =	[$axattc2, player_axec3	] {self.weaponframe=2;};
-void()	player_axec3 =	[$axattc3, player_axec4	] {self.weaponframe=3;W_FireAxe();};
-void()	player_axec4 =	[$axattc4, player_run	] {self.weaponframe=4; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-
-void()	player_axed1 =	[$axattd1, player_axed2	] {self.weaponframe=5;};
-void()	player_axed2 =	[$axattd2, player_axed3	] {self.weaponframe=6;};
-void()	player_axed3 =	[$axattd3, player_axed4	] {self.weaponframe=7;W_FireAxe();};
-void()	player_axed4 =	[$axattd4, player_run	] {self.weaponframe=8; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
 
 //============================================================================
 

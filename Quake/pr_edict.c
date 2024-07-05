@@ -841,6 +841,8 @@ const char *ED_FieldValueString (edict_t *ed, ddef_t *d)
 			BIT_CASE (EF_MUZZLEFLASH);
 			BIT_CASE (EF_BRIGHTLIGHT);
 			BIT_CASE (EF_DIMLIGHT);
+			BIT_CASE(EF_NOLERP);
+			BIT_CASE(EF_NOLERP2);
 		}
 
 		#undef BIT_CASE

@@ -38,24 +38,8 @@ void(vector dest) ChooseTurn;
 
 void() ai_face;
 
-
 float	enemy_vis, enemy_infront, enemy_range;
 float	enemy_yaw;
-
-
-void() knight_attack =
-{
-	local float		len;
-	
-	//decide if now is a good swing time
-	len = vlen(self.enemy.origin+self.enemy.view_ofs - (self.origin+self.view_ofs));
-	
-	if (len<80)
-		knight_atk1 ();
-	
-	else
-		knight_runatk1 ();
-};
 
 //=============================================================================
 
@@ -205,7 +189,7 @@ void() ai_melee =
 		
 	delta = self.enemy.origin - self.origin;
 
-	if (vlen(delta) > 60)
+	if (vlen(delta) > 80)
 		return;
 		
 	ldmg = (random() + random() + random()) * 3;

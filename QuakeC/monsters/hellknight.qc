@@ -207,7 +207,7 @@ void()	hknight_die8	=[	$death8,	hknight_die9	] {ai_forward(10);};
 void()	hknight_die9	=[	$death9,	hknight_die10	] {ai_forward(11);};
 void()	hknight_die10	=[	$death10,	hknight_die11	] {};
 void()	hknight_die11	=[	$death11,	hknight_die12	] {};
-void()	hknight_die12	=[	$death12,	hknight_die12	] {};
+void()	hknight_die12	=[	$death12,	decay	] {};
 
 void()	hknight_dieb1	=[	$deathb1,	hknight_dieb2	] {};
 void()	hknight_dieb2	=[	$deathb2,	hknight_dieb3	] {};
@@ -217,7 +217,7 @@ void()	hknight_dieb5	=[	$deathb5,	hknight_dieb6	] {};
 void()	hknight_dieb6	=[	$deathb6,	hknight_dieb7	] {};
 void()	hknight_dieb7	=[	$deathb7,	hknight_dieb8	] {};
 void()	hknight_dieb8	=[	$deathb8,	hknight_dieb9	] {};
-void()	hknight_dieb9	=[	$deathb9,	hknight_dieb9	] {};
+void()	hknight_dieb9	=[	$deathb9,	decay	] {};
 
 //============================================================================
 
@@ -403,10 +403,10 @@ void() hknight_die =
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_hellkn.mdl", self.health);
-		ThrowGib ("progs/gib1.mdl", self.health);
-		ThrowGib ("progs/gib2.mdl", self.health);
-		ThrowGib ("progs/gib3.mdl", self.health);
+		ThrowHead ("progs/h_hellkn.mdl", self.lasthit_damage);
+		ThrowGib ("progs/synth_gib1.mdl", self.lasthit_damage);
+		ThrowGib ("progs/synth_gib2.mdl", self.lasthit_damage);
+		ThrowGib ("progs/synth_gib3.mdl", self.lasthit_damage);
 	
 		return;
 	}
@@ -417,7 +417,7 @@ void() hknight_die =
 		setmodel (self, "progs/hknight_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 40');
 		self.angles_y += crandom() * 15;
-		sendMessageImpact(findHeadPosition(self), VEC_ORIGIN, IMPACT_GAUSS_FLESH_HEADSHOT, VEC_ORIGIN); 
+		sendMessageVec(findHeadPosition(self), TE_SYNTHHEAD_EXPLOSION); // particle effect
 		if (self.monsterflags & MFL_DROP_HEAD)
 		{
 			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
@@ -426,7 +426,7 @@ void() hknight_die =
 		else
 		{
 			for (float i = 0; i < 5; i++)
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+			ThrowHeadGib ("progs/smallgib_synth.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		}
 	}
 	else
@@ -479,11 +479,9 @@ void() monster_hell_knight =
 	setsize (self, '-16 -16 -24', '16 16 40'); //40
 	self.head_offset = '9 2 32';
 	self.head_size = 12;
-	self.health = 300;
-	self.max_health = 300;
-	self.health_head = 100;
-	self.armorclass_body = 30;
-	self.armorclass_head = 5;
+	self.health = HELLKNIGHT_HEALTH;
+	self.max_health = HELLKNIGHT_HEALTH;
+	self.health_head = HELLKNIGHT_HEAD;
 	self.gib_threshold = 100;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_HELLKNIGHT;

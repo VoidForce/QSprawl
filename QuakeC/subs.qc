@@ -352,37 +352,37 @@ string getNetname(float item_number) =
 	switch(item_number) 
 	{
 		case IT_AXE:
-			return "Axe";
+			return "Katana";
 		case IT_SHOTGUN:
-			return "Shotgun";
+			return "Mateba Deck-Steir Series D";
 		case IT_SUPER_SHOTGUN:
-			return "Super Shotgun";
+			return "Megatech A8";
 		case IT_NAILGUN:
-			return "Nailgun";
+			return "Seburo-Sendai C390";
 		case IT_SUPER_NAILGUN:
-			return "Perforator";
+			return "Megatech HAW201";
 		case IT_GRENADE_LAUNCHER:
-			return "Grenade Launcher";
+			return "Shogo-Kenbishi Auto-Load";
 		case IT_ROCKET_LAUNCHER:
-			return "Rocket Launcher";
+			return "Hiro-Enki Y.T. Prototype";
 		case IT_LIGHTNING:
-			return "Lightning Gun";
-		case IT_EXTRA_WEAPON:
-			return "Extra Weapon";
+			return "Lightning Rod";
+		case IT_BULLETS:
+			return ".50 BMG Rounds";
 		case IT_SHELLS:
-			return "Shells";
+			return "Shotgun Shells";
 		case IT_NAILS:
-			return "Nails";
+			return ".45 ACP Rounds";
 		case IT_ROCKETS:
-			return "Rockets";
+			return "Grenades";
 		case IT_CELLS:
-			return "Cells";
+			return "Energy Cells";
 		case IT_ARMOR1:
-			return "Green Armor";
+			return "Light Armor";
 		case IT_ARMOR2:
-			return "Yellow Armor";
+			return "Combat Armor";
 		case IT_ARMOR3:
-			return "Red Armor";
+			return "Assault Armor";
 		case IT_SUPERHEALTH:
 			return "Mega Health";
 		case IT_KEY1:
@@ -670,15 +670,16 @@ void(vector a, float type) sendMessageVec =
 
 void(vector offset) setHead =
 {
-	self.origin_old = self.origin;
-	self.lasttick_time = time;
-	self.offset_old = self.head_offset;
+	//self.origin_old = self.origin;
+	//self.lasttick_time = time;
+	//self.offset_old = self.head_offset;
 	self.head_offset = offset;
+	/*
 	if (self.headmodel)
 	{
 		makevectors2(self.angles);
 		setorigin (self.headmodel, self.origin + self.head_offset_x * v_forward + self.head_offset_y * v_right + self.head_offset_z * v_up);
-	}
+	}*/
 };
 
 vector(entity target) findHeadPosition =
@@ -733,22 +734,9 @@ vector(float dm) VelocityForDamage =
 
 	v_x = 100 * crandom();
 	v_y = 100 * crandom();
-	v_z = 200 + 100 * random();
+	v_z = 100 + 100 * random();
 
-	if (dm > -50)
-	{
-		v = v * 0.7;
-	}
-
-	else if (dm > -200)
-	{
-		v = v * 2;
-	}
-
-	else
-		v = v * 10;
-
-	return v;
+	return lerpVector(v, v * 6, dm/400);
 };
 
 void(string gibname, vector direction) ThrowGibDirection =
@@ -765,9 +753,9 @@ void(string gibname, vector direction) ThrowGibDirection =
 	new.avelocity_x = random()*600;
 	new.avelocity_y = random()*600;
 	new.avelocity_z = random()*600;
-	new.think = SUB_Remove;
+	new.think = decay;
 	new.ltime = time;
-	new.nextthink = time + 10 + random()*10;
+	new.nextthink = time + 7 + random()*5;
 	new.frame = 0;
 	new.flags = 0;
 };
@@ -797,9 +785,9 @@ void(string gibname, vector direction, float flag) ThrowHeadGib =
 		new.avelocity_y = random()*600;
 		new.avelocity_z = random()*600;
 	}
-	new.think = SUB_Remove;
+	new.think = decay;
 	new.ltime = time;
-	new.nextthink = time + 10 + random()*10;
+	new.nextthink = time + 7 + random()*5;
 	new.frame = 0;
 	new.flags = 0;
 };
@@ -809,18 +797,18 @@ void(string gibname, float dm) ThrowGib =
 	local	entity new;
 
 	new = spawn();
-	new.origin = self.origin;
+	new.origin = self.origin + [crandom()*6, crandom()*6, crandom()*4];
 	setmodel (new, gibname);
 	setsize (new, '0 0 0', '0 0 0');
 	new.velocity = VelocityForDamage (dm);
 	new.movetype = MOVETYPE_BOUNCE;
 	new.solid = SOLID_NOT;
-	new.avelocity_x = random()*600;
+	new.avelocity_x = random()*30;
 	new.avelocity_y = random()*600;
-	new.avelocity_z = random()*600;
-	new.think = SUB_Remove;
+	new.avelocity_z = random()*30;
+	new.think = decay;
 	new.ltime = time;
-	new.nextthink = time + 10 + random()*10;
+	new.nextthink = time + 7 + random()*5;
 	new.frame = 0;
 	new.flags = 0;
 };
@@ -829,7 +817,8 @@ void(string gibname, float dm) ThrowHead =
 {
 	setmodel (self, gibname);
 	self.frame = 0;
-	self.nextthink = -1;
+	self.think = decay;
+	self.nextthink = time + 10;
 	self.movetype = MOVETYPE_BOUNCE;
 	self.takedamage = DAMAGE_NO;
 	self.solid = SOLID_NOT;
@@ -844,7 +833,7 @@ void(string gibname, float dm) ThrowHead =
 void (entity targ, vector direction, float force, float pflags) Knockback =
 {
 // direction must be normalized
-	if (targ.flags & FL_MONSTER )
+	if (targ.flags & FL_MONSTER)
 	{
 		if (targ.flags & FL_ONGROUND)
 		{
@@ -877,3 +866,41 @@ void () flyDeathLoop =
 	ai_velocity(self.lasthit_damage);
 	self.lasthit_damage -= 10;
 }; 
+
+void() decay = //remove corpses
+{
+	if (!self.fadecount)
+	{
+		self.fadecount = 6;
+		self.nextthink = time + 10;
+		self.think = decay;
+		return;
+	}
+	
+	self.think = decay;
+	self.nextthink = time + 0.1;
+
+	if (self.fadecount == 6)
+		self.alpha = 0.7;
+	else if (self.fadecount == 5)
+		self.alpha = 0.4;
+	else if (self.fadecount == 4)
+		self.alpha = 0.2;
+	else if (self.fadecount == 3)
+		self.alpha = 0.15;
+	else if (self.fadecount == 2)
+		self.alpha = 0.10;
+	else if (self.fadecount == 1) 
+	{
+		self.alpha = 0.05;
+		self.think = SUB_Remove;
+		self.nextthink = time + 0.05;
+		return;
+	}	
+	self.fadecount -= 1;
+};
+
+void (float timer) Think =
+{
+	self.nextthink = time + timer;
+};

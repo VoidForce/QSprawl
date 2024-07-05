@@ -45,6 +45,20 @@ vector(vector a, vector b, float mix) lerpv =
 	return (b * mix + a * ( 1 - mix ) );
 }
 
+vector(vector a, vector b, vector c, float mix) lerp3PointCurve =
+{
+	if (mix <= 0)
+		return a;
+	if (mix >= 1)
+		return c;
+	
+	vector d,e;
+	
+	d = (b * mix + a * ( 1 - mix ));
+	e = (c * mix + b * ( 1 - mix ));
+	return (e * mix + d * ( 1 - mix ));
+}
+
 float(float a, float b) min = { if (a <= b) return a; return b; }
 float(float a, float b) max = { if (a >= b) return a; return b; }
 
@@ -85,6 +99,26 @@ float(float x, float y) pow =
 	}
 	return c;
 };
+
+/*
+projects vector A on vector B
+*/
+vector (vector a, vector b) projectOnVector =
+{
+	vector normb;
+	normb = normalize(b);
+	
+	return ( normb * (a * normb) );
+};
+
+/*
+projects vector A on a plane defined by it's normal vector B
+*/
+vector (vector a, vector b) projectOnPlane =
+{
+	return (a - projectOnVector(a,b));
+};
+
 /*
 use entity(vector raypoint, vector direction, vector point) distancetoray = #702; instead;
 float(vector raypoint, vector direction, vector point) DistanceToLine =

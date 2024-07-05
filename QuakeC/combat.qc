@@ -85,8 +85,8 @@ void(entity targ, entity attacker) Killed =
 
 	oself = self;
 	self = targ;
-	
-	if (self.health < -99)
+
+	if (self.entity_type == TYPE_PLAYER && self.health < -99)
 		self.health = -99;		// don't let sbar look bad if a player
 
 	if (self.movetype == MOVETYPE_PUSH || self.movetype == MOVETYPE_NONE)
@@ -117,6 +117,47 @@ void(entity targ, entity attacker) Killed =
 	self = oself;
 };
 
+int (float type)fillArmorStats = 
+{
+	switch(type)
+	{
+		case TYPE_SOLDIER:
+			armorstats = A_SOLDIER;
+			return 0;
+		case TYPE_ENFORCER:
+			armorstats = A_ENFORCER;
+			return 0;
+		case TYPE_SCRAG:
+			armorstats = A_SCRAG;
+			return 0;
+		case TYPE_OGRE:
+			armorstats = A_OGRE;
+			return 0;
+		case TYPE_DOG:
+			armorstats = A_DOG;
+			return 0;
+		case TYPE_FIEND:
+			armorstats = A_FIEND;
+			return 0;
+		case TYPE_KNIGHT:
+			armorstats = A_KNIGHT;
+			return 0;
+		case TYPE_HELLKNIGHT:
+			armorstats = A_HELLKNIGHT;
+			return 0;
+		case TYPE_VORE:
+			armorstats = A_VORE;
+			return 0;
+		case TYPE_ZOMBIE:
+			armorstats = A_ZOMBIE;
+			return 0;
+		case TYPE_SHAMBLER:
+			armorstats = A_SHAMBLER;
+			return 0;
+	}
+	dprint3("Unknown armor stats:", ftos(type), "\n");
+	return 1;
+};
 
 /*============
 T_Damage
@@ -124,12 +165,12 @@ T_Damage
 The damage is coming from inflictor, but get mad at attacker
 This should be the only function that ever reduces health.
 ============*/
-void(entity targ, entity inflictor, entity attacker, float damage, float dflags) T_Damage=
+void(entity targ, entity inflictor, entity attacker, float damage, float dflags, float penetration = 0, float count = 1) T_Damage=
 {
-	local	vector	dir;
-	local	entity	oldself;
-	local	float	save;
-	local	float	take;
+	vector dir;
+	entity oldself;
+	float save;
+	float take;
 
 	if (!targ.takedamage)
 		return;
@@ -138,16 +179,15 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
 	
-	//dprint3(attacker.classname, " - ", targ.classname);endl();
 	if (attacker.entity_type == TYPE_PLAYER && attacker != targ)
 	{
 		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
 		{
 			attacker.engineflags |= ENF_HITHEAD;
 			sound (attacker, CHAN_AUTO, "weapons/hitmarker_head.wav", 1, ATTN_NORM);
+			attacker.headmarker_time = time + 0.2;
 		}
-		else
-			sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
+		//sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
 		attacker.engineflags |= ENF_HITMARKER;
 		attacker.hitmarker_time = time + 0.2;
 	}
@@ -157,20 +197,70 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 
 	// check for quad damage powerup on the attacker
 	if (attacker.super_damage_finished > time)
-		damage = damage * 4;
-
-	// save damage based on the target's armor level
-	save = ceil(targ.armortype*damage);
-
-	if (save >= targ.armorvalue)
 	{
-		save = targ.armorvalue;
-		targ.armortype = 0;	// lost all armor
-		targ.items = targ.items - (targ.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3));
+		damage = damage * 2;
+		penetration += 1;
 	}
 	
-	targ.armorvalue = targ.armorvalue - save;
-	take = ceil(damage-save);
+	if (targ.entity_type == TYPE_PLAYER)
+	{
+		// save damage based on the target's armor level
+		save = ceil(targ.armortype*damage);
+
+		if (save >= targ.armorvalue)
+		{
+			save = targ.armorvalue;
+			targ.armortype = 0;	// lost all armor
+			targ.items = targ.items - (targ.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3));
+		}
+		
+		targ.armorvalue = targ.armorvalue - save;
+		take = ceil(damage-save);
+	}
+	else 
+		take = ceil(damage);
+	
+	if (targ.flags & FL_MONSTER)
+	{
+		float res;
+		float mit;
+		save = take * 0.2;
+		
+		if (fillArmorStats(targ.monstertype))
+			armorstats = A_NULL; // couldn't find proper type
+
+		penetration = 1 - penetration;
+
+		if (dflags & DF_HEADSHOT)
+		{
+			res = armorstats.head_resistance * penetration;
+			mit = armorstats.head_mitigation * penetration;
+		}
+		else
+		{	
+			res = armorstats.body_resistance * penetration;
+			mit = armorstats.body_mitigation * penetration;
+		}
+		
+		if ( dflags & DF_EXPLOSION)
+		{
+			res = armorstats.explosives_resistance;
+			mit = 0;
+		}
+		dprint5("mit: ",ftos(mit)," res: ", ftos(res), "\n");
+		take -= mit * count;
+		if (take < save)
+			take = save;
+		dprint3("Damage mit: ",ftos(take), "\n");
+		take *= (1 - res);
+		dprint3("Damage res: ",ftos(take), "\n");
+		if (take < save)
+			take = save;
+		take = ceil(take);
+	}
+	dprint3(attacker.classname, " - ", targ.classname);
+	dprint4(" HP:",ftos(targ.health), " head:",ftos(targ.health_head)); endl();
+	dprint3("Damage: ",ftos(take), "\n");
 
 	// add to the damage total for clients, which will be sent as a single
 	// message at the end of the frame
@@ -201,24 +291,27 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 			sound (targ, CHAN_ITEM, "items/protect3.wav", 1, ATTN_NORM);
 			self.invincible_sound = time + 2;
 		}
-	
 		return;
 	}
 
 	// team play damage avoidance
-	if ( (teamplay == 1) && (targ.team > 0)&&(targ.team == attacker.team) )
+	if ( teamplay == 1 && targ.team > 0 && targ.team == attacker.team )
 		return;
-
-	targ.lasthit_damage = take;
+	
+	if (dflags & DF_NEVERGIB)
+		targ.lasthit_damage = 1; // prevent gib death
+	else
+		targ.lasthit_damage = take;
 	// do the damage
 	if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
 	{
 		targ.health_head -= take;
+		targ.health -= rint(take * 0.4);
 		targ.monsterflags |= MFL_PAIN_HEADSHOT;
 	}
 	else
 		targ.health -= take;
-	
+
 	if (targ.health <= 0)
 	{
 	// actually will not drop the head, but will not apply velocity to the body when killed with katana
@@ -232,9 +325,11 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	{
 		targ.monsterflags |= MFL_LOST_HEAD;
 		targ.monsterflags -= targ.monsterflags & MFL_HASHEAD;
+		
 		if (dflags & DF_KATANA)
 			targ.monsterflags |= MFL_DROP_HEAD;
-		self.pain_finished = 0;
+		
+		targ.pain_finished = 0;
 		if (targ.monsterflags & MFL_HEADKILLS)
 		{
 			//targ.health = -1;
@@ -247,7 +342,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags)
 	oldself = self;
 	self = targ;
 
-	if ( (self.flags & FL_MONSTER) && attacker != world)
+	if (self.flags & FL_MONSTER && attacker != world)
 	{
 		//get mad unless of the same class (except for soldiers)
 		if (self != attacker && attacker != self.enemy)
@@ -307,7 +402,7 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 		if (points > 0)
 		{
 			if (CanDamage (head, inflictor))
-				T_Damage (head, inflictor, attacker, points, 0);
+				T_Damage (head, inflictor, attacker, points, DF_EXPLOSION);
 		}
 		head = head.chain;
 	}
