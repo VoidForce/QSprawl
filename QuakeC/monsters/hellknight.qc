@@ -70,9 +70,23 @@ $frame magicc1 magicc2 magicc3 magicc4 magicc5 magicc6 magicc7 magicc8
 $frame magicc9 magicc10 magicc11
 
 
-void() hknight_char_a1;
-void() hknight_run1;
-void() hk_idle_sound;
+void() hellknight_trail =
+{
+	entity trail;
+	trail = spawn();
+	
+	trail.solid = SOLID_NOT;
+	trail.movetype = MOVETYPE_NONE;
+	setmodel (trail, "progs/hknight_trail.mdl");
+	setsize (trail, '-16 -16 -24', '16 16 40'); //28
+	setorigin(trail, self.origin);
+	trail.angles = self.angles;
+	trail.alpha = 0.01;
+	trail.cnt = 1;
+	trail.frame = self.frame;
+	trail.think = knight_trail_fade;
+	trail.nextthink = time + 0.1;
+};
 
 void(float offset) hknight_shot =
 {
@@ -171,18 +185,18 @@ void()	hknight_walk20	=[	$walk20,	hknight_walk1	] {setHead('9 2 31');ai_walk(2);
 
 //===========================================================================
 
-void()	hknight_run1	=[	$run1,		hknight_run2	]{setHead('11 1 29');  // 30 run
+void()	hknight_run1	=[	$run1,		hknight_run2	]{Think(0.075);setHead('11 1 29');  // 30 run
 	hk_idle_sound();
-	ai_run (20); 
+	ai_run (18); 
 	CheckForCharge (); 
 };
-void()	hknight_run2	=[	$run2,		hknight_run3	] {setHead('9 1 29');ai_run(25);}; // 31
-void()	hknight_run3	=[	$run3,		hknight_run4	] {setHead('11 3 33');ai_run(18);}; // 32
-void()	hknight_run4	=[	$run4,		hknight_run5	] {setHead('11 3 28');ai_run(16);}; // 33
-void()	hknight_run5	=[	$run5,		hknight_run6	] {setHead('11 3 28');ai_run(14);}; // 34
-void()	hknight_run6	=[	$run6,		hknight_run7	] {setHead('9 2 28');ai_run(25);}; // 35
-void()	hknight_run7	=[	$run7,		hknight_run8	] {setHead('6 1 33');ai_run(21);}; // 36
-void()	hknight_run8	=[	$run8,		hknight_run1	] {setHead('8 1 32');ai_run(13);}; // 37
+void()	hknight_run2	=[	$run2,		hknight_run3	] {Think(0.075);setHead('9 1 29');ai_run(18);}; // 31
+void()	hknight_run3	=[	$run3,		hknight_run4	] {Think(0.075);setHead('11 3 33');ai_run(18);}; // 32
+void()	hknight_run4	=[	$run4,		hknight_run5	] {Think(0.075);setHead('11 3 28');ai_run(16);}; // 33
+void()	hknight_run5	=[	$run5,		hknight_run6	] {Think(0.075);setHead('11 3 28');ai_run(14);}; // 34
+void()	hknight_run6	=[	$run6,		hknight_run7	] {Think(0.075);setHead('9 2 28');ai_run(18);}; // 35
+void()	hknight_run7	=[	$run7,		hknight_run8	] {Think(0.075);setHead('6 1 33');ai_run(18);}; // 36
+void()	hknight_run8	=[	$run8,		hknight_run1	] {Think(0.075);setHead('8 1 32');ai_run(13);}; // 37
 
 //============================================================================
 
@@ -268,83 +282,109 @@ void()	hknight_magicc11 =[	$magicc11,	hknight_run1] 	  {setHead('13 -2 30');hkni
 
 //===========================================================================
 
-void()	hknight_char_a1	=[	$char_a1,	hknight_char_a2	] {setHead('11 0 29');ai_charge(20);}; // 64
-void()	hknight_char_a2	=[	$char_a2,	hknight_char_a3	] {setHead('10 1 30');ai_charge(25);}; // 65
-void()	hknight_char_a3	=[	$char_a3,	hknight_char_a4	] {setHead('11 3 33');ai_charge(18);}; // 66
-void()	hknight_char_a4	=[	$char_a4,	hknight_char_a5	] {setHead('6 3 30');ai_charge(16);}; // 67
-void()	hknight_char_a5	=[	$char_a5,	hknight_char_a6	] {setHead('11 -1 29');ai_charge(14);}; // 68
-void()	hknight_char_a6	=[	$char_a6,	hknight_char_a7	] {setHead('12 -1 26');ai_charge(20); ai_melee();}; // 69
-void()	hknight_char_a7	=[	$char_a7,	hknight_char_a8	] {setHead('14 -3 27');ai_charge(21); ai_melee();}; // 70
-void()	hknight_char_a8	=[	$char_a8,	hknight_char_a9	] {setHead('12 -1 30');ai_charge(13); ai_melee();}; // 71
-void()	hknight_char_a9	=[	$char_a9,	hknight_char_a10] {setHead('11 0 29');ai_charge(20); ai_melee();}; // 72
-void()	hknight_char_a10=[	$char_a10,	hknight_char_a11] {setHead('8 0 30');ai_charge(20); ai_melee();}; // 73
-void()	hknight_char_a11=[	$char_a11,	hknight_char_a12] {setHead('9 -1 34');ai_charge(18); ai_melee();}; // 74
-void()	hknight_char_a12=[	$char_a12,	hknight_char_a13] {setHead('10 0 29');ai_charge(16);}; // 75
-void()	hknight_char_a13=[	$char_a13,	hknight_char_a14] {setHead('7 0 30');ai_charge(14);}; // 76
-void()	hknight_char_a14=[	$char_a14,	hknight_char_a15] {setHead('8 2 28');ai_charge(25);}; // 77
-void()	hknight_char_a15=[	$char_a15,	hknight_char_a16] {setHead('9 3 31');ai_charge(21);}; // 78
-void()	hknight_char_a16=[	$char_a16,	hknight_run1	] {setHead('11 3 29');ai_charge(13);}; // 79
+void()	hknight_char_a1	=[	$char_a1,	hknight_char_a2	] {ai_charge_side(); setHead('11 0 29');ai_charge(20);}; // 64
+void()	hknight_char_a2	=[	$char_a2,	hknight_char_a3	] {ai_charge_side(); setHead('10 1 30');ai_charge(25);}; // 65
+void()	hknight_char_a3	=[	$char_a3,	hknight_char_a4	] {ai_charge_side(); setHead('11 3 33');ai_charge(18);}; // 66
+void()	hknight_char_a4	=[	$char_a4,	hknight_char_a5	] {ai_charge_side(); setHead('6 3 30');ai_charge(16);}; // 67
+void()	hknight_char_a5	=[	$char_a5,	hknight_char_a6	] {ai_charge_side(); setHead('11 -1 29');ai_charge(14);}; // 68
+void()	hknight_char_a6	=[	$char_a6,	hknight_char_a7	] {ai_charge_side(); setHead('12 -1 26');ai_charge(20); ai_melee();}; // 69
+void()	hknight_char_a7	=[	$char_a7,	hknight_char_a8	] {ai_charge_side(); setHead('14 -3 27');ai_charge(21); ai_melee();}; // 70
+void()	hknight_char_a8	=[	$char_a8,	hknight_char_a9	] {ai_charge_side(); setHead('12 -1 30');ai_charge(13); ai_melee();}; // 71
+void()	hknight_char_a9	=[	$char_a9,	hknight_char_a10] {ai_charge_side(); setHead('11 0 29');ai_charge(20); ai_melee();}; // 72
+void()	hknight_char_a10=[	$char_a10,	hknight_char_a11] {ai_charge_side(); setHead('8 0 30');ai_charge(20); ai_melee();}; // 73
+void()	hknight_char_a11=[	$char_a11,	hknight_char_a12] {ai_charge_side(); setHead('9 -1 34');ai_charge(18); ai_melee();}; // 74
+void()	hknight_char_a12=[	$char_a12,	hknight_char_a13] {ai_charge_side(); setHead('10 0 29');ai_charge(16);}; // 75
+void()	hknight_char_a13=[	$char_a13,	hknight_char_a14] {ai_charge_side(); setHead('7 0 30');ai_charge(14);}; // 76
+void()	hknight_char_a14=[	$char_a14,	hknight_char_a15] {ai_charge_side(); setHead('8 2 28');ai_charge(25);}; // 77
+void()	hknight_char_a15=[	$char_a15,	hknight_char_a16] {ai_charge_side(); setHead('9 3 31');ai_charge(21);}; // 78
+void()	hknight_char_a16=[	$char_a16,	hknight_run1	] {ai_charge_side(); setHead('11 3 29');ai_charge(13);}; // 79
 
 //===========================================================================
 
-void()	hknight_char_b1	=[	$char_b1,	hknight_char_b2	] {setHead('1 3 31');CheckContinueCharge (); ai_charge(23); ai_melee();}; // 107
-void()	hknight_char_b2	=[	$char_b2,	hknight_char_b3	] {setHead('9 2 32');ai_charge(17); ai_melee();}; // 108
-void()	hknight_char_b3	=[	$char_b3,	hknight_char_b4	] {setHead('10 2 31');ai_charge(12); ai_melee();}; // 109
-void()	hknight_char_b4	=[	$char_b4,	hknight_char_b5	] {setHead('10 0 29');ai_charge(22); ai_melee();}; // 110
-void()	hknight_char_b5	=[	$char_b5,	hknight_char_b6	] {setHead('15 -2 29');ai_charge(18); ai_melee();}; // 111
-void()	hknight_char_b6	=[	$char_b6,	hknight_char_b1	] {setHead('12 -3 32');ai_charge(8); ai_melee();}; // 112
+void()	hknight_char_b1	=[	$char_b1,	hknight_char_b2	] {ai_charge_side(); setHead('1 3 31');CheckContinueCharge (); ai_charge(23); ai_melee();}; // 107
+void()	hknight_char_b2	=[	$char_b2,	hknight_char_b3	] {ai_charge_side(); setHead('9 2 32');ai_charge(17); ai_melee();}; // 108
+void()	hknight_char_b3	=[	$char_b3,	hknight_char_b4	] {ai_charge_side(); setHead('10 2 31');ai_charge(12); ai_melee();}; // 109
+void()	hknight_char_b4	=[	$char_b4,	hknight_char_b5	] {ai_charge_side(); setHead('10 0 29');ai_charge(22); ai_melee();}; // 110
+void()	hknight_char_b5	=[	$char_b5,	hknight_char_b6	] {ai_charge_side(); setHead('15 -2 29');ai_charge(18); ai_melee();}; // 111
+void()	hknight_char_b6	=[	$char_b6,	hknight_char_b1	] {ai_charge_side(); setHead('12 -3 32');ai_charge(8); ai_melee();}; // 112
 
 //===========================================================================
 
-void()	hknight_slice1	=[	$slice1,	hknight_slice2	] {setHead('3 3 34');ai_charge(9);}; // 113
-void()	hknight_slice2	=[	$slice2,	hknight_slice3	] {setHead('2 7 30');ai_charge(6);}; // 114
-void()	hknight_slice3	=[	$slice3,	hknight_slice4	] {setHead('-5 10 34');ai_charge(13);}; // 115
-void()	hknight_slice4	=[	$slice4,	hknight_slice5	] {setHead('-4 9 28');ai_charge(4);}; // 116
-void()	hknight_slice5	=[	$slice5,	hknight_slice6	] {setHead('5 9 27');ai_charge(7); ai_melee();}; // 117
-void()	hknight_slice6	=[	$slice6,	hknight_slice7	] {setHead('6 -5 32');ai_charge(15); ai_melee();}; // 118
-void()	hknight_slice7	=[	$slice7,	hknight_slice8	] {setHead('4 -11 27');ai_charge(8); ai_melee();}; // 119
-void()	hknight_slice8	=[	$slice8,	hknight_slice9	] {setHead('2 -18 22');ai_charge(2); ai_melee();}; // 120
-void()	hknight_slice9	=[	$slice9,	hknight_slice10	] {setHead('8 -6 30');ai_melee();}; // 121
-void()	hknight_slice10	=[	$slice10,	hknight_run1	] {setHead('8 -3 30');ai_charge(3);}; // 122
+void()	hknight_slice1	=[	$slice1,	hknight_slice2	] {ai_charge_side(); setHead('3 3 34');ai_charge(9);}; // 113
+void()	hknight_slice2	=[	$slice2,	hknight_slice3	] {ai_charge_side(); setHead('2 7 30');ai_charge(6);}; // 114
+void()	hknight_slice3	=[	$slice3,	hknight_slice4	] {ai_charge_side(); setHead('-5 10 34');ai_charge(13);}; // 115
+void()	hknight_slice4	=[	$slice4,	hknight_slice5	] {ai_charge_side(); setHead('-4 9 28');ai_charge(4);}; // 116
+void()	hknight_slice5	=[	$slice5,	hknight_slice6	] {ai_charge_side(); setHead('5 9 27');ai_charge(7); ai_melee();}; // 117
+void()	hknight_slice6	=[	$slice6,	hknight_slice7	] {ai_charge_side(); setHead('6 -5 32');ai_charge(15); ai_melee();}; // 118
+void()	hknight_slice7	=[	$slice7,	hknight_slice8	] {ai_charge_side(); setHead('4 -11 27');ai_charge(8); ai_melee();}; // 119
+void()	hknight_slice8	=[	$slice8,	hknight_slice9	] {ai_charge_side(); setHead('2 -18 22');ai_charge(2); ai_melee();}; // 120
+void()	hknight_slice9	=[	$slice9,	hknight_slice10	] {ai_charge_side(); setHead('8 -6 30');ai_melee();}; // 121
+void()	hknight_slice10	=[	$slice10,	hknight_run1	] {ai_charge_side(); setHead('8 -3 30');ai_charge(3);}; // 122
 
 //===========================================================================
 
-void()	hknight_smash1	=[	$smash1,	hknight_smash2	] {setHead('3 6 29');ai_charge(1);}; // 123
-void()	hknight_smash2	=[	$smash2,	hknight_smash3	] {setHead('-1 6 33');ai_charge(13);}; // 124
-void()	hknight_smash3	=[	$smash3,	hknight_smash4	] {setHead('-8 8 30');ai_charge(9);}; // 125
-void()	hknight_smash4	=[	$smash4,	hknight_smash5	] {setHead('-5 4 30');ai_charge(11);}; // 126
-void()	hknight_smash5	=[	$smash5,	hknight_smash6	] {setHead('5 3 30');ai_charge(10); ai_melee();}; // 127
-void()	hknight_smash6	=[	$smash6,	hknight_smash7	] {setHead('10 -1 32');ai_charge(7); ai_melee();}; // 128
-void()	hknight_smash7	=[	$smash7,	hknight_smash8	] {setHead('11 -2 31');ai_charge(12); ai_melee();}; // 129
-void()	hknight_smash8	=[	$smash8,	hknight_smash9	] {setHead('17 -4 23');ai_charge(2); ai_melee();}; // 130
-void()	hknight_smash9	=[	$smash9,	hknight_smash10	] {setHead('18 -5 14');ai_charge(3); ai_melee();}; // 131
-void()	hknight_smash10	=[	$smash10,	hknight_smash11	] {setHead('19 -5 13');ai_charge(0);}; // 132
-void()	hknight_smash11	=[	$smash11,	hknight_run1	] {setHead('12 0 23');ai_charge(0);}; // 133
+void() hknight_jumpsmash	=[	$smash1,	hknight_jumpsmash2	] 
+{
+	vector dir;
+	setHead('3 6 29');
+	ai_face_instant(); 
+	if (self.flags & FL_ONGROUND)
+		self.flags = self.flags - FL_ONGROUND;
+	dir = SUB_GetPlayerDirection(self.origin, self.enemy);
+	self.velocity = normalize (dir);
+	self.velocity = self.velocity * 582; // 600, 15 degree, 0.97
+	self.velocity_z = 156; // 0.26
+	self.vA = self.velocity;
+	hellknight_trail();
+	self.pain_finished = time + 2;
+};  // 123
+void()  hknight_jumpsmash2	=[	$smash2,	hknight_jumpsmash3	] {hellknight_trail();setHead('-1 6 33'); self.velocity = self.vA;}; // 124
+void()	hknight_jumpsmash3	=[	$smash3,	hknight_jumpsmash4	] {hellknight_trail();ai_charge_side(); setHead('-8 8 30');ai_charge(9);}; // 125
+void()	hknight_jumpsmash4	=[	$smash4,	hknight_jumpsmash5	] {hellknight_trail();ai_charge_side(); setHead('-5 4 30');ai_charge(11);}; // 126
+void()	hknight_jumpsmash5	=[	$smash5,	hknight_jumpsmash6	] {hellknight_trail();ai_charge_side(); setHead('5 3 30');ai_charge(10); ai_melee();}; // 127
+void()	hknight_jumpsmash6	=[	$smash6,	hknight_jumpsmash7	] {hellknight_trail();ai_charge_side(); setHead('10 -1 32');ai_charge(7); ai_melee();}; // 128
+void()	hknight_jumpsmash7	=[	$smash7,	hknight_jumpsmash8	] {hellknight_trail();ai_charge_side(); setHead('11 -2 31');ai_charge(12); ai_melee();}; // 129
+void()	hknight_jumpsmash8	=[	$smash8,	hknight_jumpsmash9	] {hellknight_trail();ai_charge_side(); setHead('17 -4 23');ai_charge(2); ai_melee();}; // 130
+void()	hknight_jumpsmash9	=[	$smash9,	hknight_jumpsmash10	] {hellknight_trail();ai_charge_side(); setHead('18 -5 14');ai_charge(3); ai_melee();}; // 131
+void()	hknight_jumpsmash10	=[	$smash10,	hknight_jumpsmash11	] {ai_charge_side(); setHead('19 -5 13');ai_charge(0);}; // 132
+void()	hknight_jumpsmash11	=[	$smash11,	hknight_run1	] {ai_charge_side(); setHead('12 0 23');ai_charge(0);}; // 133
+
+void()	hknight_smash1	=[	$smash1,	hknight_smash2	] {ai_charge_side(); setHead('3 6 29');ai_charge(1);}; // 123
+void()	hknight_smash2	=[	$smash2,	hknight_smash3	] {ai_charge_side(); setHead('-1 6 33');ai_charge(13);}; // 124
+void()	hknight_smash3	=[	$smash3,	hknight_smash4	] {ai_charge_side(); setHead('-8 8 30');ai_charge(9);}; // 125
+void()	hknight_smash4	=[	$smash4,	hknight_smash5	] {ai_charge_side(); setHead('-5 4 30');ai_charge(11);}; // 126
+void()	hknight_smash5	=[	$smash5,	hknight_smash6	] {ai_charge_side(); setHead('5 3 30');ai_charge(10); ai_melee();}; // 127
+void()	hknight_smash6	=[	$smash6,	hknight_smash7	] {ai_charge_side(); setHead('10 -1 32');ai_charge(7); ai_melee();}; // 128
+void()	hknight_smash7	=[	$smash7,	hknight_smash8	] {ai_charge_side(); setHead('11 -2 31');ai_charge(12); ai_melee();}; // 129
+void()	hknight_smash8	=[	$smash8,	hknight_smash9	] {ai_charge_side(); setHead('17 -4 23');ai_charge(2); ai_melee();}; // 130
+void()	hknight_smash9	=[	$smash9,	hknight_smash10	] {ai_charge_side(); setHead('18 -5 14');ai_charge(3); ai_melee();}; // 131
+void()	hknight_smash10	=[	$smash10,	hknight_smash11	] {ai_charge_side(); setHead('19 -5 13');ai_charge(0);}; // 132
+void()	hknight_smash11	=[	$smash11,	hknight_run1	] {ai_charge_side(); setHead('12 0 23');ai_charge(0);}; // 133
 
 //============================================================================
 
-void()	hknight_watk1	=[	$w_attack1,	hknight_watk2	] {setHead('4 2 33');ai_charge(2);}; // 134
-void()	hknight_watk2	=[	$w_attack2,	hknight_watk3	] {setHead('-5 6 31');ai_charge(0);}; // 135
-void()	hknight_watk3	=[	$w_attack3,	hknight_watk4	] {setHead('-10 9 29');ai_charge(0);}; // 136
-void()	hknight_watk4	=[	$w_attack4,	hknight_watk5	] {setHead('-1 7 30');ai_melee();}; // 137
-void()	hknight_watk5	=[	$w_attack5,	hknight_watk6	] {setHead('9 4 31');ai_melee();}; // 138
-void()	hknight_watk6	=[	$w_attack6,	hknight_watk7	] {setHead('13 0 31');ai_melee();}; // 139
-void()	hknight_watk7	=[	$w_attack7,	hknight_watk8	] {setHead('19 -4 29');ai_charge(1);}; // 140
-void()	hknight_watk8	=[	$w_attack8,	hknight_watk9	] {setHead('23 -3 24');ai_charge(4);}; // 141
-void()	hknight_watk9	=[	$w_attack9,	hknight_watk10	] {setHead('24 -3 19');ai_charge(5);}; // 142
-void()	hknight_watk10	=[	$w_attack10,hknight_watk11	] {setHead('24 -5 20');ai_charge(3); ai_melee();}; // 143
-void()	hknight_watk11	=[	$w_attack11,hknight_watk12	] {setHead('20 -9 25');ai_charge(2); ai_melee();}; // 144
-void()	hknight_watk12	=[	$w_attack12,hknight_watk13	] {setHead('11 -11 27');ai_charge(2); ai_melee();}; // 145
-void()	hknight_watk13	=[	$w_attack13,hknight_watk14	] {setHead('3 -11 27');ai_charge(0);}; // 146
-void()	hknight_watk14	=[	$w_attack14,hknight_watk15	] {setHead('-2 -6 30');ai_charge(0);}; // 147
-void()	hknight_watk15	=[	$w_attack15,hknight_watk16	] {setHead('-4 -1 31');ai_charge(0);}; // 148
-void()	hknight_watk16	=[	$w_attack16,hknight_watk17	] {setHead('5 -2 31');ai_charge(1);}; // 149
-void()	hknight_watk17	=[	$w_attack17,hknight_watk18	] {setHead('12 -3 29');ai_charge(1); ai_melee();}; // 150
-void()	hknight_watk18	=[	$w_attack18,hknight_watk19	] {setHead('15 0 29');ai_charge(3); ai_melee();}; // 151
-void()	hknight_watk19	=[	$w_attack19,hknight_watk20	] {setHead('14 4 29');ai_charge(4); ai_melee();}; // 152
-void()	hknight_watk20	=[	$w_attack20,hknight_watk21	] {setHead('9 5 31');ai_charge(6);}; // 153
-void()	hknight_watk21	=[	$w_attack21,hknight_watk22	] {setHead('3 4 32');ai_charge(7);}; // 154
-void()	hknight_watk22	=[	$w_attack22,hknight_run1	] {setHead('3 3 33');ai_charge(3);}; // 155
+void()	hknight_watk1	=[	$w_attack1,	hknight_watk2	] {ai_charge_side(); setHead('4 2 33');ai_charge(2);}; // 134
+void()	hknight_watk2	=[	$w_attack2,	hknight_watk3	] {ai_charge_side(); setHead('-5 6 31');ai_charge(0);}; // 135
+void()	hknight_watk3	=[	$w_attack3,	hknight_watk4	] {ai_charge_side(); setHead('-10 9 29');ai_charge(0);}; // 136
+void()	hknight_watk4	=[	$w_attack4,	hknight_watk5	] {ai_charge_side(); setHead('-1 7 30');ai_melee();}; // 137
+void()	hknight_watk5	=[	$w_attack5,	hknight_watk6	] {ai_charge_side(); setHead('9 4 31');ai_melee();}; // 138
+void()	hknight_watk6	=[	$w_attack6,	hknight_watk7	] {ai_charge_side(); setHead('13 0 31');ai_melee();}; // 139
+void()	hknight_watk7	=[	$w_attack7,	hknight_watk8	] {ai_charge_side(); setHead('19 -4 29');ai_charge(1);}; // 140
+void()	hknight_watk8	=[	$w_attack8,	hknight_watk9	] {ai_charge_side(); setHead('23 -3 24');ai_charge(4);}; // 141
+void()	hknight_watk9	=[	$w_attack9,	hknight_watk10	] {ai_charge_side(); setHead('24 -3 19');ai_charge(5);}; // 142
+void()	hknight_watk10	=[	$w_attack10,hknight_watk11	] {ai_charge_side(); setHead('24 -5 20');ai_charge(3); ai_melee();}; // 143
+void()	hknight_watk11	=[	$w_attack11,hknight_watk12	] {ai_charge_side(); setHead('20 -9 25');ai_charge(2); ai_melee();}; // 144
+void()	hknight_watk12	=[	$w_attack12,hknight_watk13	] {ai_charge_side(); setHead('11 -11 27');ai_charge(2); ai_melee();}; // 145
+void()	hknight_watk13	=[	$w_attack13,hknight_watk14	] {ai_charge_side(); setHead('3 -11 27');ai_charge(0);}; // 146
+void()	hknight_watk14	=[	$w_attack14,hknight_watk15	] {ai_charge_side(); setHead('-2 -6 30');ai_charge(0);}; // 147
+void()	hknight_watk15	=[	$w_attack15,hknight_watk16	] {ai_charge_side(); setHead('-4 -1 31');ai_charge(0);}; // 148
+void()	hknight_watk16	=[	$w_attack16,hknight_watk17	] {ai_charge_side(); setHead('5 -2 31');ai_charge(1);}; // 149
+void()	hknight_watk17	=[	$w_attack17,hknight_watk18	] {ai_charge_side(); setHead('12 -3 29');ai_charge(1); ai_melee();}; // 150
+void()	hknight_watk18	=[	$w_attack18,hknight_watk19	] {ai_charge_side(); setHead('15 0 29');ai_charge(3); ai_melee();}; // 151
+void()	hknight_watk19	=[	$w_attack19,hknight_watk20	] {ai_charge_side(); setHead('14 4 29');ai_charge(4); ai_melee();}; // 152
+void()	hknight_watk20	=[	$w_attack20,hknight_watk21	] {ai_charge_side(); setHead('9 5 31');ai_charge(6);}; // 153
+void()	hknight_watk21	=[	$w_attack21,hknight_watk22	] {ai_charge_side(); setHead('3 4 32');ai_charge(7);}; // 154
+void()	hknight_watk22	=[	$w_attack22,hknight_run1	] {ai_charge_side(); setHead('3 3 33');ai_charge(3);}; // 155
 
 //============================================================================
 
@@ -358,8 +398,8 @@ void(entity attacker, float damage)	hknight_pain =
 {
 	if (self.pain_finished > time)
 		return;
-
-	sound (self, CHAN_VOICE, "hknight/pain1.wav", 1, ATTN_NORM);
+	
+	playPainSound("hknight/pain1.wav");
 
 	if (time - self.pain_finished > 5)
 	{	// always go into pain frame if it has been a while
@@ -391,7 +431,8 @@ void() hknight_melee =
 
 	else if (hknight_type == 3)
 	{
-		hknight_watk1 ();
+		//hknight_watk1 ();
+		hknight_smash1 ();
 		hknight_type = 0;
 	}
 };
@@ -449,6 +490,7 @@ void() monster_hell_knight =
 	}
 
 	precache_model2 ("progs/hknight.mdl");
+	precache_model2 ("progs/hknight_trail.mdl");
 	precache_model2 ("progs/hknight_headless.mdl"); 
 	precache_model2 ("progs/k_spike.mdl");
 	precache_model2 ("progs/h_hellkn.mdl");
@@ -483,14 +525,14 @@ void() monster_hell_knight =
 	self.max_health = HELLKNIGHT_HEALTH;
 	self.health_head = HELLKNIGHT_HEAD;
 	self.gib_threshold = 100;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
 	self.monstertype = TYPE_HELLKNIGHT;
 
 	self.th_stand = hknight_stand1;
 	self.th_walk = hknight_walk1;
 	self.th_run = hknight_run1;
 	self.th_melee = hknight_melee;
-	self.th_missile = hknight_magicc1;
+	self.th_missile = hknight_jumpsmash;//hknight_magicc1;
 	self.th_pain = hknight_pain;
 	self.th_die = hknight_die;
 		

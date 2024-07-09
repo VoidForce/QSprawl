@@ -44,7 +44,7 @@ void R_ReadPointFile_f (void);
 texture_t *R_TextureAnimation (texture_t *base, int frame);
 
 typedef enum {
-	pt_static, pt_bullet, pt_muzzle, pt_gauss, pt_gaussmain, pt_holegauss, pt_grav, pt_gaussexit, pt_fire, pt_explode, pt_explode2, pt_explodehead, pt_blood
+	pt_static, pt_bullet, pt_muzzle, pt_gauss, pt_gaussmain, pt_holegauss, pt_grav, pt_gaussexit, pt_fire, pt_explode, pt_explode2, pt_explodehead, pt_blood, pt_changevel
 } ptype_t;
 
 // !!! if this is changed, it must be changed in d_ifacea.h too !!!

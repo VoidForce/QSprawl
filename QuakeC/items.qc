@@ -559,7 +559,7 @@ void() weapon_touch =
 	stuffcmd (other, "bf\n");
 
 	bound_other_ammo ();
-
+	setAmmo(other);
 	// change to the weapon
 	old = other.items;
 	other.items = other.items | new;
@@ -676,9 +676,6 @@ AMMO
 
 void() ammo_touch =
 {
-	local entity	stemp;
-	//local float		best;
-
 	if (other.classname != "player")
 		return;
 
@@ -749,11 +746,8 @@ void() ammo_touch =
 	*/
 
 	// if changed current ammo, update it
-	stemp = self;
-	self = other;
-	W_SetCurrentAmmo();
-	self = stemp;
-
+	setAmmo(other);
+	
 	// remove it in single player, or setup for respawning in deathmatch
 	self.model = string_null;
 	self.solid = SOLID_NOT;
@@ -767,8 +761,36 @@ void() ammo_touch =
 	SUB_UseTargets();				// fire all targets / killtargets
 };
 
-
-
+void (entity who)setAmmo =
+{
+	if (who.items & IT_SHELLS)
+	{
+		who.currentammo = who.ammo_shells;
+		return;
+	}
+	
+	if (who.items & IT_NAILS)
+	{
+		who.currentammo = who.ammo_nails;
+		return;
+	}
+	
+	if (who.items & IT_ROCKETS)
+	{
+		who.currentammo = who.ammo_rockets;
+		return;
+	}
+	
+	if (who.items & IT_CELLS)
+	{
+		who.currentammo = who.ammo_cells;
+		return;
+	}
+	if (who.items & IT_BULLETS)
+	{
+		who.currentammo = who.ammo_bullets;
+	}
+};
 
 float WEAPON_BIG2 = 1;
 
@@ -1458,7 +1480,7 @@ void() BackpackTouch =
 			Deathmatch_Weapon (old, new);
 		}
 	*/
-	W_SetCurrentAmmo ();
+	//W_SetCurrentAmmo ();
 
 };
 

@@ -62,16 +62,14 @@ static int	robotspark[16] = { 0xf4, 0xf5, 0xf6, 0xfc, 0xef, 0xee, 0xed, 0xec, 0x
 #define IMPACT_GAUSS_FINAL 1
 #define IMPACT_GAUSS_ENTRANCE 2
 #define IMPACT_GAUSS_EXIT 3
-#define IMPACT_GAUSS_FLESH_HEADSHOT 4
-#define IMPACT_GAUSS_FLESH 5
-#define IMPACT_GAUSS_ROBOT_HEADSHOT 6
-#define IMPACT_GAUSS_ROBOT 7
-#define IMPACT_FLESH_HEADSHOT 8
-#define IMPACT_ROBOT_HEADSHOT 9
-#define IMPACT_FLESH 10
-#define IMPACT_ROBOT 11
-#define IMPACT_WALL 12
-#define IMPACT_LASER 13
+#define IMPACT_GAUSS_FLESH 4
+#define IMPACT_GAUSS_ROBOT 5
+#define IMPACT_FLESH_HEADSHOT 6
+#define IMPACT_ROBOT_HEADSHOT 7
+#define IMPACT_FLESH 8
+#define IMPACT_ROBOT 9
+#define IMPACT_WALL 10
+#define IMPACT_LASER 11
 
 particle_t	*particles;
 int			r_numparticles, r_numactiveparticles;
@@ -726,7 +724,7 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 
 	VectorSubtract(end, start, vec);
 	len = VectorNormalize(vec);
-
+	// trail
 	while (len > 0)
 	{
 		if (!(p = R_AllocParticle()))
@@ -755,7 +753,7 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 		amount = 4;
 	else
 		amount = 5;
-
+	// muzzle sparks
 	for (i = 0; i < amount; i++)
 	{
 		if (!(p = R_AllocParticle()))
@@ -782,6 +780,33 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 	}
 }
 
+void R_LaserTrace(vec3_t start, vec3_t end, int color)
+{
+	particle_t* p;
+	vec3_t vec, org, dir;
+	float len;
+
+	if (color < 0 || color > 255)
+		color = 0;
+	VectorSubtract(end, start, vec);
+	len = VectorNormalize(vec);
+	// trail
+	while (len > 0)
+	{
+		if (!(p = R_AllocParticle()))
+			return;
+
+		p->die = cl.time + 0.1;
+		p->color = color;
+		p->type = pt_static;
+		VectorCopy(vec3_origin, p->vel); // zero velocity
+		VectorScale(vec, len, dir);
+		VectorAdd(start, dir, org);
+		VectorCopy(org, p->org);
+		len -= 8;
+	}
+}
+
 void R_GaussTrail(vec3_t start, vec3_t end)
 {
 	//return; // turned off for debugging purposes, remove this later
@@ -804,11 +829,13 @@ void R_GaussTrail(vec3_t start, vec3_t end)
 	{
 		if (!(p = R_AllocParticle()))
 			return;
+
 		// smoke-ish part
 		p->die = 99999;
 		p->ramp = 0;
 		p->color = ramp3[0];
 		p->type = pt_gauss;//pt_gauss;//pt_static;
+		p->flag = 0;
 		VectorCopy(vec3_origin, p->vel); // zero velocity
 		VectorScale(vec, len, dir);
 		VectorAdd(start, dir, org);
@@ -822,9 +849,7 @@ void R_GaussTrail(vec3_t start, vec3_t end)
 		VectorAdd(offset_side, offset_up, offset_side);
 		VectorAdd(org, offset_side, p->org);
 		for (j = 0; j < 3; j++)
-		{
 			p->vel[j] = (rand() % 200) - 100;
-		}
 		// central beam
 		if (!(p = R_AllocParticle()))
 			return;
@@ -833,11 +858,12 @@ void R_GaussTrail(vec3_t start, vec3_t end)
 		p->color = rampcore[(int)p->ramp];
 		p->die = 99999;// cl.time + ((rand() % 20) - 10) * 0.2;;
 		p->type = pt_gaussmain;
+		p->flag = 0;
 		VectorCopy(vec3_origin, p->vel); // zero velocity
-		VectorScale(side, circlex[circle] * 20, offset_side);
-		VectorScale(up, circley[circle] * 20, offset_up);
+		VectorScale(side, circlex[circle], offset_side);
+		VectorScale(up, circley[circle], offset_up);
 		VectorAdd(offset_side, offset_up, offset_side);
-		VectorCopy(offset_side, p->wish_vel);
+		VectorScale(offset_side, 20, p->wish_vel);
 		VectorCopy(org, p->org);
 
 		len -= 10;
@@ -1019,67 +1045,99 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 	}
 }
 
+#define TYPE_BLOOD 1
+#define TYPE_ROBOT 2
+#define TYPE_GAUSS 4
+#define TYPE_HEAD 8
+#define TYPE_LASER 16
+#define TYPE_WALL 32
+
+void R_ImpactSparks(vec3_t org, vec3_t dir, int color, int color_rand, int count, int velocity)
+{
+	int			i, j;
+	particle_t* p;
+	float half_vel;
+	//float duration;
+	half_vel = (float)velocity / 2;
+
+	
+	for (i = 0; i < count; i++)
+	{
+		if (!(p = R_AllocParticle()))
+			return;
+
+		p->die = cl.time + 0.1 * (rand() % 5);
+		p->color = color + (rand() & color_rand);
+		p->type = pt_grav;
+		for (j = 0; j < 3; j++)
+		{
+			p->org[j] = org[j] + dir[j] * 4;// +((rand() & 8) - 4);
+			p->vel[j] = dir[j] + (rand() % velocity) - half_vel;
+		}
+		p->vel[2] += 200;
+	}
+}
 
 void R_Impact(vec3_t org, vec3_t dir, int type)
 {
 	particle_t* p;
 	vec3_t offset;
-
-	int i;
+	float color;
+	int	i;
+	color = 0;
 	switch (type)
 	{
-		case IMPACT_GAUSS_FLESH_HEADSHOT: // headshot
-			//Con_DPrintf("GAUSS HEAD FLESH \n");
-			break;
 		case IMPACT_GAUSS_FLESH: // gauss flesh, red
-			VectorCopy(dir, offset);
-			VectorInverse(offset);
-			VectorScale(offset, 200, offset);
-			for (i = 0; i < 100; i++)
+			color = 0x4a;
+		case IMPACT_GAUSS_ROBOT:
+			if (color == 0)
+				color = 0xea;
+
+			for (i = 0; i < 36; i++)
 			{
 				if (!(p = R_AllocParticle()))
 					return;
 
-				p->ramp = rand() & 3;
-				p->color = 0x4a + (rand() & 5);
-				p->type = pt_grav;
-				p->die = cl.time + 7200;
-				p->flag = 0;
+					p->ramp = -(rand() % 10);
+					p->color = color + (rand() & 5);
+					p->type = pt_grav;
+					p->die = cl.time + 1;
+					p->flag = 1;
 
+				VectorScale(dir, i*2, offset);
 				VectorCopy(org, p->org);
-				VectorCopy(offset, p->vel);
-				p->vel[0] += (rand() % 1000) - 500;
-				p->vel[1] += (rand() % 1000) - 500;
-				p->vel[2] += (rand() % 1000) - 500;
-				VectorCopy(vec3_origin, p->wish_vel);
+				VectorAdd(p->org, offset, p->org);
+				VectorCopy(dir, p->vel);
+				p->vel[0] += (rand() % 100) - 50;
+				p->vel[1] += (rand() % 100) - 50;
+				p->vel[2] += (rand() % 100) - 50;
 			}
-			//Con_DPrintf("GAUSS FLESH \n");
-			break;
-
-		case IMPACT_GAUSS_ROBOT_HEADSHOT: // headshot
-			//Con_DPrintf("GAUSS HEAD ROBOT \n");
-			break;
-		case IMPACT_GAUSS_ROBOT: // gauss robot
-			//Con_DPrintf("GAUSS BODY ROBOT \n");
 			break;
 
 		case IMPACT_FLESH_HEADSHOT:
-			//Con_DPrintf("BASIC FLESH HEAD \n");
+			R_ImpactSparks(org, dir, 0x48, 5, 30, 100);
+			R_ImpactSparks(org, dir, 0xeb, 4, 4, 600);
 			break;
+
 		case IMPACT_ROBOT_HEADSHOT:
-			//Con_DPrintf("BASIC ROBOT HEAD \n");
+			//R_ImpactSparks(org, dir, 0xeb, 4, 5, 600);
+			R_ImpactSparks(org, dir, 0xfa, 1, 12, 300);
 			break;
+
 		case IMPACT_FLESH:
-			//Con_DPrintf("BASIC FLESH\n");
+			R_ImpactSparks(org, dir, 0x48, 5, 30, 100);
 			break;
+
 		case IMPACT_ROBOT:
-			//Con_DPrintf("BASIC ROBOT\n");
+			R_ImpactSparks(org, dir, 0xeb, 4, 9, 600);
 			break;
+
 		case IMPACT_WALL:
-			//Con_DPrintf("WALL\n");
+			R_ImpactSparks(org, dir, 0x03, 5, 10, 300);
 			break;
+
 		case IMPACT_LASER:
-			//Con_DPrintf("LASER\n");
+			R_ImpactSparks(org, dir, 0xfa, 1, 40, 500);
 			break;
 	}
 }
@@ -1190,6 +1248,20 @@ void CL_RunParticles (void)
 		switch (p->type)
 		{
 		case pt_static:
+			break;
+
+		case pt_changevel:
+			p->ramp += time3;
+			if (p->ramp >= 20)
+				p->die = -1;
+
+			if ((int)p->ramp == 0)
+			{
+				p->vel[0] = p->wish_vel[0];
+				p->vel[1] = p->wish_vel[1];
+				p->vel[2] = p->wish_vel[2];
+				p->ramp = 1;
+			}
 			break;
 
 		case pt_bullet:

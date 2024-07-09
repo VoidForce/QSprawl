@@ -216,6 +216,9 @@ void() dog_painb16	=[	$painb16 ,	dog_run1	] {};
 
 void(entity attacker, float damage) dog_pain =
 {
+	playPainSound("dog/dpain1.wav");
+	return;
+	/*
 	if (self.pain_finished > time)
 		return;
 	
@@ -231,6 +234,7 @@ void(entity attacker, float damage) dog_pain =
 		dog_pain1 ();
 	else
 		dog_painb1 ();
+	*/
 };
 
 void() dog_die1		=[	$death1,	dog_die2	] {};

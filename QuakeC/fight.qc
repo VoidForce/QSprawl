@@ -21,19 +21,6 @@
 When it decides it can't attack, it goes into hunt mode.*/
 
 float(float v) anglemod;
-
-void() knight_atk1;
-void() knight_runatk1;
-void() ogre_smash1;
-void() ogre_swing1;
-
-void() sham_smash1;
-void() sham_swingr1;
-void() sham_swingl1;
-
-float()	DemonCheckAttack;
-void(float side)	Demon_Melee;
-
 void(vector dest) ChooseTurn;
 
 void() ai_face;
@@ -139,8 +126,21 @@ Stay facing the enemy
 =============*/
 void() ai_face =
 {
+	if (self.monsterflags & MFL_CONFUSED)
+		self.ideal_yaw = vectoyaw(self.enemy.trail4 - self.origin);
+	else
+		self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+	ChangeYaw ();
+};
+
+void() ai_face_instant =
+{
+	float oldyawspd;
+	oldyawspd = self.yaw_speed;
+	self.yaw_speed = 360;
 	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
 	ChangeYaw ();
+	self.yaw_speed = oldyawspd;
 };
 
 /*=============

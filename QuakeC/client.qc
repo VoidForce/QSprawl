@@ -67,14 +67,11 @@ void() SetChangeParms =
 	parm1 = self.items;
 	parm2 = self.health;
 	parm3 = self.armorvalue;
-
+	parm4 = self.ammo_shells;
 	if (self.ammo_nails < 25)
-		parm4 = 25;
-
+		parm5 = 25;
 	else
-		parm4 = self.ammo_shells;
-
-	parm5 = self.ammo_nails;
+		parm5 = self.ammo_nails;
 	parm6 = self.ammo_rockets;
 	parm7 = self.ammo_cells;
 	parm8 = self.weapon;
@@ -601,6 +598,7 @@ void() PutClientInServer =
 	spot = SelectSpawnPoint ();
 
 	self.origin = spot.origin + '0 0 1';
+	self.trail1 = self.trail2 = self.trail3 = self.trail4 = self.origin;
 	self.angles = spot.angles;
 	self.fixangle = TRUE;		// turn this way immediately
 
@@ -635,6 +633,9 @@ void() PutClientInServer =
 	
 	if (!self.weapon_director)
 		self.weapon_director = spawn();
+	
+	self.thinkA = trailPlayer;
+	self.nextthinkA = time + 1;
 };
 
 
@@ -1037,6 +1038,17 @@ void() CheckWaterJump =
 	}
 };
 
+void() trailPlayer =
+{
+	self.trail4 = self.trail3;
+	self.trail3 = self.trail2;
+	self.trail2 = self.trail1;
+	self.trail1 = self.origin + self.velocity * 0.25;
+	self.trail1_z -= 20;
+	self.thinkA = trailPlayer;
+	self.nextthinkA = time + 0.3;
+};
+
 void() SetMovementParams_Slide =
 {
 	self.current_acceleration = 0;
@@ -1211,47 +1223,43 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		return;
 	if (self.engineflags & ENF_ADRENALINE_OFF)
 		return;
-	if (!(self.flags & FL_ONGROUND || traceDown(self))) // on ground, slightly above ground
+	if (self.jump_timer > time)
 		return;
+	if (self.wall_jumps > 2) 
+		return;
+	self.wall_jumps++;
 	
-	local float jump_height;
-	
-	jump_height = 160;
-	//if (type == MOVE_BACKWARD)
-	//	jump_height = 400;
-	
-	makevectors(self.angles);
-	self.flags -= self.flags & FL_ONGROUND;
-	self.velocity += v_forward * fvel + v_right * rvel + [0,0, jump_height];
-	self.dodge_time = time + 0.5;
-	consumeAdrenaline(0, 0.2);
-	addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
-	self.jump_timer = time + 0.5;
-	StopAirAcceleration(0.4);
-	StopAcceleration(0.4);
-	
-	// make jump sound here
-	/*
+	if (self.flags & FL_ONGROUND || traceDown(self)) // on ground, slightly above ground
+	{
+		makevectors(self.angles);
+		self.flags -= self.flags & FL_ONGROUND;
+		self.velocity += v_forward * fvel + v_right * rvel + [0,0, 160];
+		self.dodge_time = time + 0.5;
+		consumeAdrenaline(0, 0.2);
+		addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
+		self.jump_timer = time + 0.5;
+		StopAirAcceleration(0.4);
+		StopAcceleration(0.4);
+		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
+	}
 	else 
 	{
 	//wall in the opposite side of dodge direction
 		makevectors(self.angles);
 		if (!(self.flags & FL_ONGROUND) && traceWall(self, fwall * v_forward, rwall * v_right))
 		{
-			fvel *= 0.5;
-			rvel *= 0.5;
-			self.velocity += v_forward * fvel * 0.65 + v_right * rvel * 0.65; // + '0 0 -100'
-			if (self.velocity_z < 300) //270
-				self.velocity_z = 300;
-			//self.velocity_z = 0;
+			self.velocity += v_forward * fvel + v_right * rvel; // + '0 0 -100'
+			if (self.velocity_z < 150) //270
+				self.velocity_z = 150;
 			self.dodge_time = time + 0.5;
 			consumeAdrenaline(0, 0.2);
-			addShake(100,rvel * 0.2, rvel * 0.1);
+			addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
+			//addShake(100,rvel * 0.2, rvel * 0.1);
 			self.jump_timer = time + 0.5;
-			// make jump sound here
+			StopAirAcceleration(0.4);
+			sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 		}
 	}
-	*/
 };
 #define DODGE_SPEED 500
 void() checkPressCombo =
@@ -1403,6 +1411,8 @@ void() catchComboInput =
 
 void() checkMovementInput =
 {
+	if (self.weapon != IT_AXE)
+		return;
 	catchComboInput();
 // Important! must be set after all the input/combo checks
 // any of this shouldn't be modified outside of body of this procedure

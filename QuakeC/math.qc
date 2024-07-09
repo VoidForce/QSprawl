@@ -126,3 +126,5 @@ float(vector raypoint, vector direction, vector point) DistanceToLine =
 	return vlen(CrossProduct( point - raypoint, direction )) / vlen(direction);
 };
 */
+
+// zi = (xi – min(x)) / (max(x) – min(x)) normalize to 0..1

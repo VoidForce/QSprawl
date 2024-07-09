@@ -293,6 +293,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	TE_GAUSSTRACE			11
 #define	TE_IMPACT				12
 #define TE_HEAD					13
+#define TE_LASERTRACE			14
 
 typedef struct
 {

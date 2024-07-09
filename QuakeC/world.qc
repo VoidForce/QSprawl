@@ -233,7 +233,8 @@ void() worldspawn =
 	precache_sound ("weapons/lhit.wav");		//lightning
 	precache_sound ("weapons/lstart.wav");		//lightning start
 	precache_sound ("items/damage3.wav");
-
+	precache_sound ("items/damage2.wav");
+	
 	precache_sound ("misc/power.wav");			//lightning for boss
 
 // player gib sounds
@@ -293,7 +294,6 @@ void() worldspawn =
 	precache_model ("progs/m_gib_03.mdl");
 	precache_model ("progs/m_gib_04.mdl");
 	precache_model ("progs/m_gib_05.mdl");
-	
 
 	precache_model ("progs/s_bubble.spr");	// drowning bubbles
 	precache_model ("progs/s_explod.spr");	// sprite explosion
@@ -316,7 +316,7 @@ void() worldspawn =
 	
 	precache_model ("progs/missile.mdl");
 	precache_model ("progs/grenade.mdl");
-	precache_model ("progs/spike.mdl");
+	precache_model ("progs/shrapnel.mdl");
 	precache_model ("progs/s_spike.mdl");
 
 	precache_model ("progs/backpack.mdl");

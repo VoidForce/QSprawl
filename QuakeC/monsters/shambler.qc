@@ -90,12 +90,12 @@ void() sham_walk12 =[ $walk12, sham_walk1 ] {setHead('17 1 36');                
 		sound (self, CHAN_VOICE, "shambler/sidle.wav", 1, ATTN_IDLE);
 };
 
-void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41');ai_run(25);}; // 30
-void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_run(25);}; // 31
-void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39');ai_run(25);}; // 32
-void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43');ai_run(25);}; // 33
-void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40');ai_run(25);}; // 34
-void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  // 35
+void() sham_run1  =[ $run1, sham_run2  ] {ai_charge_side(); setHead('15 1 41');ai_run(25);}; // 30
+void() sham_run2  =[ $run2, sham_run3  ] {ai_charge_side(); setHead('12 -1 39');ai_run(25);}; // 31
+void() sham_run3  =[ $run3, sham_run4  ] {ai_charge_side(); setHead('12 2 39');ai_run(25);}; // 32
+void() sham_run4  =[ $run4, sham_run5  ] {ai_charge_side(); setHead('13 2 43');ai_run(25);}; // 33
+void() sham_run5  =[ $run5, sham_run6  ] {ai_charge_side(); setHead('14 2 40');ai_run(25);}; // 34
+void() sham_run6  =[ $run6, sham_run1  ] {ai_charge_side(); setHead('5 0 40');  // 35
 	ai_run(25);
 	self.nextthink = time + 0.05;
 	if (random() > 0.8)
@@ -155,7 +155,7 @@ void(float side) ShamClaw =
 
 	delta = self.enemy.origin - self.origin;
 
-	if (vlen(delta) > 100)
+	if (vlen(delta) > 128)
 		return;
 		
 	ldmg = (random() + random() + random()) * 20;
@@ -174,13 +174,13 @@ void() sham_swingl1	=[      $swingl1,      sham_swingl2   ] {setHead('18 2 40');
 	ai_charge(5);
 };
 
-void() sham_swingl2 =[      $swingl2,      sham_swingl3   ] {setHead('12 -2 44');ai_charge(3);}; // 58
-void() sham_swingl3 =[      $swingl3,      sham_swingl4   ] {setHead('1 -5 47');ai_charge(7);}; // 59
-void() sham_swingl4 =[      $swingl4,      sham_swingl5   ] {setHead('-6 -3 45');ai_charge(3);}; // 60
-void() sham_swingl5 =[      $swingl5,      sham_swingl6   ] {setHead('3 -2 45');ai_charge(7);}; // 61
-void() sham_swingl6 =[      $swingl6,      sham_swingl7   ] {setHead('12 9 40');ai_charge(9);}; // 62
-void() sham_swingl7 =[      $swingl7,      sham_swingl8   ] {setHead('7 18 35');ai_charge(5); ShamClaw(250);}; // 63
-void() sham_swingl8 =[      $swingl8,      sham_swingl9   ] {setHead('12 15 36');ai_charge(4);}; // 64
+void() sham_swingl2 =[      $swingl2,      sham_swingl3   ] {ai_charge_side(); setHead('12 -2 44');ai_charge(3);}; // 58
+void() sham_swingl3 =[      $swingl3,      sham_swingl4   ] {ai_charge_side(); setHead('1 -5 47');ai_charge(7);}; // 59
+void() sham_swingl4 =[      $swingl4,      sham_swingl5   ] {ai_charge_side(); setHead('-6 -3 45');ai_charge(3);}; // 60
+void() sham_swingl5 =[      $swingl5,      sham_swingl6   ] {ai_charge_side(); setHead('3 -2 45');ai_charge(7);}; // 61
+void() sham_swingl6 =[      $swingl6,      sham_swingl7   ] {ai_charge_side(); setHead('12 9 40');ai_charge(9);}; // 62
+void() sham_swingl7 =[      $swingl7,      sham_swingl8   ] {ai_charge_side(); setHead('7 18 35');ai_charge(5); ShamClaw(250);}; // 63
+void() sham_swingl8 =[      $swingl8,      sham_swingl9   ] {ai_charge_side(); setHead('12 15 36');ai_charge(4);}; // 64
 void() sham_swingl9 =[      $swingl9,      sham_run1  ] {setHead('20 7 38'); // 65
 	ai_charge(8);
 	if (random()<0.5)
@@ -190,13 +190,13 @@ void() sham_swingr1	=[      $swingr1,      sham_swingr2   ] {setHead('19 2 40');
 	sound (self, CHAN_VOICE, "shambler/melee1.wav", 1, ATTN_NORM);
 	ai_charge(1);
 };
-void() sham_swingr2	=[      $swingr2,      sham_swingr3   ] {setHead('12 5 44');ai_charge(8);}; // 49
-void() sham_swingr3 =[      $swingr3,      sham_swingr4   ] {setHead('4 9 46');ai_charge(14);}; // 50
-void() sham_swingr4 =[      $swingr4,      sham_swingr5   ] {setHead('-2 10 47');ai_charge(7);}; // 51
-void() sham_swingr5 =[      $swingr5,      sham_swingr6   ] {setHead('6 6 46');ai_charge(3);}; // 52
-void() sham_swingr6 =[      $swingr6,      sham_swingr7   ] {setHead('9 -7 41');ai_charge(6);}; // 53
-void() sham_swingr7 =[      $swingr7,      sham_swingr8   ] {setHead('5 -17 36');ai_charge(6); ShamClaw(-250);}; // 54
-void() sham_swingr8 =[      $swingr8,      sham_swingr9   ] {setHead('10 -14 37');ai_charge(3);}; // 55
+void() sham_swingr2	=[      $swingr2,      sham_swingr3   ] {ai_charge_side(); setHead('12 5 44');ai_charge(8);}; // 49
+void() sham_swingr3 =[      $swingr3,      sham_swingr4   ] {ai_charge_side(); setHead('4 9 46');ai_charge(14);}; // 50
+void() sham_swingr4 =[      $swingr4,      sham_swingr5   ] {ai_charge_side(); setHead('-2 10 47');ai_charge(7);}; // 51
+void() sham_swingr5 =[      $swingr5,      sham_swingr6   ] {ai_charge_side(); setHead('6 6 46');ai_charge(3);}; // 52
+void() sham_swingr6 =[      $swingr6,      sham_swingr7   ] {ai_charge_side(); setHead('9 -7 41');ai_charge(6);}; // 53
+void() sham_swingr7 =[      $swingr7,      sham_swingr8   ] {ai_charge_side(); setHead('5 -17 36');ai_charge(6); ShamClaw(-250);}; // 54
+void() sham_swingr8 =[      $swingr8,      sham_swingr9   ] {ai_charge_side(); setHead('10 -14 37');ai_charge(3);}; // 55
 void() sham_swingr9 =[      $swingr9,      sham_run1  ] {setHead('14 -4 39'); // 56
 	ai_charge(1);
 	ai_charge(10);
@@ -209,12 +209,10 @@ void() sham_melee =
 	local float chance;
 	chance = random();
 
-	if (chance > 0.6 || self.health == 600)
+	if (chance > 0.8)
 		sham_smash1 ();
-
 	else if (chance > 0.3)
 		sham_swingr1 ();
-
 	else
 		sham_swingl1 ();
 };
@@ -275,7 +273,7 @@ void() sham_pain6       =[      $pain6, sham_run1       ] {setHead('12 3 41');};
 
 void(entity attacker, float damage)	sham_pain =
 {
-	sound (self, CHAN_VOICE, "shambler/shurt2.wav", 1, ATTN_NORM);
+	playPainSound("shambler/shurt2.wav");
 
 	if (self.health <= 0)
 		return;		// already dying, don't go into pain frame
@@ -427,13 +425,14 @@ void() monster_shambler =
 
 	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
 	self.head_offset = '16 2 43';
-	self.head_size = 24;
+	self.head_size = 16;
 	self.health_head = SHAMBLER_HEAD;
 	self.health = SHAMBLER_HEALTH;
 	self.max_health = SHAMBLER_HEALTH;
 	self.gib_threshold = 300;
 	self.monstertype = TYPE_SHAMBLER;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
+	self.yaw_speed = 10;
 
 	self.th_stand = sham_stand1;
 	self.th_walk = sham_walk1;

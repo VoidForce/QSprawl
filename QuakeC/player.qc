@@ -295,23 +295,33 @@ void() setGaussSkin =
 			self.engineflags |= ENF_CHANGESKIN;
 			break;
 		case 21:
+			if (self.weapon_skin == 3)
+				sound (self, CHAN_AUTO, "weapons/gauss_charge5.wav", 1, ATTN_NORM);
 			self.weapon_skin = 4;
 			self.engineflags |= ENF_CHANGESKIN;
 			break;
 		case 17:
+			if (self.weapon_skin == 2)
+				sound (self, CHAN_AUTO, "weapons/gauss_charge3.wav", 1, ATTN_NORM);
 			self.weapon_skin = 3;
 			self.engineflags |= ENF_CHANGESKIN;
 			break;
 		case 13:
+			if (self.weapon_skin == 1)
+				sound (self, CHAN_AUTO, "weapons/gauss_charge2.wav", 1, ATTN_NORM);
 			self.weapon_skin = 2;
 			self.engineflags |= ENF_CHANGESKIN;
 			break;
 		case 9:
+			if (self.weapon_skin == 0)
+				sound (self, CHAN_AUTO, "weapons/gauss_charge1.wav", 1, ATTN_NORM);
 			self.weapon_skin = 1;
 			self.engineflags |= ENF_CHANGESKIN;
 			break;
 		case 5:
 		case 40:
+			if (self.weapon_skin == 5)
+				sound (self, CHAN_AUTO, "weapons/gauss_charge4.wav", 1, ATTN_NORM);
 			self.weapon_skin = 0;
 			self.engineflags |= ENF_CHANGESKIN;
 			break;

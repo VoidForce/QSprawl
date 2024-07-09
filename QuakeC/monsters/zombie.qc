@@ -420,18 +420,8 @@ void() zombie_paine8	=[	$paine8,	zombie_paine9	] {setHead('-12 0 -6');self.nextt
 void() zombie_paine9	=[	$paine9,	zombie_paine10	] {setHead('-15 0 -11');self.nextthink = time + 0.05;ai_pain(2);}; //171
 void() zombie_paine10	=[	$paine10,	zombie_paine11	] {setHead('-16 1 -17');				 //172
 sound (self, CHAN_BODY, "zombie/z_fall.wav", 1, ATTN_NORM);};
-void() zombie_paine11	=[	$paine11,	zombie_paine12	] {setHead('-16 1 -21'); self.nextthink = self.nextthink + 1;}; //173
-void() zombie_paine12	=[	$paine12,	zombie_paine13	] {setHead('-16 1 -22'); //174
-	self.solid = SOLID_SLIDEBOX;
-	if (!walkmove (0, 0))
-	{
-		self.think = zombie_die;
-		Killed (self, self);
-		self.solid = SOLID_NOT;
-		return;
-	}
-	sound (self, CHAN_VOICE, "zombie/z_idle.wav", 1, ATTN_IDLE);
-};
+void() zombie_paine11	=[	$paine11,	zombie_paine12	] {setHead('-16 1 -21'); self.nextthink = self.nextthink + 0.1;}; //173
+void() zombie_paine12	=[	$paine12,	zombie_paine13	] {setHead('-16 1 -22');}; //174
 void() zombie_paine13	=[	$paine13,	zombie_paine14	] {setHead('-16 1 -22');self.solid = SOLID_SLIDEBOX;}; //175
 void() zombie_paine14	=[	$paine14,	zombie_paine15	] {setHead('-16 1 -22');}; //176
 void() zombie_paine15	=[	$paine15,	zombie_paine16	] {setHead('-16 1 -22');}; //177
@@ -511,24 +501,19 @@ void(entity attacker, float take) zombie_pain =
 		// gp into one of the fast pain animations	
 		self.pain_finished = time + 3;
 		self.inpain = 2;
-		self.solid = SOLID_NOT;
 		zombie_paine1 ();
+		// head was sliced with katana, throw it away
 		if (self.monsterflags & MFL_DROP_HEAD)
-		{
 			ZombieFireHead(self.head_offset,1);
-		}
 		else
 		{
+		// head was destroyed, blow up
 			T_RadiusDamage (self, self, 40, self);
 			sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
 		}
 		return;
-		
 	}
 	
-	if (take < 20)
-		return;				// totally ignore
-
 	if (self.inpain == 2)
 		return;			// down on ground, so don't reset any counters
 
@@ -536,7 +521,7 @@ void(entity attacker, float take) zombie_pain =
 	if (self.pain_finished > time)
 		return;
 	self.inpain = 1;
-	self.pain_finished = time + 2;
+	self.pain_finished = time + 3;
 
 	r = random();
 	if (r < 0.25)

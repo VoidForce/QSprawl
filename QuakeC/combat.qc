@@ -117,6 +117,29 @@ void(entity targ, entity attacker) Killed =
 	self = oself;
 };
 
+void(entity victim, entity attacker, float force, float verticalForce) T_Push =
+{
+	vector direction;
+	float modifiedForce;
+	modifiedForce = force;
+	
+	if ( victim.movetype == MOVETYPE_WALK )
+	{
+	// heavy monsters
+		if (victim.monstertype == TYPE_SHAMBLER)
+			modifiedForce *= 0.5;
+		
+		direction = victim.origin - (attacker.absmin + attacker.absmax) * 0.5;
+		direction = normalize(direction);
+
+		victim.velocity = victim.velocity + (direction * modifiedForce);
+		victim.velocity_z = victim.velocity_z + verticalForce;
+		
+		if (victim.flags & FL_ONGROUND)
+			victim.flags = victim.flags - FL_ONGROUND;
+	}
+};
+
 int (float type)fillArmorStats = 
 {
 	switch(type)
@@ -178,7 +201,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	//gnounc -- shub kill crash fix.
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
-	
+	dprint2("penetration: ",ftos(penetration)); endl();
 	if (attacker.entity_type == TYPE_PLAYER && attacker != targ)
 	{
 		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
@@ -198,8 +221,9 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	// check for quad damage powerup on the attacker
 	if (attacker.super_damage_finished > time)
 	{
-		damage = damage * 2;
-		penetration += 1;
+		damage = damage * 3;
+		if (penetration < 1)
+			penetration = 1;
 	}
 	
 	if (targ.entity_type == TYPE_PLAYER)
@@ -224,11 +248,26 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	{
 		float res;
 		float mit;
-		save = take * 0.2;
+	// minimal damage is lower on headshots
+		if (dflags & DF_HEADSHOT)
+			save = take * 0.1;
+		else
+			save = take * 0.2;
 		
 		if (fillArmorStats(targ.monstertype))
 			armorstats = A_NULL; // couldn't find proper type
-
+		
+	// player does more damage when shooting from behind
+	// we do this by increasing penetration power by 80% (addition, not multiplication)
+		if (attacker.entity_type == TYPE_PLAYER)
+		{
+		// i'm gonna use res here for angles difference, it's ugly but who cares
+			res = anglemod(targ.angles_y - attacker.angles_y); //
+			if (res < 75 || res > 285)
+				penetration += 0.8;
+			res = 0;
+		}
+		dprint2("penetration: ",ftos(penetration)); endl();
 		penetration = 1 - penetration;
 
 		if (dflags & DF_HEADSHOT)
@@ -247,20 +286,23 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			res = armorstats.explosives_resistance;
 			mit = 0;
 		}
-		dprint5("mit: ",ftos(mit)," res: ", ftos(res), "\n");
+		//dprint5("mit: ",ftos(mit)," res: ", ftos(res), "\n");
 		take -= mit * count;
 		if (take < save)
 			take = save;
-		dprint3("Damage mit: ",ftos(take), "\n");
+		//dprint3("Damage mit: ",ftos(take), "\n");
 		take *= (1 - res);
-		dprint3("Damage res: ",ftos(take), "\n");
+		//dprint3("Damage res: ",ftos(take), "\n");
 		if (take < save)
 			take = save;
 		take = ceil(take);
 	}
-	dprint3(attacker.classname, " - ", targ.classname);
-	dprint4(" HP:",ftos(targ.health), " head:",ftos(targ.health_head)); endl();
-	dprint3("Damage: ",ftos(take), "\n");
+	if (attacker.entity_type == TYPE_PLAYER)
+	{
+		dprint(targ.classname);
+		dprint4(" HP:",ftos(targ.health), " head:",ftos(targ.health_head)); endl();
+		dprint3("Damage: ",ftos(take), "\n");
+	}
 
 	// add to the damage total for clients, which will be sent as a single
 	// message at the end of the frame
@@ -342,8 +384,16 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	oldself = self;
 	self = targ;
 
-	if (self.flags & FL_MONSTER && attacker != world)
+	if (self.flags & FL_MONSTER && attacker.entity_type == TYPE_PLAYER)
 	{
+		if (self.enemy != attacker)
+		{
+			self.oldenemy = self.enemy;		
+			self.enemy = attacker;
+			FoundTarget ();
+		}
+		
+		/*
 		//get mad unless of the same class (except for soldiers)
 		if (self != attacker && attacker != self.enemy)
 		{
@@ -351,13 +401,19 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			{
 				if (self.enemy.classname == "player")
 					self.oldenemy = self.enemy;
-
+				
 				self.enemy = attacker;
 				FoundTarget ();
 			}
 		}
+		*/
 	}
-
+	
+	if (dflags & DF_EXPLOSION && self.monstertype == TYPE_OGRE && !(self.state & OGRE_NOWEAPON) && take == OGRE_LOSTWEAPON)
+	{
+			self.monsterflags |= MFL_LOSTWEAPON;
+	}
+	
 	if (self.th_pain)
 	{
 		self.th_pain (attacker, take);
@@ -401,6 +457,45 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 
 		if (points > 0)
 		{
+			if (CanDamage (head, inflictor))
+				T_Damage (head, inflictor, attacker, points, DF_EXPLOSION);
+		}
+		head = head.chain;
+	}
+};
+
+void(entity inflictor, entity attacker, float damage, entity ignore, float radius, float epicenter) T_RadiusDamagePlayer =
+{
+	local	float 	points;
+	local	entity	head;
+	local	vector	org;
+	local 	float	distancetotarget, distoutepicenter,fall,fallfraction;
+
+	head = findradius(inflictor.origin, radius);
+	
+	while (head)
+	{
+	//reset
+		
+		if ((head != ignore) && (head != attacker) && head.takedamage)
+		{
+			org = head.origin + (head.mins + head.maxs)*0.5;
+			distancetotarget = vlen (inflictor.origin - org);
+			
+			if ( distancetotarget <= epicenter ) 
+				points = damage;
+			else
+			{
+				fall = radius - epicenter;
+				distoutepicenter = distancetotarget - epicenter;
+				fallfraction = 1 - ( distoutepicenter / fall);
+				
+			// bug: fix for that stupid bug that heals monster for 1000 hp	
+				if (fallfraction < 0) 
+					fallfraction = 0; 
+				points = damage * fallfraction;
+			}
+
 			if (CanDamage (head, inflictor))
 				T_Damage (head, inflictor, attacker, points, DF_EXPLOSION);
 		}

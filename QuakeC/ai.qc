@@ -172,11 +172,11 @@ float(entity targ) range =
 	spot2 = targ.origin + targ.view_ofs;
 	
 	r = vlen (spot1 - spot2);
-	if (r < 120)
+	if (r < 96) // 128
 		return RANGE_MELEE;
 	if (r < 500)
 		return RANGE_NEAR;
-	if (r < 1000)
+	if (r < 2000)
 		return RANGE_MID;
 	return RANGE_FAR;
 };
@@ -234,7 +234,11 @@ void() HuntTarget =
 {
 	self.goalentity = self.enemy;
 	self.think = self.th_run;
-	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+	//self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+	if (self.monsterflags & MFL_CONFUSED)
+		self.ideal_yaw = vectoyaw(self.enemy.trail4 - self.origin);
+	else
+		self.ideal_yaw = vectoyaw(self.enemy.trail1 - self.origin);
 	self.nextthink = time + 0.1;
 	SUB_AttackFinished (1);	// wait a while before first attack
 };
@@ -645,7 +649,8 @@ void(float dist) ai_run =
 
 	enemy_infront = infront(self.enemy);
 	enemy_range = range(self.enemy);
-	enemy_yaw = vectoyaw(self.enemy.origin - self.origin);
+	//enemy_yaw = vectoyaw(self.enemy.origin - self.origin);
+	enemy_yaw = vectoyaw(self.enemy.trail1 - self.origin);
 	
 	if (self.attack_state == AS_MISSILE)
 	{

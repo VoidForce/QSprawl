@@ -136,6 +136,7 @@ void R_ParticleHead(vec3_t org,byte flesh);
 void R_LavaSplash (vec3_t org);
 void R_TeleportSplash (vec3_t org);
 void R_BulletTrail (vec3_t start, vec3_t end, int type);
+void R_LaserTrace(vec3_t start, vec3_t end, int color);
 void R_GaussTrail(vec3_t start, vec3_t end);
 void R_Impact(vec3_t org, vec3_t dir, int type);
 void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type);

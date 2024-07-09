@@ -102,19 +102,19 @@ void()	army_walk22	=[	$prowl_22,	army_walk23	] {setHead('7 1 22');ai_walk(1);}; 
 void()	army_walk23	=[	$prowl_23,	army_walk24	] {setHead('7 1 22');ai_walk(1);}; // 113
 void()	army_walk24	=[	$prowl_24,	army_walk1	] {setHead('7 1 21');ai_walk(1);}; // 114
 
-void()	army_run1	=[	$run1,		army_run2	] {setHead('7 1 21'); // 74
+void()	army_run1	=[	$run1,		army_run2	] {Think(0.06);setHead('7 1 21'); // 74
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "soldier/idle.wav", 1, ATTN_IDLE);
 	ai_run(11);
 };
 
-void()	army_run2	=[	$run2,		army_run3	] {setHead('6 0 22');ai_run(15);}; // 75
-void()	army_run3	=[	$run3,		army_run4	] {setHead('6 0 21');ai_run(10);}; // 76
-void()	army_run4	=[	$run4,		army_run5	] {setHead('6 0 21');ai_run(10);}; // 77
-void()	army_run5	=[	$run5,		army_run6	] {setHead('6 0 21');ai_run( 8);}; // 78
-void()	army_run6	=[	$run6,		army_run7	] {setHead('6 1 22');ai_run(15);}; // 79
-void()	army_run7	=[	$run7,		army_run8	] {setHead('6 1 21');ai_run(10);}; // 80
-void()	army_run8	=[	$run8,		army_run1	] {setHead('6 1 20');ai_run( 8);}; // 81
+void()	army_run2	=[	$run2,		army_run3	] {Think(0.06);setHead('6 0 22');ai_run(15);}; // 75
+void()	army_run3	=[	$run3,		army_run4	] {Think(0.06);setHead('6 0 21');ai_run(12);}; // 76
+void()	army_run4	=[	$run4,		army_run5	] {Think(0.06);setHead('6 0 21');ai_run(12);}; // 77
+void()	army_run5	=[	$run5,		army_run6	] {Think(0.06);setHead('6 0 21');ai_run(10);}; // 78
+void()	army_run6	=[	$run6,		army_run7	] {Think(0.06);setHead('6 1 22');ai_run(15);}; // 79
+void()	army_run7	=[	$run7,		army_run8	] {Think(0.06);setHead('6 1 21');ai_run(12);}; // 80
+void()	army_run8	=[	$run8,		army_run1	] {Think(0.06);setHead('6 1 20');ai_run(10);}; // 81
 
 void()	army_atk1	=[	$shoot1,	army_atk2	] {setHead('5 0 24');ai_face();};  // 82
 void()	army_atk2	=[	$shoot2,	army_atk3	] {setHead('2 1 24');ai_face();};  // 83
@@ -180,21 +180,21 @@ void(entity attacker, float damage)	army_pain =
 	{
 		self.pain_finished = time + 0.6;
 		army_pain1 ();
-		sound (self, CHAN_VOICE, "soldier/pain1.wav", 1, ATTN_NORM);
+		playPainSound("soldier/pain1.wav");
 	}
 
 	else if (r < 0.6)
 	{
 		self.pain_finished = time + 1.1;
 		army_painb1 ();
-		sound (self, CHAN_VOICE, "soldier/pain2.wav", 1, ATTN_NORM);
+		playPainSound("soldier/pain2.wav");
 	}
 
 	else
 	{
 		self.pain_finished = time + 1.1;
 		army_painc1 ();
-		sound (self, CHAN_VOICE, "soldier/pain2.wav", 1, ATTN_NORM);
+		playPainSound("soldier/pain2.wav");
 	}
 };
 
@@ -246,7 +246,7 @@ void(vector org, vector vec) LaunchLaser =
 
 	setorigin (newmis, org);
 
-	newmis.velocity = vec * 600;
+	newmis.velocity = vec * 900;
 	newmis.angles = vectoangles(newmis.velocity);
 
 	newmis.nextthink = time + 5;
@@ -362,6 +362,8 @@ void() army_die =
 		ThrowGib ("progs/gib1.mdl", self.lasthit_damage);
 		ThrowGib ("progs/gib2.mdl", self.lasthit_damage);
 		ThrowGib ("progs/gib3.mdl", self.lasthit_damage);
+		ThrowGib ("progs/smallgib.mdl", self.lasthit_damage);
+		ThrowGib ("progs/smallgib.mdl", self.lasthit_damage);
 		return;
 	}
 	

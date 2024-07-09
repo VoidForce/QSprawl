@@ -219,8 +219,7 @@ void(entity attacker, float damage) shalrath_pain =
 {
 	if (self.pain_finished > time)
 		return;
-
-	sound (self, CHAN_VOICE, "shalrath/pain.wav", 1, ATTN_NORM);
+	playPainSound("shalrath/pain.wav");
 	shal_pain1();
 	self.pain_finished = time + 3;
 };

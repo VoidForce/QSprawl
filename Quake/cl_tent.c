@@ -212,6 +212,17 @@ void CL_ParseTEnt (void)
 		R_BulletTrail(pos, pos2, flag);
 		break;
 
+	case TE_LASERTRACE:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		pos2[0] = MSG_ReadCoord(cl.protocolflags);
+		pos2[1] = MSG_ReadCoord(cl.protocolflags);
+		pos2[2] = MSG_ReadCoord(cl.protocolflags);
+		flag = MSG_ReadByte();
+		R_LaserTrace(pos, pos2, flag);
+		break;
+
 	case TE_IMPACT:
 		pos[0] = MSG_ReadCoord(cl.protocolflags);
 		pos[1] = MSG_ReadCoord(cl.protocolflags);

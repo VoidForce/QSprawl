@@ -47,7 +47,25 @@ $frame attacka9 attacka10 attacka11 attacka12 attacka13 attacka14 attacka15
 
 //============================================================================
 
-void()	Demon_JumpTouch;
+// if current origins is too close to old orgin assume that we stuck
+void() checkLeapOrigin = 
+{
+	float difference;
+
+	difference = fabs(self.origin_x - self.oldorigin_x);
+	difference += fabs(self.origin_y - self.oldorigin_y);
+	difference += fabs(self.origin_z - self.oldorigin_z);
+	
+	if (difference < 16)
+	{
+		self.fA = time + 1.5; // next leap try
+		self.nextthink = -1;
+		demon1_run1();
+		return;
+	}
+	
+	self.oldorigin = self.origin;
+};
 									  
 void()	demon1_stand1	= [$stand1,   demon1_stand2] {setHead('19 3 3'); ai_stand(); }; // 1
 void()	demon1_stand2	= [$stand2,   demon1_stand3] {setHead('19 3 3'); ai_stand(); }; // 2
@@ -77,59 +95,84 @@ void()	demon1_walk6	=[	$walk6,	demon1_walk7 ] {setHead('23 3 5'); ai_walk(6);  }
 void()	demon1_walk7	=[	$walk7,	demon1_walk8 ] {setHead('23 3 5'); ai_walk(10); }; // 20
 void()	demon1_walk8	=[	$walk8,	demon1_walk1 ] {setHead('23 3 5'); ai_walk(10); }; // 21
 
-void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); // 22
+void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); ai_run(20); Think(0.075); // 22
 	if (random() < 0.2)
 	    sound (self, CHAN_VOICE, "demon/idle1.wav", 1, ATTN_IDLE);
-	ai_run(20);
 };
 
-void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_run(15); Think(0.075); }; // 23
-void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(36); Think(0.075); }; // 24
-void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_run(20); Think(0.075); }; // 25
-void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_run(15); Think(0.075); }; // 26
-void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(36); Think(0.075); }; // 27
+void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_run(15); ai_charge_side(); Think(0.075); }; // 23
+void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(15); ai_charge_side(); Think(0.075); }; // 24 // run 36
+void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_run(20); ai_charge_side(); Think(0.075); }; // 25
+void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_run(15); ai_charge_side(); Think(0.075); }; // 26
+void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(15); ai_charge_side(); Think(0.075); }; // 27 // run 36
 
-void()	demon1_jump1	=[	$leap1,		demon1_jump2	] {setHead('22 4 4');  ai_face(); Think(0.05);  }; // 28
-void()	demon1_jump2	=[	$leap2,		demon1_jump3	] {setHead('25 2 22'); ai_face(); Think(0.075); }; // 29
-void()	demon1_jump3	=[	$leap3,		demon1_jump4	] {setHead('13 3 37'); ai_face(); Think(0.075); }; // 30
-void()	demon1_jump4	=[	$leap4,		demon1_jump5	] {setHead('11 3 38'); ai_face(); Think(0.075);    // 31
+void()	demon1_jump1	=[	$leap1,		demon1_jump2	] 
+{
+	setHead('22 4 4');
+	Think(0.05);
+	ai_face_instant();
 	
-	self.touch = Demon_JumpTouch;
-	makevectors2 (self.angles);
-	self.origin_z = self.origin_z + 1;
-	self.velocity = v_forward * 600 + '0 0 250';
-
+	self.velocity_z = 270;
 	if (self.flags & FL_ONGROUND)
 		self.flags = self.flags - FL_ONGROUND;
-};
+	self.fA = time + 3; // next leap try
+	self.touch = Demon_PushTouch;
+	self.oldorigin = '0 0 0';
+}; // 28
 
-void()	demon1_jump5	=[	$leap5,		demon1_jump6	] {setHead('13 3 37'); Think(0.075); }; // 32
-void()	demon1_jump6	=[	$leap6,		demon1_jump7	] {setHead('11 3 42'); Think(0.075); }; // 33
-void()	demon1_jump7	=[	$leap7,		demon1_jump8	] {setHead('11 3 42'); Think(0.075); }; // 34
-void()	demon1_jump8	=[ 	$leap8,		demon1_jump9	] {setHead('11 3 43'); Think(0.075); }; // 35
-void()	demon1_jump9	=[ 	$leap9,		demon1_jump10	] {setHead('12 3 42'); Think(0.075); }; // 36
-void()	demon1_jump10	=[ 	$leap10,	demon1_jump1	] {setHead('20 3 35');	 // 37
-self.nextthink = time + 3; // if three seconds pass, assume demon is stuck and jump again
-};
-void()	demon1_jump11	=[ 	$leap11,	demon1_jump12	] {setHead('20 3 29');};  // 38
+void()	demon1_jump2	=[	$leap2,		demon1_jump3	] 
+{
+	vector dir;
+	float oldz;
+	
+	setHead('25 2 22');
+	ai_face();
+	Think(0.075);
+
+	dir = SUB_GetPlayerDirection(self.origin, self.enemy);
+	oldz = self.velocity_z;
+	self.velocity = normalize (dir);
+	self.velocity = self.velocity * 800;
+	self.vA = self.velocity; //save initial leap velocity
+	self.velocity_z = oldz + 40;
+	if (self.flags & FL_ONGROUND)
+		self.flags = self.flags - FL_ONGROUND;
+}; // 29
+
+void()	demon1_jump3	=[	$leap3,		demon1_jump4	] {setHead('13 3 37'); Think(0.075); self.velocity = self.vA; self.velocity_z += 40;}; // 30
+void()	demon1_jump4	=[	$leap4,		demon1_jump5	] {setHead('11 3 38'); Think(0.075); ai_face(); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 40;}; // 31
+void()	demon1_jump5	=[	$leap5,		demon1_jump6	] {setHead('13 3 37'); Think(0.075); ai_face(); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 35; }; // 32
+void()	demon1_jump6	=[	$leap6,		demon1_jump7	] {setHead('11 3 42'); Think(0.075); ai_face(); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 30; }; // 33
+void()	demon1_jump7	=[	$leap7,		demon1_jump8	] {setHead('11 3 42'); Think(0.075); ai_face(); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 25;
+	self.touch = Demon_JumpTouch;
+	self.monsterflags |= MFL_FIENDTOUCH; // can we touch and deal damage? Yes we can!
+}; // 34
+void()	demon1_jump8	=[ 	$leap8,		demon1_jump9	] {setHead('11 3 43'); Think(0.075); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 20;}; // 35
+void()	demon1_jump9	=[ 	$leap9,		demon1_jump10	] {setHead('12 3 42'); Think(0.075); checkLeapOrigin(); self.velocity = self.vA; self.velocity_z += 15;}; // 36
+void()	demon1_jump10	=[ 	$leap10,	demon1_jump11	] {setHead('20 3 35'); checkLeapOrigin(); Think(3); };// 37
+void()	demon1_jump11	=[ 	$leap11,	demon1_jump12	] {setHead('20 3 29');
+	checkLeapOrigin();
+	self.fA = time + 3.0; // next leap try
+};  // 38
 void()	demon1_jump12	=[ 	$leap12,	demon1_run1	] {setHead('22 3 28');}; // 39
 
 
-void()	demon1_atta1	=[	$attacka1,	demon1_atta2 ] {Think(0.075); setHead('21 3 22');  ai_charge(4); }; // 55
-void()	demon1_atta2	=[	$attacka2,	demon1_atta3 ] {Think(0.075); setHead('18 -2 25'); ai_charge(0); }; // 56
-void()	demon1_atta3	=[	$attacka3,	demon1_atta4 ] {Think(0.075); setHead('15 -2 26'); ai_charge(0); }; // 57
-void()	demon1_atta4	=[	$attacka4,	demon1_atta5 ] {Think(0.075); setHead('15 -2 26'); ai_charge(1); }; // 58
-void()	demon1_atta5	=[	$attacka5,	demon1_atta6 ] {Think(0.075); setHead('17 1 25');  ai_charge(2); Demon_Melee(200); }; // 59
-void()	demon1_atta6	=[	$attacka6,	demon1_atta7 ] {Think(0.075); setHead('21 2 19');  ai_charge(1); }; // 60
-void()	demon1_atta7	=[	$attacka7,	demon1_atta8 ] {Think(0.075); setHead('22 9 19');  ai_charge(6); }; // 61
-void()	demon1_atta8	=[	$attacka8,	demon1_atta9 ] {Think(0.075); setHead('22 9 19');  ai_charge(8); }; // 62
-void()	demon1_atta9	=[	$attacka9,	demon1_atta10] {Think(0.075); setHead('21 9 19');  ai_charge(4); }; // 63
-void()	demon1_atta10	=[	$attacka10,	demon1_atta11] {Think(0.075); setHead('22 7 17');  ai_charge(2); }; // 64
-void()	demon1_atta11	=[	$attacka11,	demon1_atta12] {Think(0.075); setHead('22 4 15');  Demon_Melee(-200); }; // 65
-void()	demon1_atta12	=[	$attacka12,	demon1_atta13] {Think(0.075); setHead('20 -3 15'); ai_charge(5); }; // 66
-void()	demon1_atta13	=[	$attacka13,	demon1_atta14] {Think(0.075); setHead('19 -6 15'); ai_charge(8); }; // 67
-void()	demon1_atta14	=[	$attacka14,	demon1_atta15] {Think(0.075); setHead('19 -5 12'); ai_charge(4); }; // 68
-void()	demon1_atta15	=[	$attacka15,	demon1_run1]   {Think(0.075); setHead('19 -2 15'); ai_charge(4); }; // 69
+void()	demon1_atta1	=[	$attacka1,	demon1_atta2 ] {Think(0.03); setHead('21 3 22');  ai_charge_side(); }; // 55
+void()	demon1_atta2	=[	$attacka2,	demon1_atta3 ] {Think(0.03); setHead('18 -2 25'); ai_charge_side(); }; // 56
+void()	demon1_atta3	=[	$attacka3,	demon1_atta4 ] {Think(0.03); setHead('15 -2 26'); ai_charge_side(); }; // 57
+void()	demon1_atta4	=[	$attacka4,	demon1_atta5 ] {Think(0.03); setHead('15 -2 26'); ai_charge_side(); }; // 58
+void()	demon1_atta5	=[	$attacka5,	demon1_atta6 ] {Think(0.06); setHead('17 1 25');  ai_charge_side(); Demon_Melee(200); }; // 59
+void()	demon1_atta6	=[	$attacka6,	demon1_atta7 ] {Think(0.06); setHead('21 2 19');  ai_charge_side(); }; // 60
+void()	demon1_atta7	=[	$attacka7,	demon1_atta8 ] {Think(0.06); setHead('22 9 19');  ai_charge_side(); }; // 61
+void()	demon1_atta8	=[	$attacka8,	demon1_atta9 ] {Think(0.06); setHead('22 9 19');  ai_charge_side(); }; // 62
+void()	demon1_atta9	=[	$attacka9,	demon1_run1] {Think(0.06); setHead('21 9 19');    ai_charge_side(); }; // 63
+
+void()	demon1_atta10	=[	$attacka10,	demon1_atta11] {Think(0.06); setHead('22 7 17');  ai_charge_side(); }; // 64
+void()	demon1_atta11	=[	$attacka11,	demon1_atta12] {Think(0.06); setHead('22 4 15');  ai_charge_side(); Demon_Melee(-200); }; // 65
+void()	demon1_atta12	=[	$attacka12,	demon1_atta13] {Think(0.06); setHead('20 -3 15'); ai_charge_side(); }; // 66
+void()	demon1_atta13	=[	$attacka13,	demon1_atta14] {Think(0.06); setHead('19 -6 15'); ai_charge_side(); }; // 67
+void()	demon1_atta14	=[	$attacka14,	demon1_atta15] {Think(0.06); setHead('19 -5 12'); ai_charge_side(); }; // 68
+void()	demon1_atta15	=[	$attacka15,	demon1_run1]   {Think(0.06); setHead('19 -2 15'); ai_charge_side(); }; // 69
 
 void()	demon1_pain1	=[	$pain1,	demon1_pain2] {setHead('6 -3 24');}; // 40
 void()	demon1_pain2	=[	$pain2,	demon1_pain3] {setHead('2 -2 25');}; // 41
@@ -147,7 +190,7 @@ void(entity attacker, float damage)	demon1_pain =
 		return;
 
 	self.pain_finished = time + 1;
-    sound (self, CHAN_VOICE, "demon/dpain1.wav", 1, ATTN_NORM);
+	playPainSound("demon/dpain1.wav");
 
 	if (random()*200 > damage)
 		return;		// didn't flinch
@@ -194,7 +237,16 @@ void() demon_die =
 
 void() Demon_MeleeAttack =
 {
-	demon1_atta1 ();
+	if (self.fC)
+	{
+		self.fC = 0;
+		demon1_atta1 ();
+	}
+	else
+	{
+		self.fC = 1;
+		demon1_atta10 ();
+	}
 };
 
 
@@ -229,6 +281,9 @@ float()	CheckDemonJump =
 {
 	local	vector	dist;
 	local	float	d;
+	
+	if (self.fA > time) 
+		return FALSE;
 
 	if (self.origin_z + self.mins_z > self.enemy.origin_z + self.enemy.mins_z + 0.75 * self.enemy.size_z)
 		return FALSE;
@@ -243,12 +298,6 @@ float()	CheckDemonJump =
 	
 	if (d < 100)
 		return FALSE;
-		
-	if (d > 200)
-	{
-		if (random() < 0.9)
-			return FALSE;
-	}
 		
 	return TRUE;
 };
@@ -278,8 +327,7 @@ float()	DemonCheckAttack =
 
 void(float side)	Demon_Melee =
 {
-	local	float	ldmg;
-	local vector	delta;
+	vector delta;
 	
 	ai_face ();
 	walkmove (self.ideal_yaw, 12);	// allow a little closing
@@ -293,47 +341,62 @@ void(float side)	Demon_Melee =
 		return;
 		
     sound (self, CHAN_WEAPON, "demon/dhit2.wav", 1, ATTN_NORM);
-	ldmg = 10 + 5*random();
-	T_Damage (self.enemy, self, self, ldmg, 0);	
+	T_Damage (self.enemy, self, self, 5 + random() * 3, 0);	
+	T_Push (other, self, 600, 150);
 
 	makevectors2 (self.angles);
 	SpawnMeatSpray (self.origin + v_forward*16, side * v_right);
 };
 
+void() Demon_PushTouch =
+{
+	T_Damage (other, self, self, 5, NOFLAGS); 	
+	T_Push (other, self, 600, 150);
+};
 
 void()	Demon_JumpTouch =
 {
-	local	float	ldmg;
+	local	float	leapdmg;
 
 	if (self.health <= 0)
 		return;
-		
-	if (other.takedamage)
+	
+	if (other.takedamage && (self.monsterflags & MFL_FIENDTOUCH))
 	{
-		if ( vlen(self.velocity) > 400 )
-		{
-			ldmg = 40 + 10*random();
-			T_Damage (other, self, self, ldmg, 0);	
-		}
+		leapdmg = 30 + 5*random();
+		T_Damage (other, self, self, leapdmg, NOFLAGS); 	
+		self.monsterflags -= self.monsterflags & MFL_FIENDTOUCH;
+		self.counter = 0;
+		T_Push (other, self, 600, 150);
 	}
 
 	if (!checkbottom(self))
 	{
 		if (self.flags & FL_ONGROUND)
-		{	// jump randomly to not get hung up
+		{
+			self.counter++;
+
+			if (self.counter > 3)
+			{
+				self.fA = time + 3.0;
+				self.counter = 0;
+				self.touch = SUB_Null;
+				self.think = demon1_run1;
+				self.nextthink = time + 0.1;
+				return;
+			}
 			self.touch = SUB_Null;
 			self.think = demon1_jump1;
 			self.nextthink = time + 0.1;
 		}
-
 		return;	// not on ground yet
 	}
 
 	self.touch = SUB_Null;
-	self.think = demon1_jump11;
+	//self.think = demon1_jump4;
+	self.think = demon1_run1;
 	self.nextthink = time + 0.1;
 };
-
 
 /*QUAKED monster_demon1 (1 0 0) (-32 -32 -24) (32 32 64) Ambush*/
 void() monster_demon1 =
@@ -364,7 +427,7 @@ void() monster_demon1 =
 	self.noise = "demon/sight2.wav";
 	self.killstring = " was eviscerated by a Fiend\n";
 
-	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
+	setsize (self, '-32 -32 -24', '32 32 50');
 	self.head_offset = '19 3 6';
 	self.head_size = 8;
 	self.health = FIEND_HEALTH;

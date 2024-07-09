@@ -321,26 +321,14 @@ some monsters refire twice automatically*/
 
 void(float normal) SUB_AttackFinished =
 {
-	self.cnt = 0;		// refire count for nightmare
-
-	if (skill != 3)
-		self.attack_finished = time + normal;
+	self.attack_finished = time + normal;
 };
-
-float (entity targ) visible;
 
 void (void() thinkst) SUB_CheckRefire =
 {
-	if (skill != 3)
-		return;
-
-	if (self.cnt == 1)
-		return;
-
 	if (!visible (self.enemy))
 		return;
 
-	self.cnt = 1;
 	self.think = thinkst;
 };
 
@@ -617,6 +605,10 @@ void() endl =
 	
 void(vector a, vector b, float flag, vector c) sendMessageImpact =
 {
+	// don't send the impact hole message if normal is not specified
+	if (flag && flag < 4 && c == VEC_ORIGIN)
+		return;
+		
 	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
 	WriteByte (MSG_BROADCAST, TE_IMPACT);
 	WriteCoord (MSG_BROADCAST, a_x);
@@ -736,7 +728,7 @@ vector(float dm) VelocityForDamage =
 	v_y = 100 * crandom();
 	v_z = 100 + 100 * random();
 
-	return lerpVector(v, v * 6, dm/400);
+	return lerpVector(v*2, v * 4, dm/400);
 };
 
 void(string gibname, vector direction) ThrowGibDirection =
@@ -797,15 +789,15 @@ void(string gibname, float dm) ThrowGib =
 	local	entity new;
 
 	new = spawn();
-	new.origin = self.origin + [crandom()*6, crandom()*6, crandom()*4];
+	new.origin = self.origin + [crandom()*24, crandom()*24, crandom()*32];
 	setmodel (new, gibname);
 	setsize (new, '0 0 0', '0 0 0');
 	new.velocity = VelocityForDamage (dm);
 	new.movetype = MOVETYPE_BOUNCE;
 	new.solid = SOLID_NOT;
-	new.avelocity_x = random()*30;
+	new.avelocity_x = random()*300;
 	new.avelocity_y = random()*600;
-	new.avelocity_z = random()*30;
+	new.avelocity_z = random()*300;
 	new.think = decay;
 	new.ltime = time;
 	new.nextthink = time + 7 + random()*5;
@@ -900,7 +892,21 @@ void() decay = //remove corpses
 	self.fadecount -= 1;
 };
 
-void (float timer) Think =
+inline void (float timer) Think =
 {
 	self.nextthink = time + timer;
 };
+
+vector(vector start, entity player) SUB_GetPlayerDirection =
+{
+	return normalize(player.origin - start);
+};
+
+void (string soundname, float timer = 1) playPainSound =
+{
+	if (self.painsound_time < time)
+	{
+		self.painsound_time = time + timer;
+		sound (self, CHAN_VOICE, soundname, 1, ATTN_NORM);
+	}
+}

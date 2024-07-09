@@ -78,22 +78,68 @@ $frame paind9 paind10 paind11 paind12 paind13 paind14 paind15 paind16
 $frame paind17 paind18 paind19
 
 
+void(float normal) Enforcer_AttackFinished =
+{
+	self.attack_finished = time + normal;
+};
+
+void (void() thinkst) Enforcer_CheckRefire =
+{
+	if (self.monster_ammo < 1)
+	{
+		self.monster_ammo = 6;
+		self.attack_finished = time + 4;
+		return;
+	}
+	if (!visible (self.enemy))
+		return;
+	
+	self.think = thinkst;
+};
+
+void(vector org, vector dir) launchShrapnel = 
+{ 
+	local entity shrapnel;
+
+	shrapnel = spawn();
+	shrapnel.owner = self;
+	shrapnel.movetype = MOVETYPE_FLYMISSILE;
+	shrapnel.solid = SOLID_BBOX;
+	shrapnel.angles = vectoangles(dir);
+	shrapnel.touch = spike_touch;
+	shrapnel.classname = "spike";
+	shrapnel.think = SUB_Remove;
+	shrapnel.nextthink = time + 6;
+	setmodel(shrapnel, "progs/shrapnel.mdl");
+	setsize(shrapnel, '0 0 0', '0 0 0');
+	setorigin(shrapnel, org);
+	shrapnel.velocity = dir * 1800;
+	//shrapnel.avelocity = [random() * 200, random() * 200, random() * 200];
+};
+
 void() enforcer_fire =
 {
-	local	vector	dir;
-	local	entity	en;
+	vector	dir;
+	vector org;
+	float i;
+	float ri,rr; // random index and random radius
 	
 	ai_face();
 	
 	sound (self, CHAN_WEAPON, "soldier/sattck1.wav", 1, ATTN_NORM);	
-
-	// fire somewhat behind the player, so a dodging player is harder to hit
-	en = self.enemy;
-	
-	dir = en.origin - en.velocity*0.2;
-	dir = normalize (dir - self.origin);
-	
-	FireBullets (4, dir, '0.1 0.1 0', 4);
+	makevectors2(vectoangles([self.enemy.origin_x,self.enemy.origin_y,self.enemy.origin_z + self.enemy.view_ofs_z] - [self.origin_x,self.origin_y,self.origin_z + 16]));
+	for (i = 0; i < 10; i++)
+	{
+		ri = rint(random() * 15);
+		if ( i < 5)
+			rr = 20;
+		else
+			rr = 50;
+		dir = normalize( v_forward * 1000 + v_up * CIRCLEY[ri] * rr + v_right * CIRCLEX[ri] * rr);
+		org = self.origin + v_forward * 23 + v_right * 8 + '0 0 16'; // starting point offset to match gun barrel
+		launchShrapnel(org, dir);
+	}
+	self.monster_ammo--;
 };
 
 //============================================================================
@@ -138,28 +184,28 @@ void()	enf_run1	=[	$run1  ,	enf_run2	]
 	self.head_offset = '3 -1 29';
 };
 
-void()	enf_run2	=[	$run2  ,	enf_run3	] {ai_run(14);setHead('3 -1 27');};
-void()	enf_run3	=[	$run3  ,	enf_run4	] {ai_run(7); setHead('4 -1 26');}; //26;
-void()	enf_run4	=[	$run4  ,	enf_run5	] {ai_run(12);setHead('3 1.5 26.5');};
-void()	enf_run5	=[	$run5  ,	enf_run6	] {ai_run(14);setHead('2.5 3 28');};
-void()	enf_run6	=[	$run6  ,	enf_run7	] {ai_run(14);setHead('3 3 27');};
-void()	enf_run7	=[	$run7  ,	enf_run8	] {ai_run(7); setHead('5 3 26');};
-void()	enf_run8	=[	$run8  ,	enf_run1	] {ai_run(11);setHead('3 1 27');};
+void()	enf_run2	=[	$run2  ,	enf_run3	] {Think(0.06); ai_run(14);setHead('3 -1 27');};
+void()	enf_run3	=[	$run3  ,	enf_run4	] {Think(0.06); ai_run(7); setHead('4 -1 26');}; //26;
+void()	enf_run4	=[	$run4  ,	enf_run5	] {Think(0.06); ai_run(12);setHead('3 1.5 26.5');};
+void()	enf_run5	=[	$run5  ,	enf_run6	] {Think(0.06); ai_run(14);setHead('2.5 3 28');};
+void()	enf_run6	=[	$run6  ,	enf_run7	] {Think(0.06); ai_run(14);setHead('3 3 27');};
+void()	enf_run7	=[	$run7  ,	enf_run8	] {Think(0.06); ai_run(7); setHead('5 3 26');};
+void()	enf_run8	=[	$run8  ,	enf_run1	] {Think(0.06); ai_run(11);setHead('3 1 27');};
 
 void()	enf_atk1	=[	$attack1,	enf_atk2	] {ai_face();setHead('-9 4 29');};
 void()	enf_atk2	=[	$attack2,	enf_atk3	] {ai_face();setHead('-9 3 27');}; //33
 void()	enf_atk3	=[	$attack3,	enf_atk4	] {ai_face();setHead('-9 2 26');};
 void()	enf_atk4	=[	$attack4,	enf_atk5	] {ai_face();setHead('-8 2 26');};
 void()	enf_atk5	=[	$attack5,	enf_atk6	] {ai_face();setHead('-6 2 26');}; //36
-void()	enf_atk6	=[	$attack6,	enf_atk7	] {enforcer_fire();setHead('-5 1 26');};
-void()	enf_atk7	=[	$attack7,	enf_atk8	] {ai_face();setHead('-15 1 23');};
-void()	enf_atk8	=[	$attack8,	enf_atk9	] {ai_face();setHead('-15 1 23');}; // 39
-void()	enf_atk9	=[	$attack5,	enf_atk10	] {ai_face();setHead('-6 2 26');}; // frame 36 repeats
-void()	enf_atk10	=[	$attack6,	enf_atk11	] {enforcer_fire();setHead('-5 1 26');};
+void()	enf_atk6	=[	$attack6,	enf_atk11	] {enforcer_fire();setHead('-5 1 26');};
+//void()	enf_atk7	=[	$attack7,	enf_atk8	] {ai_face();setHead('-15 1 23');};
+//void()	enf_atk8	=[	$attack8,	enf_atk9	] {ai_face();setHead('-15 1 23');}; // 39
+//void()	enf_atk9	=[	$attack5,	enf_atk10	] {ai_face();setHead('-6 2 26');}; // frame 36 repeats
+//void()	enf_atk10	=[	$attack6,	enf_atk11	] {enforcer_fire();setHead('-5 1 26');};
 void()	enf_atk11	=[	$attack7,	enf_atk12	] {ai_face();setHead('-15 1 23');};
 void()	enf_atk12	=[	$attack8,	enf_atk13	] {ai_face();setHead('-15 1 23');};
 void()	enf_atk13	=[	$attack9,	enf_atk14	] {ai_face();setHead('-11.5 1.5 24');}; //40
-void()	enf_atk14	=[	$attack10,	enf_run1	] {ai_face();setHead('-8 2 25');SUB_CheckRefire (enf_atk1);}; //41
+void()	enf_atk14	=[	$attack10,	enf_run1	] {ai_face();setHead('-8 2 25');Enforcer_CheckRefire (enf_atk1);}; //41
 // 42- 66 death
 void()	enf_paina1	=[	$paina1,	enf_paina2	] {setHead('-15 5 27');}; //67
 void()	enf_paina2	=[	$paina2,	enf_paina3	] {setHead('-17 5 27');};
@@ -210,9 +256,9 @@ void(entity attacker, float damage)	enf_pain =
 		return;
 
 	if (r < 0.5)
-		sound (self, CHAN_VOICE, "enforcer/pain1.wav", 1, ATTN_NORM);
+		playPainSound("enforcer/pain1.wav");
 	else
-		sound (self, CHAN_VOICE, "enforcer/pain2.wav", 1, ATTN_NORM);
+		playPainSound("enforcer/pain2.wav");
 	
 	if (self.monsterflags & MFL_PAIN_HEADSHOT)
 	{
@@ -367,6 +413,7 @@ void() monster_enforcer =
 	self.health_head = ENFORCER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_ENFORCER;
+	self.monster_ammo = 6;
 	self.gib_threshold = 100;
 
 	self.th_stand = enf_stand1;

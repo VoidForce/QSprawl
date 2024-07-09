@@ -95,6 +95,24 @@ void(entity missile, float mspeed, float accuracy) LaunchMissile =
 	missile.think = SUB_Remove;	
 };
 
+void() wizzard_fire =
+{
+	local	vector	dir;
+	local	entity	en;
+	
+	ai_face();
+	
+	sound (self, CHAN_WEAPON, "wizard/wattack.wav", 1, ATTN_NORM);	
+
+	// fire somewhat behind the player, so a dodging player is harder to hit
+	en = self.enemy;
+	
+	dir = en.origin - en.velocity*0.2;
+	dir = normalize (dir - self.origin);
+	
+	FireBullets (1, dir, '0.1 0.1 0', 4);
+	sendMessageVecVecFlag(self.origin, trace_endpos, MF_SMG, TE_BULLETTRACE);
+};
 
 void() wiz_run1;
 void() wiz_side1;
@@ -399,7 +417,7 @@ void() wiz_die =
 
 void(entity attacker, float damage) Wiz_Pain =
 {
-	sound (self, CHAN_VOICE, "wizard/wpain.wav", 1, ATTN_NORM);
+	playPainSound("wizard/wpain.wav");
 	if (random()*70 > damage)
 		return;		// didn't flinch
 
@@ -457,7 +475,7 @@ void() monster_wizard =
 	self.th_stand = wiz_stand1;
 	self.th_walk = wiz_walk1;
 	self.th_run = wiz_run1;
-	self.th_missile = Wiz_Missile;
+	self.th_missile = wizzard_fire;//Wiz_Missile;
 	self.th_pain = Wiz_Pain;
 	self.th_die = wiz_die;
 	self.yaw_speed = 75;

@@ -241,7 +241,14 @@ void() fire_touch =
 
 void() barrel_explode =
 {
-	self.takedamage = DAMAGE_NO;
+// hack to prevent gauss traceline being overwritten by radius damage 
+	if (self.takedamage == DAMAGE_AIM)
+	{
+		self.takedamage = DAMAGE_NO;
+		self.nextthink = time + 0.05;
+		self.think = barrel_explode;
+		return;
+	}
 	self.classname = "explo_box";
 	// did say self.owner..i believe it meant to say enemy. now properly tracks who shot the barrel	--gnounc
 	T_RadiusDamage (self, self.enemy, 160, world);
@@ -263,12 +270,17 @@ void() misc_explobox =
 	
 	self.solid = SOLID_BBOX;
 	self.movetype = MOVETYPE_NONE;
-	precache_model ("maps/b_explob.bsp");
-	setmodel (self, "maps/b_explob.bsp");
+	
+	//precache_model ("maps/b_explob.bsp");
+	//setmodel (self, "maps/b_explob.bsp");
+	precache_model ("progs/explode_box1.mdl");
+	setmodel (self, "progs/explode_box1.mdl");
+	setsize (self, '-15 -15 0', '15 15 64');
 	precache_sound ("weapons/r_exp3.wav");
 	self.health = 20;
 	self.th_die = barrel_explode;
 	self.takedamage = DAMAGE_AIM;
+	self.flags |= FL_EXPLOBOX;
 
 	//gnounc
 	self.netname = "exploding barrel";
@@ -299,12 +311,16 @@ void() misc_explobox2 =
 	
 	self.solid = SOLID_BBOX;
 	self.movetype = MOVETYPE_NONE;
-	precache_model2 ("maps/b_exbox2.bsp");
-	setmodel (self, "maps/b_exbox2.bsp");
+	//precache_model2 ("maps/b_exbox2.bsp");
+	//setmodel (self, "maps/b_exbox2.bsp");
+	precache_model ("progs/explode_box2.mdl");
+	setmodel (self, "progs/explode_box2.mdl");
+	setsize (self, '-15 -15 0', '15 15 32');
 	precache_sound ("weapons/r_exp3.wav");
 	self.health = 20;
 	self.th_die = barrel_explode;
 	self.takedamage = DAMAGE_AIM;
+	self.flags |= FL_EXPLOBOX;
 
 	//gnounc
 	self.netname = "exploding barrel";

@@ -67,6 +67,12 @@ $frame pull1 pull2 pull3 pull4 pull5 pull6 pull7 pull8 pull9 pull10 pull11
 
 //=============================================================================
 
+enumflags OGRESTATE {
+	OGRE_IDLE,
+	OGRE_SNIPER,
+	OGRE_NOWEAPON,
+	OGRE_FAST
+};
 
 void() OgreGrenadeExplode =
 {
@@ -79,7 +85,7 @@ void() OgreGrenadeExplode =
 	WriteCoord (MSG_BROADCAST, self.origin_x);
 	WriteCoord (MSG_BROADCAST, self.origin_y);
 	WriteCoord (MSG_BROADCAST, self.origin_z);
-
+	//dprint3(" actual travel time: ", ftos(time - self.attack_finished), "\n");
 	self.velocity = '0 0 0';
 	self.touch = SUB_Null;
 	setmodel (self, "progs/s_explod.spr");
@@ -109,55 +115,74 @@ void() OgreGrenadeTouch =
 OgreFireGrenade
 ================
 */
+#define OGRE_NADE_VEL 900
+// 1184 //45 // 1024
+// 608 //90 
+// 320 //45
+
+// 1070 314 1.68 - 45d
+// 
+// 350 distance with 0 angle
 void() OgreFireGrenade =
 {
-	local	entity missile;
+	entity missile;
+	vector dir;
 	
-	self.effects = self.effects | EF_MUZZLEFLASH;
-
-	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
+	float distance, ttime, blast_time;
+	vector start, end, base_forward,;
+	
+	if (self.state & OGRE_NOWEAPON)
+		return;
+	makevectors2(self.angles);
+	base_forward = v_forward;
+	blast_time = 2.5;
+	if (self.state & OGRE_SNIPER)
+	{
+		start = self.origin + v_forward * 70 + v_up * 37;
+		distance = vlen(self.origin - self.enemy.origin);
+		ttime = distance / 1000; // simplified travel time
+		dprint3("dist ",ftos(distance), " time ");
+		dprint(ftos(ttime));endl();
+		end = self.enemy.origin + self.enemy.velocity * (ttime - 0.1);
+		dir = vectoangles(end - start);
+		dir_x = dir_x + 25 * ttime;
+		dprint2("angle: ",ftos(dir_x));endl();
+		//if (dir_x > 89)
+		//	dir_x = 89;
+		makevectors2(dir);
+		dir = lerpv(v_forward, [v_forward_x, base_forward_y, v_forward_z], 0.5);
+		blast_time = ttime + 0.15;
+	}
+	else if (self.monsterflags & MFL_HASHEAD)
+	{
+		start = self.origin + v_forward * 70 + v_up * 37;
+		end = self.enemy.trail2 + [random() * 8, random() * 8, 0];
+		dir = normalize((end - start) + '0 0 64');
+	}
+	else
+		dir = normalize([v_forward_x + crandom() * 0.5 , v_forward_y + crandom() * 0.5, v_forward_z + crandom() * 0.5]);
 
 	missile = spawn ();
-	missile.classname = "ogre_grenade";	//gnounc
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
-		
-// set missile speed	
-
-	makevectors2 (self.angles);
-
-	missile.velocity = normalize(self.enemy.origin - self.origin);
-	missile.velocity = missile.velocity * 600;
-	missile.velocity_z = 200;
-
+	missile.velocity = dir * OGRE_NADE_VEL;
 	missile.avelocity = '300 300 300';
-
 	missile.angles = vectoangles(missile.velocity);
-	
 	missile.touch = OgreGrenadeTouch;
-	
-// set missile duration
-	missile.nextthink = time + 2.5;
+	missile.nextthink = time + blast_time;
 	missile.think = OgreGrenadeExplode;
-
+	//missile.attack_finished = time;
 	setmodel (missile, "progs/grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
-	setorigin (missile, self.origin + v_forward * 70 + v_up * 37);
+	setorigin (missile, self.origin + v_forward * 31 + v_up * 37);
 	missile.isgrenade = 1;
 	appendToList(missile);
+	
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
 };
 
-
-//=============================================================================
-
-/*
-================
-chainsaw
-
-FIXME
-================
-*/
 void(float side) chainsaw =
 {
 local vector	delta;
@@ -188,7 +213,6 @@ local float 	ldmg;
 			SpawnMeatSpray (self.origin + v_forward*16, side * v_right);
 	}
 };
-
 
 void() ogre_stand1	=[	$stand1,	ogre_stand2	] {setHead('3 2 45');ai_stand();}; // frame 1 stand
 void() ogre_stand2	=[	$stand2,	ogre_stand3	] {setHead('3 2 45');ai_stand();}; // 2
@@ -235,76 +259,116 @@ void() ogre_walk14	=[	$walk14,	ogre_walk15	] {setHead('9 4 44');ai_walk(3);}; //
 void() ogre_walk15	=[	$walk15,	ogre_walk16	] {setHead('6 4 44');ai_walk(3);}; // 24
 void() ogre_walk16	=[	$walk16,	ogre_walk1	] {setHead('6 4 44');ai_walk(4);}; // 25
 
-void() ogre_run1	=[	$run1,		ogre_run2	] {setHead('11 -2 42'); // 26 run
+
+void() ogre_run	
+{
+	if (random() < 0.2)
+		sound (self, CHAN_VOICE, "ogre/ogidle2.wav", 1, ATTN_IDLE);
+	
+	if (self.state & OGRE_FAST)
+		ogre_run1();
+	else
+		ogre_run_slow1();
+};
+
+void() ogre_run1	=[	$run1,		ogre_run2	] {Think(0.075);setHead('11 -2 42'); // 26 run
 	ai_run(9);
 
 	if (random() < 0.2)
 		sound (self, CHAN_VOICE, "ogre/ogidle2.wav", 1, ATTN_IDLE);
 };
 
-void() ogre_run2	=[	$run2,		ogre_run3	] {setHead('14 -2 40');ai_run(12);}; // 27
-void() ogre_run3	=[	$run3,		ogre_run4	] {setHead('16 -3 42');ai_run(8);};  // 28
-void() ogre_run4	=[	$run4,		ogre_run5	] {setHead('14 -2 45');ai_run(22);}; // 29
-void() ogre_run5	=[	$run5,		ogre_run6	] {setHead('13 -2 41');ai_run(16);}; // 30
-void() ogre_run6	=[	$run6,		ogre_run7	] {setHead('13 0 40');ai_run(4);};  // 31
-void() ogre_run7	=[	$run7,		ogre_run8	] {setHead('15 -1 41');ai_run(13);}; // 32
-void() ogre_run8	=[	$run8,		ogre_run1	] {setHead('13 1 44');ai_run(24);}; // 33
+void() ogre_run2	=[	$run2,		ogre_run3	] {Think(0.075);setHead('14 -2 40');ai_run(12);}; // 27
+void() ogre_run3	=[	$run3,		ogre_run4	] {Think(0.075);setHead('16 -3 42');ai_run(8);};  // 28
+void() ogre_run4	=[	$run4,		ogre_run5	] {Think(0.075);setHead('14 -2 45');ai_run(22);}; // 29
+void() ogre_run5	=[	$run5,		ogre_run6	] {Think(0.075);setHead('13 -2 41');ai_run(16);}; // 30
+void() ogre_run6	=[	$run6,		ogre_run7	] {Think(0.075);setHead('13 0 40');ai_run(4);};  // 31
+void() ogre_run7	=[	$run7,		ogre_run8	] {Think(0.075);setHead('15 -1 41');ai_run(13);}; // 32
+void() ogre_run8	=[	$run8,		ogre_run1	] {Think(0.075);setHead('13 1 44');ai_run(24);}; // 33 // we can't go back to slow running so loop to itself
+
+void() ogre_run_slow1	=[	$walk1,		ogre_run_slow2	] {setHead('7 4 43');	ai_run(3);}; // 10 walk
+void() ogre_run_slow2	=[	$walk2,		ogre_run_slow3	] {setHead('7 4 42');	ai_run(2);}; // 11
+void() ogre_run_slow3	=[	$walk3,		ogre_run_slow4	] {setHead('11 4 42');	ai_run(2);}; // 12
+void() ogre_run_slow4	=[	$walk4,		ogre_run_slow5	] {setHead('12 3 43');	ai_run(2);}; // 13
+void() ogre_run_slow5	=[	$walk5,		ogre_run_slow6	] {setHead('11 2 44');	ai_run(2);}; // 14
+void() ogre_run_slow6	=[	$walk6,		ogre_run_slow7	] {setHead('9 1 45');	ai_run(3);}; // 15
+void() ogre_run_slow7	=[	$walk7,		ogre_run_slow8	] {setHead('9 1 45');	ai_run(3);}; // 16
+void() ogre_run_slow8	=[	$walk8,		ogre_run_slow9	] {setHead('8 2 44');	ai_run(2);}; // 17
+void() ogre_run_slow9	=[	$walk9,		ogre_run_slow10	] {setHead('9 3 42');	ai_run(3);}; // 18
+void() ogre_run_slow10	=[	$walk10,	ogre_run_slow11	] {setHead('13 3 41');	ai_run(1);}; // 19
+void() ogre_run_slow11	=[	$walk11,	ogre_run_slow12	] {setHead('14 4 41');	ai_run(2);}; // 20
+void() ogre_run_slow12	=[	$walk12,	ogre_run_slow13	] {setHead('13 3 43');	ai_run(3);}; // 21
+void() ogre_run_slow13	=[	$walk13,	ogre_run_slow14	] {setHead('11 5 44');	ai_run(3);}; // 22
+void() ogre_run_slow14	=[	$walk14,	ogre_run_slow15	] {setHead('9 4 44');	ai_run(3);}; // 23
+void() ogre_run_slow15	=[	$walk15,	ogre_run_slow16	] {setHead('6 4 44');	ai_run(3);}; // 24
+void() ogre_run_slow16	=[	$walk16,	ogre_run	] {setHead('6 4 44');	ai_run(4);}; // 25
+
 
 void() ogre_swing1	=[	$swing1,		ogre_swing2	] {setHead('-1 2 40');ai_charge(11); // 34 swing
-sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);};
-void() ogre_swing2	=[	$swing2,		ogre_swing3	] {setHead('1 2 41');ai_charge(1);}; // 35
-void() ogre_swing3	=[	$swing3,		ogre_swing4	] {setHead('4 2 42');ai_charge(4);}; // 36
-void() ogre_swing4	=[	$swing4,		ogre_swing5	] {setHead('7 1 44');ai_charge(13);}; // 37
-void() ogre_swing5	=[	$swing5,		ogre_swing6	] {setHead('8 -2 42'); // 38
+sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);
+self.pain_finished = time + 2;};
+void() ogre_swing2	=[	$swing2,		ogre_swing3	] {ai_charge_side();setHead('1 2 41');ai_charge(1);}; // 35
+void() ogre_swing3	=[	$swing3,		ogre_swing4	] {ai_charge_side();setHead('4 2 42');ai_charge(4);}; // 36
+void() ogre_swing4	=[	$swing4,		ogre_swing5	] {ai_charge_side();setHead('7 1 44');ai_charge(13);}; // 37
+void() ogre_swing5	=[	$swing5,		ogre_swing6	] {ai_charge_side();setHead('8 -2 42'); // 38
 	ai_charge(9); 
 	chainsaw(0);
 	self.angles_y = self.angles_y + random()*25;
 };
-
-void() ogre_swing6	=[	$swing6,		ogre_swing7	] {setHead('7 -4 40'); // 39
+void() ogre_swing6	=[	$swing6,		ogre_swing7	] {ai_charge_side();setHead('7 -4 40'); // 39
 	chainsaw(200);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
-void() ogre_swing7	=[	$swing7,		ogre_swing8	] {setHead('4 -7 39');  // 40
+void() ogre_swing7	=[	$swing7,		ogre_swing8	] {ai_charge_side();setHead('4 -7 39');  // 40
 	chainsaw(0);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
-void() ogre_swing8	=[	$swing8,		ogre_swing9	] {setHead('1 -11 38'); // 41
+void() ogre_swing8	=[	$swing8,		ogre_swing9	] {ai_charge_side();setHead('1 -11 38'); // 41
 	chainsaw(0);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
-void() ogre_swing9	=[	$swing9,		ogre_swing10 ] {setHead('0 -12 39'); // 42
+void() ogre_swing9	=[	$swing9,		ogre_swing10 ] {ai_charge_side();setHead('0 -12 39'); // 42
 	chainsaw(0);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
-void() ogre_swing10	=[	$swing10,		ogre_swing11 ] {setHead('-2 -10 40'); // 43
+void() ogre_swing10	=[	$swing10,		ogre_swing11 ] {ai_charge_side();setHead('-2 -10 40'); // 43
 	chainsaw(-200);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
-void() ogre_swing11	=[	$swing11,		ogre_swing12 ] {setHead('-2 -9 40'); // 44
+void() ogre_swing11	=[	$swing11,		ogre_swing12 ] {ai_charge_side();setHead('-2 -9 40'); // 44
 	chainsaw(0);
 	self.angles_y = self.angles_y + random()* 25;
 };
-
 void() ogre_swing12	=[	$swing12,		ogre_swing13 ] {setHead('3 -7 41');ai_charge(3);}; // 45
 void() ogre_swing13	=[	$swing13,		ogre_swing14 ] {setHead('8 -3 40');ai_charge(8);}; // 46
-void() ogre_swing14	=[	$swing14,		ogre_run1	] {setHead('7 2 42');ai_charge(9);}; // 47
+void() ogre_swing14	=[	$swing14,		ogre_run	] {setHead('7 2 42');ai_charge(9);}; // 47
+// no weapon jump
+void() ogre_jumpsmash	=[	$smash1,		ogre_jumpsmash2	] 
+{
+	vector dir;
+	setHead('3 1 40');
+	ai_face_instant(); 
+	if (self.flags & FL_ONGROUND)
+		self.flags = self.flags - FL_ONGROUND;
+	dir = SUB_GetPlayerDirection(self.origin, self.enemy);
+	self.velocity = normalize (dir);
+	self.velocity = self.velocity * 519;
+	self.velocity_z = 300;
+	self.vA = self.velocity;
+	
+	self.pain_finished = time + 2;
+	self.attack_finished = time + 8;
+};  // 48 smash
+void() ogre_jumpsmash2	=[	$smash2,		ogre_smash3	] {setHead('1 -1 40'); self.velocity = self.vA;}; // 49
 
-void() ogre_smash1	=[	$smash1,		ogre_smash2	] {setHead('3 1 40');ai_charge(6);  // 48 smash
-sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);
-};
-void() ogre_smash2	=[	$smash2,		ogre_smash3	] {setHead('1 -1 40');ai_charge(0);}; // 49
-void() ogre_smash3	=[	$smash3,		ogre_smash4	] {setHead('-1 -3 39');ai_charge(0);}; // 50
-void() ogre_smash4	=[	$smash4,		ogre_smash5	] {setHead('-3 -6 41');ai_charge(1);}; // 51
-void() ogre_smash5	=[	$smash5,		ogre_smash6	] {setHead('-5 -6 43');ai_charge(4);}; // 52
-void() ogre_smash6	=[	$smash6,		ogre_smash7	] {setHead('-5 -5 45');ai_charge(4); chainsaw(0);}; // 53
-void() ogre_smash7	=[	$smash7,		ogre_smash8	] {setHead('-4 -5 46');ai_charge(4); chainsaw(0);}; // 54
-void() ogre_smash8	=[	$smash8,		ogre_smash9	] {setHead('4 1 41');ai_charge(10); chainsaw(0);}; // 55
+void() ogre_smash1	=[	$smash1,		ogre_smash2	] {setHead('3 1 40');ai_charge(6); self.pain_finished = time + 2;}; // 48 smash
+void() ogre_smash2	=[	$smash2,		ogre_smash3	] {ai_charge_side(); setHead('1 -1 40');ai_charge(0);}; // 49
+void() ogre_smash3	=[	$smash3,		ogre_smash4	] {ai_charge_side(); setHead('-1 -3 39');ai_charge(0);}; // 50
+void() ogre_smash4	=[	$smash4,		ogre_smash5	] {ai_charge_side(); setHead('-3 -6 41');ai_charge(1);}; // 51
+void() ogre_smash5	=[	$smash5,		ogre_smash6	] {ai_charge_side(); setHead('-5 -6 43');ai_charge(4);}; // 52
+void() ogre_smash6	=[	$smash6,		ogre_smash7	] {ai_charge_side(); setHead('-5 -5 45');ai_charge(4); chainsaw(0); sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);}; // 53
+void() ogre_smash7	=[	$smash7,		ogre_smash8	] {ai_charge_side(); setHead('-4 -5 46');ai_charge(4); chainsaw(0);}; // 54
+void() ogre_smash8	=[	$smash8,		ogre_smash9	] {ai_charge_side(); setHead('4 1 41');ai_charge(10); chainsaw(0);}; // 55
 void() ogre_smash9	=[	$smash9,		ogre_smash10 ] {setHead('22 -1 27');ai_charge(13); chainsaw(0);}; // 56
 void() ogre_smash10	=[	$smash10,		ogre_smash11 ] {setHead('25 -3 22');chainsaw(1);}; // 57
 void() ogre_smash11	=[	$smash11,		ogre_smash12 ] {setHead('26 -1 24');  // 58
@@ -315,32 +379,64 @@ void() ogre_smash11	=[	$smash11,		ogre_smash12 ] {setHead('26 -1 24');  // 58
 
 void() ogre_smash12	=[	$smash12,		ogre_smash13 ] {setHead('21 0 30');ai_charge(0);}; // 59
 void() ogre_smash13	=[	$smash13,		ogre_smash14 ] {setHead('14 4 37');ai_charge(4);}; // 60
-void() ogre_smash14	=[	$smash14,		ogre_run1	] {setHead('7 7 42');ai_charge(12);}; // 61
+void() ogre_smash14	=[	$smash14,		ogre_nail4	] {if (self.state & OGRE_NOWEAPON) self.think = ogre_run; setHead('7 7 42');ai_charge(12);}; // 61 //don't shoot when no weapon
 
-void() ogre_nail1	=[	$shoot1,		ogre_nail2	] {setHead('9 4 41');ai_face();}; // 62 fire
+void() ogre_nail1	=[	$shoot1,		ogre_nail2	] {
+	setHead('9 4 41');ai_face(); 
+	if (self.state & OGRE_SNIPER)
+	{
+		self.think = ogre_sniper1;
+		Think(0.1);
+	}
+}; 	// 62 fire
 void() ogre_nail2	=[	$shoot2,		ogre_nail3	] {setHead('10 1 39');ai_face();}; // 63
 void() ogre_nail3	=[	$shoot2,		ogre_nail4	] {setHead('10 1 39');ai_face();}; // 63 - double 
 void() ogre_nail4	=[	$shoot3,		ogre_nail5	] {setHead('10 -1 38');ai_face();OgreFireGrenade();}; // 64
 void() ogre_nail5	=[	$shoot4,		ogre_nail6	] {setHead('-17 -6 41');ai_face();}; // 65
 void() ogre_nail6	=[	$shoot5,		ogre_nail7	] {setHead('-5 2 43');ai_face();}; // 66
-void() ogre_nail7	=[	$shoot6,		ogre_run1	] {setHead('5 2 43');ai_face();}; // 67
+void() ogre_nail7	=[	$shoot6,		ogre_run	] {setHead('5 2 43');ai_face();}; // 67
+
+void() ogre_snipe_loop = 
+{
+	Think(0.1);
+	self.think = ogre_snipe_loop;
+	ai_face();
+	if (range(self.enemy) == RANGE_MELEE)
+	{
+		self.think = ogre_melee;
+		return;
+	}
+	sendMessageVecVecFlag(findHeadPosition(self), self.enemy.origin, LASER_BLUE, TE_LASERTRACE);
+	self.count++;
+	if (self.count > 7) 
+	{
+		self.think = ogre_sniper2;
+		self.count = 0;
+	}
+};
+	
+void() ogre_sniper1	=[	$shoot2, ogre_snipe_loop	] {Think(0.5);setHead('10 1 39');ai_face();}; // 63
+void() ogre_sniper2	=[	$shoot3, ogre_sniper3	] {setHead('10 -1 38');ai_face();OgreFireGrenade();self.attack_finished = time + 3;}; // 64
+void() ogre_sniper3	=[	$shoot4, ogre_sniper4	] {setHead('-17 -6 41');ai_face();}; // 65
+void() ogre_sniper4 =[	$shoot5, ogre_sniper5	] {setHead('-5 2 43');ai_face();}; // 66
+void() ogre_sniper5	=[	$shoot6, ogre_run		] {setHead('5 2 43');ai_face();}; // 67
 
 void()	ogre_pain1	=[	$pain1,		ogre_pain2	] {setHead('4 2 43');}; // 68
 void()	ogre_pain2	=[	$pain2,		ogre_pain3	] {setHead('-2 2 42');}; // 69
 void()	ogre_pain3	=[	$pain3,		ogre_pain4	] {setHead('-19 1 38');}; // 70
 void()	ogre_pain4	=[	$pain4,		ogre_pain5	] {setHead('-13 2 41');}; // 71
-void()	ogre_pain5	=[	$pain5,		ogre_run1	] {setHead('-3 4 44');}; // 72
+void()	ogre_pain5	=[	$pain5,		ogre_run	] {setHead('-3 4 44');}; // 72
 
 void()	ogre_painb1	=[	$painb1,	ogre_painb2	] {setHead('5 2 42');}; // 73
 void()	ogre_painb2	=[	$painb2,	ogre_painb3	] {setHead('0 3 43');}; // 74
-void()	ogre_painb3	=[	$painb3,	ogre_run1	] {setHead('-16 1 42');}; // 75
+void()	ogre_painb3	=[	$painb3,	ogre_run	] {setHead('-16 1 42');}; // 75
 
 void()	ogre_painc1	=[	$painc1,	ogre_painc2	] {setHead('5 5 42');}; // 76
 void()	ogre_painc2	=[	$painc2,	ogre_painc3	] {setHead('-12 1 42');}; // 77
 void()	ogre_painc3	=[	$painc3,	ogre_painc4	] {setHead('-13 -14 45');}; // 78
 void()	ogre_painc4	=[	$painc4,	ogre_painc5	] {setHead('-11 11 37');}; // 79
 void()	ogre_painc5	=[	$painc5,	ogre_painc6	] {setHead('-4 -2 41');}; // 80
-void()	ogre_painc6	=[	$painc6,	ogre_run1	] {setHead('2 4 40');}; // 81
+void()	ogre_painc6	=[	$painc6,	ogre_run	] {setHead('2 4 40');}; // 81
 
 void()	ogre_paind1	=[	$paind1,	ogre_paind2	] {setHead('-12 2 44');}; // 82
 void()	ogre_paind2	=[	$paind2,	ogre_paind3	] {setHead('-15 2 39');ai_pain(10);}; // 83
@@ -357,7 +453,7 @@ void()	ogre_paind12=[	$paind12,	ogre_paind13] {setHead('12 -9 18');}; // 93
 void()	ogre_paind13=[	$paind13,	ogre_paind14] {setHead('14 -10 19');}; // 94
 void()	ogre_paind14=[	$paind14,	ogre_paind15] {setHead('15 -9 23');}; // 95
 void()	ogre_paind15=[	$paind15,	ogre_paind16] {setHead('13 -6 32');}; // 96
-void()	ogre_paind16=[	$paind16,	ogre_run1	] {setHead('8 0 40');}; // 97
+void()	ogre_paind16=[	$paind16,	ogre_run	] {setHead('8 0 40');}; // 97
 
 void()	ogre_paine1	=[	$paine1,	ogre_paine2	] {setHead('-10 4 41');}; // 98
 void()	ogre_paine2	=[	$paine2,	ogre_paine3	] {setHead('-20 3 37');ai_pain(10);}; // 99
@@ -373,49 +469,98 @@ void()	ogre_paine11=[	$paine11,	ogre_paine12] {setHead('6 12 26');}; // 108
 void()	ogre_paine12=[	$paine12,	ogre_paine13] {setHead('10 8 31');}; // 109
 void()	ogre_paine13=[	$paine13,	ogre_paine14] {setHead('10 4 35');}; // 110
 void()	ogre_paine14=[	$paine14,	ogre_paine15] {setHead('5 1 40');}; // 111
-void()	ogre_paine15=[	$paine15,	ogre_run1	] {setHead('0 0 42');}; // 112
+void()	ogre_paine15=[	$paine15,	ogre_run	] {setHead('0 0 42');}; // 112
 
 
 void(entity attacker, float damage)	ogre_pain =
 {
-	local float	r;
-
+	float	r;
+	float dopain = 0;
+	
+	if (!(self.state & OGRE_FAST))
+	{
+		if (self.health < OGRE_HEALTH_FAST || self.health_head < OGRE_HEAD_FAST)
+		{
+			self.state |= OGRE_FAST;
+			self.state -= self.state & OGRE_SNIPER;
+			self.yaw_speed = 20;
+		}
+	}
+	
+	if (self.monsterflags & MFL_LOSTWEAPON)
+	{
+		self.monsterflags -= self.monsterflags & MFL_LOSTWEAPON;
+		self.state |= OGRE_NOWEAPON | OGRE_FAST;
+		self.state -= self.state & OGRE_SNIPER;
+		self.yaw_speed = 20;
+		//self.state -= self.state & OGRE_SNIPER; // doesn't do anything in this case
+		if (self.monsterflags & MFL_HASHEAD)
+			setmodel (self, "progs/ogre_noweapon.mdl");
+		else
+			setmodel (self, "progs/ogre_strip.mdl");
+		setsize (self, '-32 -32 -24', '32 32 48');
+		self.th_missile = ogre_jumpsmash;
+		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		dopain = 1; // make pain if we not lost head at the same time
+	}
+	
+	if (self.monsterflags & MFL_LOST_HEAD)
+	{
+		self.monsterflags -= self.monsterflags & MFL_LOST_HEAD;
+		self.monsterflags |= MFL_CONFUSED;
+		if (self.state & OGRE_NOWEAPON)
+			setmodel (self, "progs/ogre_strip.mdl");
+		else
+			setmodel (self, "progs/ogre_headless.mdl");
+		setsize (self, '-32 -32 -24', '32 32 48');
+		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+		sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
+		if (self.health > OGRE_HEALTH * 0.5)
+			self.health = OGRE_HEALTH * 0.5;
+		self.pain_finished = time + 8;
+		ogre_paind1();
+		return;
+	}
+// we haven't lost the head, so do pain animation
+	if (dopain)
+	{
+		ogre_pain1 ();
+		self.pain_finished = time + 2;
+		return;
+	}
+	
 	// don't make multiple pain sounds right after each other
 	if (self.pain_finished > time)
 		return;
 
-	sound (self, CHAN_VOICE, "ogre/ogpain1.wav", 1, ATTN_NORM);		
+	playPainSound("ogre/ogpain1.wav");
 
 	r = random();
-	
-	if (r < 0.25)
+	if (self.lasthit_damage < 100)
 	{
-		ogre_pain1 ();
-		self.pain_finished = time + 1;
+		if (r < 0.25)
+		{
+			ogre_pain1 ();
+			self.pain_finished = time + 2;
+		}
+		else if (r < 0.5)
+		{
+			ogre_painb1 ();
+			self.pain_finished = time + 2;
+		}
+		else if (r < 0.75)
+		{
+			ogre_painc1 ();
+			self.pain_finished = time + 2;
+		}
 	}
-
-	else if (r < 0.5)
-	{
-		ogre_painb1 ();
-		self.pain_finished = time + 1;
-	}
-
-	else if (r < 0.75)
-	{
-		ogre_painc1 ();
-		self.pain_finished = time + 1;
-	}
-
-	else if (r < 0.88)
-	{
-		ogre_paind1 ();
-		self.pain_finished = time + 2;
-	}
-
 	else
 	{
 		ogre_paine1 ();
-		self.pain_finished = time + 2;
+		self.pain_finished = time + 8;
 	}
 };
 
@@ -474,7 +619,10 @@ float() OgreCheckAttack =
 			return TRUE;
 		}
 	}
-
+	
+	//if (self.state & OGRE_NOWEAPON)
+	//	return FALSE;
+	
 	if (time < self.attack_finished)
 		return FALSE;
 	
@@ -534,19 +682,8 @@ void() ogre_die =
 		ThrowGib ("progs/ogre_gib_plate.mdl", self.lasthit_damage);
 		return;
 	}
-	
-	if (self.health_head <= 0)
-	{
-		setmodel (self, "progs/ogre_headless.mdl");
-		setsize (self, '-32 -32 -24', '32 32 48');
-		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHeadGib ("progs/m_gib_02.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
-		sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
-	}
-	else
-		sound (self, CHAN_VOICE, "ogre/ogdth.wav", 1, ATTN_NORM);
+
+	sound (self, CHAN_VOICE, "ogre/ogdth.wav", 1, ATTN_NORM);
 	
 	if (random() < 0.5)
 		ogre_die1 ();
@@ -568,6 +705,9 @@ void() monster_ogre =
 	precache_model ("progs/ogre.mdl");
 	precache_model ("progs/h_ogre.mdl");
 	precache_model ("progs/ogre_headless.mdl");
+	precache_model ("progs/ogre_noweapon.mdl");
+	precache_model ("progs/ogre_strip.mdl");
+	
 	precache_model ("progs/ogre_gib_hand.mdl");
 	precache_model ("progs/ogre_gib_leg.mdl");
 	precache_model ("progs/ogre_gib_plate.mdl");
@@ -590,7 +730,7 @@ void() monster_ogre =
 	//gnounc
 	self.noise = "ogre/ogwake.wav";	//gnounc
 	self.netname = "Ogre";
-	self.killstring = " was destroyed by the ohGr\n";
+	self.killstring = " was destroyed by the OhGr\n";
 
 	setsize (self, '-32 -32 -24', '32 32 48');
 	self.head_offset = '3 2 45';
@@ -599,12 +739,14 @@ void() monster_ogre =
 	self.max_health = OGRE_HEALTH;
 	self.health_head = OGRE_HEAD;
 	self.gib_threshold = 180;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
+	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;
 	self.monstertype = TYPE_OGRE;
+	self.state = OGRE_SNIPER;
+	self.yaw_speed = 15;
 	
 	self.th_stand = ogre_stand1;
 	self.th_walk = ogre_walk1;
-	self.th_run = ogre_run1;
+	self.th_run = ogre_run;
 	self.th_die = ogre_die;
 	self.th_melee = ogre_melee;
 	self.th_missile = ogre_nail1;

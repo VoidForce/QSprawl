@@ -289,6 +289,7 @@ const float	FL_ONGROUND				= 512;	// standing on something
 const float	FL_PARTIALGROUND		= 1024;	// not all corners are valid
 const float	FL_WATERJUMP			= 2048;	// player jumping out of water
 const float	FL_JUMPRELEASED			= 4096;	// for jump debouncing
+const float FL_EXPLOBOX				= 8192;
 
 // edict.movetype values
 const float	MOVETYPE_NONE			= 0;	// never moves
@@ -399,6 +400,14 @@ const float	SVC_SELLSCREEN		= 33;
 #define	TE_GAUSSTRACE			11
 #define	TE_IMPACT				12
 #define TE_HEAD					13
+#define TE_LASERTRACE			14
+
+enum LASERCOLOR:float {
+	LASER_BLUE = 0xd0,
+	LASER_RED = 0xfb,
+	LASER_YELLOW = 0xf2,
+	LASER_WHITE = 0xfe
+};
 
 // sound channels
 // channel 0 never willingly overrides
@@ -550,16 +559,14 @@ const float ENF_CHANGESKIN = 16;
 #define IMPACT_GAUSS_FINAL 1 // solid, endpoint
 #define IMPACT_GAUSS_ENTRANCE 2 // solid, penetrating, entrance hole
 #define IMPACT_GAUSS_EXIT 3 // solid, penetrating, exit hole
-#define IMPACT_GAUSS_FLESH_HEADSHOT 4
-#define IMPACT_GAUSS_FLESH 5 // red blood
-#define IMPACT_GAUSS_ROBOT_HEADSHOT 6 
-#define IMPACT_GAUSS_ROBOT 7 // mech/robot sparks
-#define IMPACT_FLESH_HEADSHOT 8
-#define IMPACT_ROBOT_HEADSHOT 9
-#define IMPACT_FLESH 10
-#define IMPACT_ROBOT 11
-#define IMPACT_WALL 12
-#define IMPACT_LASER 13
+#define IMPACT_GAUSS_FLESH 4 // red blood
+#define IMPACT_GAUSS_ROBOT 5 // mech/robot sparks
+#define IMPACT_FLESH_HEADSHOT 6
+#define IMPACT_ROBOT_HEADSHOT 7
+#define IMPACT_FLESH 8
+#define IMPACT_ROBOT 9
+#define IMPACT_WALL 10
+#define IMPACT_LASER 11
 
 // movement flags
 const float MF_CROUCHINAIR = 1;
@@ -590,6 +597,9 @@ const float MFL_ROBOT = 64;
 const float MFL_DEAD = 128;
 const float MFL_GIB_ME = 256;
 const float MFL_BOSS = 512;
+const float MFL_CONFUSED = 1024; // monster chase player's trail instead of origin
+const float MFL_FIENDTOUCH = 2048; // fiend only
+const float MFL_LOSTWEAPON = 2048; // ogre only
 
 //slowmo states
 const float SLOWMO_VALUE = 0.4;
@@ -648,20 +658,14 @@ enum monstertypes:int {
 	TYPE_VORE
 };
 
-typedef struct {
-    float damage;
-    float penetration;
-	float dflags;
-} damage_t;
-
 #define PISTOL_DAMAGE			50
 #define PISTOL_PENETRATION		-0.3
 #define SMG_DAMAGE				10
-#define SMG_PENETRATION			0.3
+#define SMG_PENETRATION			0.5
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
-#define CHAINGUN_DAMAGE			60
-#define CHAINGUN_PENETRATION	0.4
+#define CHAINGUN_DAMAGE			80
+#define CHAINGUN_PENETRATION	0.6
 #define GRENADE_EXPLOSION		150
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
@@ -678,16 +682,16 @@ armor_t armorstats; // global used in T_DAMAGE
 // stats for monsters		  br bm			hr hm		er
 const armor_t A_NULL 		= {0, 0,		0, 0,		0};
 const armor_t A_SOLDIER		= {0, 0,		0, 0,		0};
-const armor_t A_KNIGHT		= {0.25, 5,		0, 0,		0};
-const armor_t A_ENFORCER	= {0.2, 5,		0, 5,		0};
-const armor_t A_DOG			= {0.2, 5,		0, 0,		0.2};
-const armor_t A_SCRAG		= {0.1, 5,		0, 0,		0.2};
-const armor_t A_ZOMBIE		= {0.5, 5,		0, 5,		0.2};
-const armor_t A_OGRE		= {0.25, 30,	0.1, 5,		0.8};
-const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body car resist a lot of damage
-const armor_t A_FIEND		= {0.4, 30,		0.95, 6,	0.8};
+const armor_t A_KNIGHT		= {0.25, 0,		0, 0,		0};
+const armor_t A_ENFORCER	= {0.3, 0,		0, 5,		0};
+const armor_t A_DOG			= {0.3, 3,		0, 0,		0.2};
+const armor_t A_SCRAG		= {0.3, 0,		0, 0,		0.2};
+const armor_t A_ZOMBIE		= {0.4, 2,		0.2, 1,		0.2};
+const armor_t A_OGRE		= {0.5, 5,		0.1, 5,		0.8};
+const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
+const armor_t A_FIEND		= {0.6, 3,		0.7, 100,	0.8};
 const armor_t A_VORE		= {0.2, 50,		0, 0,		0.8};
-const armor_t A_SHAMBLER	= {0.8, 50,		0.95, 100,	0.95};
+const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 100,	0.95};
 
 #define SOLDIER_HEALTH 		85
 #define SOLDIER_HEAD 		20
@@ -698,20 +702,29 @@ const armor_t A_SHAMBLER	= {0.8, 50,		0.95, 100,	0.95};
 #define DOG_HEALTH			100
 #define SCRAG_HEALTH		100
 #define ZOMBIE_THROWHEADHP	100
-#define ZOMBIE_HEALTH		100
+#define ZOMBIE_HEALTH		150
 #define ZOMBIE_HEADLESS		50
 #define ZOMBIE_HEAD			50
 #define OGRE_HEALTH			400		
+#define OGRE_HEALTH_FAST	250		
 #define OGRE_HEAD			150
+#define OGRE_HEAD_FAST		100
+#define OGRE_LOSTWEAPON		30 // explosion damage to loose weapon, 150 players blast dmg * 0.8 explosives resistance
 #define HELLKNIGHT_HEALTH	250
 #define HELLKNIGHT_HEAD		80
-#define FIEND_HEALTH		400
+#define FIEND_HEALTH		200
 #define FIEND_HEAD			100
 #define VORE_HEALTH			400
 #define SHAMBLER_HEALTH		800
 #define SHAMBLER_HEAD		400
 
-//
+// these are player positions stored for monster aiming calculations
+.vector		trail1;
+.vector		trail2;
+.vector		trail3;
+.vector		trail4;
+
+.float		counter;
 .float		sprawlflags;
 .float		movementflags;
 .float		katana_finished;
@@ -765,14 +778,10 @@ entity		grenade_handler; // global
 
 // monsters stuff ----------------------------------------------------------------------------------------------------------
 .float		monstertype;
-
-// head sphere debug
-//.vector		origin_old;
-//.vector 	offset_old; 
-//.float		lasttick_time; // used for head sphere, last frame change
-//.entity 	headmodel; // head sphere entity
-
+.float		state;
 // end
+.float		reload_time;
+.float		monster_ammo;
 .vector		head_offset;
 .float		head_size;
 .float		monsterflags;
@@ -792,6 +801,7 @@ entity		grenade_handler; // global
 
 .float 		attack_finished;
 .float		pain_finished;
+.float		painsound_time;
 
 .float		invincible_finished;
 .float		invisible_finished;
