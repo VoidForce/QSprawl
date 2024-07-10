@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "q_ctype.h"
+#include "mathlib.h"
 
 #define	STRINGTEMP_BUFFERS		1024
 #define	STRINGTEMP_LENGTH		1024
@@ -1163,6 +1164,46 @@ static void PF_FindFloat(void)
 
 	RETURN_EDICT(chain);
 }
+
+static void PF_ProjectOnVector(void)
+{
+	float *A, *B;
+
+	A = G_VECTOR(OFS_PARM0);
+	B = G_VECTOR(OFS_PARM1);
+
+	VectorProject(A, B, pr_global_struct->project);
+	VectorCopy(vec3_origin, pr_global_struct->reject);
+	VectorCopy(vec3_origin, pr_global_struct->reflect);
+}
+
+static void PF_ProjectOnPlane(void)
+{
+	float* A, * B;
+
+	A = G_VECTOR(OFS_PARM0);
+	B = G_VECTOR(OFS_PARM1);
+	
+	VectorProjectOnPlane(A, B, pr_global_struct->project, pr_global_struct->reject);
+	VectorCopy(vec3_origin, pr_global_struct->reflect);
+}
+
+static void PF_Reflect(void)
+{
+	float* A, * B;
+	float C;
+	vec3_t lreject;
+
+	A = G_VECTOR(OFS_PARM0);
+	B = G_VECTOR(OFS_PARM1);
+	C = G_FLOAT(OFS_PARM2);
+
+	VectorProjectOnPlane(A, B, pr_global_struct->project, pr_global_struct->reject);
+	VectorCopy(pr_global_struct->reject, lreject);
+	VectorScale(lreject, C, lreject);
+	VectorAdd(A, lreject, pr_global_struct->reflect);
+}
+
 
 static void PR_CheckEmptyString (const char *s)
 {
@@ -3611,106 +3652,109 @@ builtindef_t pr_builtindefs[] =
 	{"etos",					PF_BOTH(PF_etos),				65,		DP_QC_ETOS},			// string(entity ent)
 
 	{"movetogoal",				PF_SSQC(SV_MoveToGoal),			67},
-	{"precache_file",			PF_SSQC(PF_precache_file),		68},
-	{"makestatic",				PF_SSQC(PF_makestatic),			69},
+	{"precache_file", PF_SSQC(PF_precache_file), 68},
+	{ "makestatic",				PF_SSQC(PF_makestatic),			69 },
 
-	{"changelevel",				PF_SSQC(PF_changelevel),		70},
+	{ "changelevel",				PF_SSQC(PF_changelevel),		70 },
 
-	{"cvar_set",				PF_BOTH(PF_cvar_set),			72},
-	{"centerprint",				PF_SSQC(PF_centerprint),		73},
+	{ "cvar_set",				PF_BOTH(PF_cvar_set),			72 },
+	{ "centerprint",				PF_SSQC(PF_centerprint),		73 },
 
-	{"ambientsound",			PF_SSQC(PF_ambientsound),		74},
+	{ "ambientsound",			PF_SSQC(PF_ambientsound),		74 },
 
-	{"precache_model2",			PF_SSQC(PF_precache_model),		75},
-	{"precache_sound2",			PF_SSQC(PF_precache_sound),		76},	// precache_sound2 is different only for qcc
-	{"precache_file2",			PF_SSQC(PF_precache_file),		77},
+	{ "precache_model2",			PF_SSQC(PF_precache_model),		75 },
+	{ "precache_sound2",			PF_SSQC(PF_precache_sound),		76 },	// precache_sound2 is different only for qcc
+	{ "precache_file2",			PF_SSQC(PF_precache_file),		77 },
 
-	{"setspawnparms",			PF_SSQC(PF_setspawnparms),		78},
+	{ "setspawnparms",			PF_SSQC(PF_setspawnparms),		78 },
 
 	// 2021 re-release
-	{"finaleFinished",			PF_SSQC(PF_finalefinished),		79},	// float() finaleFinished = #79
-	{"localsound",				PF_SSQC(PF_localsound),			80},	// void localsound (entity client, string sample) = #80
+	{ "finaleFinished",			PF_SSQC(PF_finalefinished),		79 },	// float() finaleFinished = #79
+	{ "localsound",				PF_SSQC(PF_localsound),			80 },	// void localsound (entity client, string sample) = #80
 
-	{"stof",					PF_BOTH(PF_stof),				81,		FRIK_FILE},			// float(string)
+	{ "stof",					PF_BOTH(PF_stof),				81,		FRIK_FILE },			// float(string)
 
 	// 2021 re-release update 3
-	{"ex_centerprint",			PF_SSQC(PF_centerprint)},				// void(entity client, string s, ...)
-	{"ex_bprint",				PF_SSQC(PF_bprint)},					// void(string s, ...)
-	{"ex_sprint",				PF_SSQC(PF_sprint)},					// void(entity client, string s, ...)
-	{"ex_finalefinished",		PF_SSQC(PF_finalefinished)},			// float()
-	{"ex_CheckPlayerEXFlags",	PF_SSQC(PF_CheckPlayerEXFlags)},		// float(entity playerEnt)
-	{"ex_walkpathtogoal",		PF_SSQC(PF_walkpathtogoal)},			// float(float movedist, vector goal)
-	{"ex_localsound",			PF_SSQC(PF_localsound)},				// void(entity client, string sample)
+	{ "ex_centerprint",			PF_SSQC(PF_centerprint) },				// void(entity client, string s, ...)
+	{ "ex_bprint",				PF_SSQC(PF_bprint) },					// void(string s, ...)
+	{ "ex_sprint",				PF_SSQC(PF_sprint) },					// void(entity client, string s, ...)
+	{ "ex_finalefinished",		PF_SSQC(PF_finalefinished) },			// float()
+	{ "ex_CheckPlayerEXFlags",	PF_SSQC(PF_CheckPlayerEXFlags) },		// float(entity playerEnt)
+	{ "ex_walkpathtogoal",		PF_SSQC(PF_walkpathtogoal) },			// float(float movedist, vector goal)
+	{ "ex_localsound",			PF_SSQC(PF_localsound) },				// void(entity client, string sample)
 
-	{"min",						PF_BOTH(PF_min),				94,		DP_QC_MINMAXBOUND},	// float(float a, float b, ...)
-	{"max",						PF_BOTH(PF_max),				95,		DP_QC_MINMAXBOUND},	// float(float a, float b, ...)
-	{"bound",					PF_BOTH(PF_bound),				96,		DP_QC_MINMAXBOUND},	// float(float minimum, float val, float maximum)
+	{ "min",						PF_BOTH(PF_min),				94,		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "max",						PF_BOTH(PF_max),				95,		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "bound",					PF_BOTH(PF_bound),				96,		DP_QC_MINMAXBOUND },	// float(float minimum, float val, float maximum)
 
-	{"pow",						PF_BOTH(PF_pow),				97,		DP_QC_SINCOSSQRTPOW},	// float(float value, float exp)
+	{ "pow",						PF_BOTH(PF_pow),				97,		DP_QC_SINCOSSQRTPOW },	// float(float value, float exp)
 
-	{"checkextension",			PF_BOTH(PF_checkextension),		99},	// float(string extname)
+	{ "checkextension",			PF_BOTH(PF_checkextension),		99 },	// float(string extname)
 
-	{"strlen",					PF_BOTH(PF_strlen),				114,	FRIK_FILE},	// float(string s)
-	{"strcat",					PF_BOTH(PF_strcat),				115,	FRIK_FILE},	// string(string s1, optional string s2, optional string s3, optional string s4, optional string s5, optional string s6, optional string s7, optional string s8)
-	{"substring",				PF_BOTH(PF_substring),			116,	FRIK_FILE},	// string(string s, float start, float length)
-	{"stov",					PF_BOTH(PF_stov),				117,	FRIK_FILE},	// vector(string s)
-	{"strzone",					PF_BOTH(PF_strzone),			118,	FRIK_FILE},	// string(string s, ...)
-	{"strunzone",				PF_BOTH(PF_strunzone),			119,	FRIK_FILE},	// void(string s)
+	{ "strlen",					PF_BOTH(PF_strlen),				114,	FRIK_FILE },	// float(string s)
+	{ "strcat",					PF_BOTH(PF_strcat),				115,	FRIK_FILE },	// string(string s1, optional string s2, optional string s3, optional string s4, optional string s5, optional string s6, optional string s7, optional string s8)
+	{ "substring",				PF_BOTH(PF_substring),			116,	FRIK_FILE },	// string(string s, float start, float length)
+	{ "stov",					PF_BOTH(PF_stov),				117,	FRIK_FILE },	// vector(string s)
+	{ "strzone",					PF_BOTH(PF_strzone),			118,	FRIK_FILE },	// string(string s, ...)
+	{ "strunzone",				PF_BOTH(PF_strunzone),			119,	FRIK_FILE },	// void(string s)
 
-	{"str2chr",					PF_BOTH(PF_str2chr),			222,	FTE_STRINGS},	// float(string str, float index)
-	{"chr2str",					PF_BOTH(PF_chr2str),			223,	FTE_STRINGS},	// string(float chr, ...)
-	{"strconv",					PF_BOTH(PF_strconv),			224,	FTE_STRINGS},	// string(float ccase, float redalpha, float redchars, string str, ...)
+	{ "str2chr",					PF_BOTH(PF_str2chr),			222,	FTE_STRINGS },	// float(string str, float index)
+	{ "chr2str",					PF_BOTH(PF_chr2str),			223,	FTE_STRINGS },	// string(float chr, ...)
+	{ "strconv",					PF_BOTH(PF_strconv),			224,	FTE_STRINGS },	// string(float ccase, float redalpha, float redchars, string str, ...)
 
-	{"clientstat",				PF_SSQC(PF_clientstat),			232},	// void(float num, float type, .__variant fld)
+	{ "clientstat",				PF_SSQC(PF_clientstat),			232 },	// void(float num, float type, .__variant fld)
 
-	{"mod",						PF_BOTH(PF_mod),				245},	// float(float a, float n)
+	{ "mod",						PF_BOTH(PF_mod),				245 },	// float(float a, float n)
 
-	{"ftoi",					PF_BOTH(PF_ftoi)},						// int(float)
-	{"itof",					PF_BOTH(PF_itof)},						// float(int)
+	{ "ftoi",					PF_BOTH(PF_ftoi) },						// int(float)
+	{ "itof",					PF_BOTH(PF_itof) },						// float(int)
 
-	{"checkcommand",			PF_BOTH(PF_checkcommand),		294,	FTE_QC_CHECKCOMMAND},	// float(string name)
+	{ "checkcommand",			PF_BOTH(PF_checkcommand),		294,	FTE_QC_CHECKCOMMAND },	// float(string name)
 
-	{"iscachedpic",				PF_CSQC(PF_cl_iscachedpic),		316},	// float(string name)
-	{"precache_pic",			PF_CSQC(PF_cl_precachepic),		317},	// string(string name, optional float flags)
-	{"drawgetimagesize",		PF_CSQC(PF_cl_getimagesize),	318},	// #define draw_getimagesize drawgetimagesize\nvector(string picname)
-	{"drawcharacter",			PF_CSQC(PF_cl_drawcharacter),	320},	// float(vector position, float character, vector size, vector rgb, float alpha, optional float drawflag)
-	{"drawrawstring",			PF_CSQC(PF_cl_drawrawstring),	321},	// float(vector position, string text, vector size, vector rgb, float alpha, optional float drawflag)
-	{"drawpic",					PF_CSQC(PF_cl_drawpic),			322},	// float(vector position, string pic, vector size, vector rgb, float alpha, optional float drawflag)
-	{"drawfill",				PF_CSQC(PF_cl_drawfill),		323},	// float(vector position, vector size, vector rgb, float alpha, optional float drawflag)
-	{"drawsetcliparea",			PF_CSQC(PF_cl_drawsetclip),		324},	// void(float x, float y, float width, float height)
-	{"drawresetcliparea",		PF_CSQC(PF_cl_drawresetclip),	325},	// void(void)
-	{"drawstring",				PF_CSQC(PF_cl_drawstring),		326},	// float(vector position, string text, vector size, vector rgb, float alpha, float drawflag)
-	{"stringwidth",				PF_CSQC(PF_cl_stringwidth),		327},	// float(string text, float usecolours, vector fontsize='8 8')
-	{"drawsubpic",				PF_CSQC(PF_cl_drawsubpic),		328},	// void(vector pos, vector sz, string pic, vector srcpos, vector srcsz, vector rgb, float alpha, optional float drawflag)
+	{ "iscachedpic",				PF_CSQC(PF_cl_iscachedpic),		316 },	// float(string name)
+	{ "precache_pic",			PF_CSQC(PF_cl_precachepic),		317 },	// string(string name, optional float flags)
+	{ "drawgetimagesize",		PF_CSQC(PF_cl_getimagesize),	318 },	// #define draw_getimagesize drawgetimagesize\nvector(string picname)
+	{ "drawcharacter",			PF_CSQC(PF_cl_drawcharacter),	320 },	// float(vector position, float character, vector size, vector rgb, float alpha, optional float drawflag)
+	{ "drawrawstring",			PF_CSQC(PF_cl_drawrawstring),	321 },	// float(vector position, string text, vector size, vector rgb, float alpha, optional float drawflag)
+	{ "drawpic",					PF_CSQC(PF_cl_drawpic),			322 },	// float(vector position, string pic, vector size, vector rgb, float alpha, optional float drawflag)
+	{ "drawfill",				PF_CSQC(PF_cl_drawfill),		323 },	// float(vector position, vector size, vector rgb, float alpha, optional float drawflag)
+	{ "drawsetcliparea",			PF_CSQC(PF_cl_drawsetclip),		324 },	// void(float x, float y, float width, float height)
+	{ "drawresetcliparea",		PF_CSQC(PF_cl_drawresetclip),	325 },	// void(void)
+	{ "drawstring",				PF_CSQC(PF_cl_drawstring),		326 },	// float(vector position, string text, vector size, vector rgb, float alpha, float drawflag)
+	{ "stringwidth",				PF_CSQC(PF_cl_stringwidth),		327 },	// float(string text, float usecolours, vector fontsize='8 8')
+	{ "drawsubpic",				PF_CSQC(PF_cl_drawsubpic),		328 },	// void(vector pos, vector sz, string pic, vector srcpos, vector srcsz, vector rgb, float alpha, optional float drawflag)
 
-	{"getstati",				PF_CSQC(PF_cl_getstat_int),		330},	// #define getstati_punf(stnum) (float)(__variant)getstati(stnum)\nint(float stnum)
-	{"getstatf",				PF_CSQC(PF_cl_getstat_float),	331},	// #define getstatbits getstatf\nfloat(float stnum, optional float firstbit, optional float bitcount)
-	{"getstats",				PF_CSQC(PF_cl_getstat_string),	332},	// string(float stnum)
+	{ "getstati",				PF_CSQC(PF_cl_getstat_int),		330 },	// #define getstati_punf(stnum) (float)(__variant)getstati(stnum)\nint(float stnum)
+	{ "getstatf",				PF_CSQC(PF_cl_getstat_float),	331 },	// #define getstatbits getstatf\nfloat(float stnum, optional float firstbit, optional float bitcount)
+	{ "getstats",				PF_CSQC(PF_cl_getstat_string),	332 },	// string(float stnum)
 
-	{"getplayerkeyvalue",		PF_CSQC(PF_cl_playerkey_s),		348},	// string(float playernum, string keyname)
-	{"getplayerkeyfloat",		PF_CSQC(PF_cl_playerkey_f)},			// float(float playernum, string keyname, optional float assumevalue)
+	{ "getplayerkeyvalue",		PF_CSQC(PF_cl_playerkey_s),		348 },	// string(float playernum, string keyname)
+	{ "getplayerkeyfloat",		PF_CSQC(PF_cl_playerkey_f) },			// float(float playernum, string keyname, optional float assumevalue)
 
-	{"registercommand",			PF_CSQC(PF_cl_registercommand),	352},	// void(string cmdname)
+	{ "registercommand",			PF_CSQC(PF_cl_registercommand),	352 },	// void(string cmdname)
 
-	{"vectorvectors",			PF_BOTH(PF_vectorvectors),		432,	DP_QC_VECTORVECTORS},	// void(vector dir)
+	{ "vectorvectors",			PF_BOTH(PF_vectorvectors),		432,	DP_QC_VECTORVECTORS },	// void(vector dir)
 
-	{"clientcommand",			PF_SSQC(PF_clientcommand),		440,	KRIMZON_SV_PARSECLIENTCOMMAND},	// void(entity e, string s)
-	{"tokenize",				PF_BOTH(PF_Tokenize),			441,	KRIMZON_SV_PARSECLIENTCOMMAND},	// float(string s)
-	{"argv",					PF_BOTH(PF_ArgV),				442,	KRIMZON_SV_PARSECLIENTCOMMAND},	// string(float n)
-	{"argc",					PF_BOTH(PF_ArgC)},						// float()
+	{ "clientcommand",			PF_SSQC(PF_clientcommand),		440,	KRIMZON_SV_PARSECLIENTCOMMAND },	// void(entity e, string s)
+	{ "tokenize",				PF_BOTH(PF_Tokenize),			441,	KRIMZON_SV_PARSECLIENTCOMMAND },	// float(string s)
+	{ "argv",					PF_BOTH(PF_ArgV),				442,	KRIMZON_SV_PARSECLIENTCOMMAND },	// string(float n)
+	{ "argc",					PF_BOTH(PF_ArgC) },						// float()
 
-	{"asin",					PF_BOTH(PF_asin),				471,	DP_QC_ASINACOSATANATAN2TAN},	// float(float s)
-	{"acos",					PF_BOTH(PF_acos),				472,	DP_QC_ASINACOSATANATAN2TAN},	// float(float c)
-	{"atan",					PF_BOTH(PF_atan),				473,	DP_QC_ASINACOSATANATAN2TAN},	// float(float t)
-	{"atan2",					PF_BOTH(PF_atan2),				474,	DP_QC_ASINACOSATANATAN2TAN},	// float(float c, float s)
-	{"tan",						PF_BOTH(PF_tan),				475,	DP_QC_ASINACOSATANATAN2TAN},	// float(float a)
+	{ "asin",					PF_BOTH(PF_asin),				471,	DP_QC_ASINACOSATANATAN2TAN },	// float(float s)
+	{ "acos",					PF_BOTH(PF_acos),				472,	DP_QC_ASINACOSATANATAN2TAN },	// float(float c)
+	{ "atan",					PF_BOTH(PF_atan),				473,	DP_QC_ASINACOSATANATAN2TAN },	// float(float t)
+	{ "atan2",					PF_BOTH(PF_atan2),				474,	DP_QC_ASINACOSATANATAN2TAN },	// float(float c, float s)
+	{ "tan",					PF_BOTH(PF_tan),				475,	DP_QC_ASINACOSATANATAN2TAN },	// float(float a)
 
-	{"tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE},		// float(string str)
+	{ "tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE },		// float(string str)
 
-	{"sprintf",					PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF},					// string(string fmt, ...)
-	{"findfloat",				PF_SSQC(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
-	{"change_timescale",		PF_SSQC(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
-	{"distancetoray",			PF_SSQC(PF_distancetoray),		702 },	// float(vector raypoint, vector direction, vector point) PF_distancetoray
+	{ "sprintf",				PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF },					// string(string fmt, ...)
+	{ "findfloat",				PF_SSQC(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
+	{ "change_timescale",		PF_SSQC(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
+	{ "distancetoray",			PF_SSQC(PF_distancetoray),		702 },	// float(vector raypoint, vector direction, vector point) PF_distancetoray
+	{ "project_onto_vector",	PF_SSQC(PF_ProjectOnVector),	703 },
+	{ "project_onto_plane",		PF_SSQC(PF_ProjectOnPlane),		704 },
+	{ "reflectVector",			PF_SSQC(PF_Reflect),			705 },
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

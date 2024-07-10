@@ -100,7 +100,9 @@ void()		SetNewParms;			// called when a client first connects to
 
 void()		SetChangeParms;			// call to set parms for self so they can
 									// be saved for a level transition
-
+vector		project;
+vector		reject;
+vector		reflect;
 
 //================================================
 void		end_sys_globals;		// flag for structure dumping
@@ -541,9 +543,9 @@ const float	AS_MISSILE		= 4;
 #define MAX_ROCKETS 6
 #define MAX_CELLS 16
 #define MAX_BULLETS 45
-
-const float SSGX[14] = {0.4000, 0.3200, 0.3200, 0.2400, 0.1600, 0.0800, 0.0000, 0.0000,-0.0800,-0.1600,-0.2400,-0.3200,-0.3200,-0.4000};	
-const float SSGY[14] = {0.0500,-0.0500, 0.0000, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500,-0.0500, 0.0500, 0.0000,-0.0500, 0.0500};
+						//1		2		3		4		5		6		7		8		9		10		11		12		13		14
+const float SSGX[14] = {0.3200, 0.0000,-0.3200, 0.4000, 0.2400, 0.0800,-0.0800,-0.2400,-0.4000, 0.3200, 0.1600, 0.0000,-0.1600,-0.3200}; //rearranged for easier fx messages checks
+const float SSGY[14] = {0.0000, 0.0000, 0.0000, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500,-0.0500,-0.0500,-0.0500,-0.0500,-0.0500};
 const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
 const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
 
@@ -641,6 +643,7 @@ const float DF_NEVERGIB = 2;
 const float DF_ALWAYSGIB = 4;
 const float DF_KATANA = 8; // damage was done by katana
 const float DF_EXPLOSION = 16; // damage was done by explosion
+const float DF_EPICENTER = 32; // target was close to the epicenter, used by ogres to explode their weapons
 
 //monstertypes
 //"enum [class] [name_e]:type"
@@ -709,7 +712,6 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 100,	0.95};
 #define OGRE_HEALTH_FAST	250		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
-#define OGRE_LOSTWEAPON		30 // explosion damage to loose weapon, 150 players blast dmg * 0.8 explosives resistance
 #define HELLKNIGHT_HEALTH	250
 #define HELLKNIGHT_HEAD		80
 #define FIEND_HEALTH		200
@@ -1014,4 +1016,9 @@ void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// for coop respawn
 entity(.float fld, float match) findfloat = #700 // returns chain of entities
 void (float newvalue) change_timescale = #701; // clamped from 0 to 10
-float(vector raypoint, vector direction, vector point) distancetoray = #702; // 
+float(vector raypoint, vector direction, vector point) distancetoray = #702; //  // A to B
+void(vector A, vector onto) project_onto_vector = #703; // { "project_vector",			PF_SSQC(PF_ProjectOnVector),	703 }, // A to B, result project_to_vector
+void(vector A, vector onto) project_onto_plane = #704; // { "project_plane",			PF_SSQC(PF_ProjectOnPlane),		704 },
+void(vector A, vector onto, float multiplier) reflectVector = #705; //default multiplier for 1 to 1 reflection is 2
+	
+	

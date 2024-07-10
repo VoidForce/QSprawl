@@ -845,6 +845,7 @@ void CL_ParseClientdata (void)
 		i = MSG_ReadByte (); //16
 	else
 		i = 0;
+
 	if (cl.stats[STAT_WEAPON] != i)
 	{
 		cl.stats[STAT_WEAPON] = i;
@@ -910,6 +911,12 @@ void CL_ParseClientdata (void)
 
 	i = MSG_ReadByte (); //25
 
+	if (cl.stats[STAT_ACTIVEWEAPON] != i)
+	{
+		cl.stats[STAT_ACTIVEWEAPON] = i;
+		Sbar_Changed();
+	}
+	/*
 	if (standard_quake)
 	{
 		if (cl.stats[STAT_ACTIVEWEAPON] != i)
@@ -927,7 +934,7 @@ void CL_ParseClientdata (void)
 			Sbar_Changed ();
 		}
 	}
-
+	*/
 	if (bits & SU_WEAPONALPHA)
 		cl.viewent.alpha = MSG_ReadByte(); //26
 	else

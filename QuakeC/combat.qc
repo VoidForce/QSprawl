@@ -409,7 +409,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		*/
 	}
 	
-	if (dflags & DF_EXPLOSION && self.monstertype == TYPE_OGRE && !(self.state & OGRE_NOWEAPON) && take == OGRE_LOSTWEAPON)
+	if (dflags & DF_EPICENTER && self.monstertype == TYPE_OGRE && !(self.state & OGRE_NOWEAPON))
 	{
 			self.monsterflags |= MFL_LOSTWEAPON;
 	}
@@ -466,24 +466,28 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 
 void(entity inflictor, entity attacker, float damage, entity ignore, float radius, float epicenter) T_RadiusDamagePlayer =
 {
-	local	float 	points;
-	local	entity	head;
-	local	vector	org;
-	local 	float	distancetotarget, distoutepicenter,fall,fallfraction;
+	float 	points;
+	entity	head;
+	vector	org;
+	float	distancetotarget, distoutepicenter,fall,fallfraction;
+	float	dflags;
 
 	head = findradius(inflictor.origin, radius);
 	
 	while (head)
 	{
 	//reset
-		
+		dflags = DF_EXPLOSION;
 		if ((head != ignore) && (head != attacker) && head.takedamage)
 		{
 			org = head.origin + (head.mins + head.maxs)*0.5;
 			distancetotarget = vlen (inflictor.origin - org);
 			
 			if ( distancetotarget <= epicenter ) 
+			{
 				points = damage;
+				dflags |= DF_EPICENTER;
+			}
 			else
 			{
 				fall = radius - epicenter;
@@ -497,7 +501,7 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 			}
 
 			if (CanDamage (head, inflictor))
-				T_Damage (head, inflictor, attacker, points, DF_EXPLOSION);
+				T_Damage (head, inflictor, attacker, points, dflags);
 		}
 		head = head.chain;
 	}

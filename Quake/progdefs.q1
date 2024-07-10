@@ -58,6 +58,9 @@ typedef struct
 	func_t	ClientDisconnect;
 	func_t	SetNewParms;
 	func_t	SetChangeParms;
+	vec3_t	project;
+	vec3_t	reject;
+	vec3_t	reflect;
 } globalvars_t;
 
 typedef struct
@@ -170,4 +173,4 @@ typedef struct
 	float		weapon_skin;
 } entvars_t;
 
-#define PROGHEADER_CRC 54890
+#define PROGHEADER_CRC 37463

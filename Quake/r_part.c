@@ -1060,7 +1060,6 @@ void R_ImpactSparks(vec3_t org, vec3_t dir, int color, int color_rand, int count
 	//float duration;
 	half_vel = (float)velocity / 2;
 
-	
 	for (i = 0; i < count; i++)
 	{
 		if (!(p = R_AllocParticle()))
@@ -1074,7 +1073,22 @@ void R_ImpactSparks(vec3_t org, vec3_t dir, int color, int color_rand, int count
 			p->org[j] = org[j] + dir[j] * 4;// +((rand() & 8) - 4);
 			p->vel[j] = dir[j] + (rand() % velocity) - half_vel;
 		}
-		p->vel[2] += 200;
+		p->vel[2] += 100;
+	}
+	// another set of particles, no offset on origin and predifined velocity
+	for (i = 0; i < count * 2; i++)
+	{
+		if (!(p = R_AllocParticle()))
+			return;
+
+		p->die = cl.time + 0.1 * (rand() % 5);
+		p->color = color + (rand() & color_rand);
+		p->type = pt_static;
+		for (j = 0; j < 3; j++)
+		{
+			p->org[j] = org[j];
+			p->vel[j] = dir[j] + (rand() % 50) - 25;
+		}
 	}
 }
 
@@ -1115,29 +1129,29 @@ void R_Impact(vec3_t org, vec3_t dir, int type)
 			break;
 
 		case IMPACT_FLESH_HEADSHOT:
-			R_ImpactSparks(org, dir, 0x48, 5, 30, 100);
-			R_ImpactSparks(org, dir, 0xeb, 4, 4, 600);
+			R_ImpactSparks(org, dir, 0x48, 5, 15, 100);
+			R_ImpactSparks(org, dir, 0xeb, 4, 2, 600);
 			break;
 
 		case IMPACT_ROBOT_HEADSHOT:
 			//R_ImpactSparks(org, dir, 0xeb, 4, 5, 600);
-			R_ImpactSparks(org, dir, 0xfa, 1, 12, 300);
+			R_ImpactSparks(org, dir, 0xfa, 1, 6, 300);
 			break;
 
 		case IMPACT_FLESH:
-			R_ImpactSparks(org, dir, 0x48, 5, 30, 100);
+			R_ImpactSparks(org, dir, 0x48, 5, 15, 100);
 			break;
 
 		case IMPACT_ROBOT:
-			R_ImpactSparks(org, dir, 0xeb, 4, 9, 600);
+			R_ImpactSparks(org, dir, 0xeb, 4, 5, 600);
 			break;
 
 		case IMPACT_WALL:
-			R_ImpactSparks(org, dir, 0x03, 5, 10, 300);
+			R_ImpactSparks(org, dir, 0x03, 5, 8, 300);
 			break;
 
 		case IMPACT_LASER:
-			R_ImpactSparks(org, dir, 0xfa, 1, 40, 500);
+			R_ImpactSparks(org, dir, 0xfa, 1, 20, 200);
 			break;
 	}
 }

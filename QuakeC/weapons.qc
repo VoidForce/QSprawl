@@ -188,6 +188,7 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 				else
 					head.think = OgreGrenadeExplode;
 				head.nextthink = time;
+				head.owner = self;
 			}
 		}
 		head = next;
@@ -594,11 +595,11 @@ void() W_FireSuperShotgun =
 	for (i = 0; i < 14; i++)
 	{
 		lflag = FBA_ISMULTIDAMAGE;
-		if (i == 2 || i == 6 || i == 11)
+		if (i > 2)
 			lflag |= FBA_IMPACT;
 
 		FireBulletAim (dir, SSGX[i]*0.2, SSGY[i]*0.2, SHOTGUN_DAMAGE, SHOTGUN_PENETRATION, lflag); // last one means that we have to use ApplyMultiDamage after cycle
-		if (i == 2 || i == 6 || i == 11)
+		if (i < 3)
 			sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE); // 3 messages in total
 	}
 	ApplyMultiDamage ();
@@ -814,12 +815,12 @@ void() W_FireChaingun =
 {
 	vector dir;
 	
-	if (self.ammo_bullets < 1)
+	/*if (self.ammo_bullets < 1)
 	{
 		self.weapon = W_BestWeapon ();
 		W_SetCurrentAmmo ();
 		return;
-	}
+	}*/
 	self.currentammo = self.ammo_bullets = self.ammo_bullets - 1;
 	
 	sound (self, CHAN_WEAPON, "weapons/spike2.wav", 1, ATTN_NORM);	

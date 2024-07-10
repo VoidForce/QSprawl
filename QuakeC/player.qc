@@ -521,6 +521,12 @@ void() spinChaingunLoop =
 			W_FireChaingun();
 			self.effects = self.effects | EF_MUZZLEFLASH;
 			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			if (self.ammo_bullets < 1)
+			{
+				self.think = player_run;
+				self.nextthink = time + 0.1;
+				return;
+			}
 			self.attack_finished = time + 0.3;
 			break;
 		case CG_ENDFRAME:
@@ -850,6 +856,8 @@ void() PlayerDie =
 	self.super_damage_finished = 0;
 	self.radsuit_finished = 0;
 	self.modelindex = modelindex_player;	// don't use eyes
+	self.sprawlflags = 0;
+	self.engineflags = 0;
 
 	if (deathmatch || coop)
 		DropBackpack();

@@ -1076,7 +1076,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		bits |= SU_ARMOR;
 
 	bits |= SU_WEAPON;
-	if (bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
+	if (ent->alpha != ENTALPHA_DEFAULT) 
+		bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
 	
 	if ((int)ent->v.engineflags & ENF_CHANGESKIN)
 	{
@@ -1086,8 +1087,6 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 
 	if ((int)ent->v.engineflags)
 		bits |= SU_ENGINEFLAGS;
-
-
 	
 	if (bits >= 65536) bits |= SU_EXTEND1; //?
 	if (bits >= 16777216) bits |= SU_EXTEND2; //?
@@ -1162,6 +1161,8 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1 23
 	MSG_WriteByte (msg, ent->v.adrenaline * 255); // byte 1 24 
 
+	MSG_WriteByte(msg, ent->v.weapon); //1 25
+	/*
 	if (standard_quake)
 	{
 		MSG_WriteByte (msg, ent->v.weapon); //1 25
@@ -1177,7 +1178,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 			}
 		}
 	}
-
+	*/
 	if (bits & SU_WEAPONALPHA)
 		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1 26
 	if (bits & SU_WEAPONSKIN)

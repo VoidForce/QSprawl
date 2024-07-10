@@ -85,7 +85,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_WEAPON		(1<<10)	// no data follows, the bit is it
 #define SU_ANGLES		(1<<11)
 #define SU_WEAPONSKIN	(1<<12)
-#define SU_WEAPONALPHA	(1<<14)
+#define SU_WEAPONALPHA	(1<<13)
 #define SU_EXTEND1		(1<<15) // another byte to follow
 #define SU_EXTEND2		(1<<23) // another byte to follow
 //(1<<13)

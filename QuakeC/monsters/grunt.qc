@@ -221,7 +221,7 @@ void() Laser_Touch =
 	}
 	else
 	{
-		sendMessageImpact(org, self.velocity, IMPACT_LASER, VEC_ORIGIN); 
+		sendMessageImpact(org, VEC_ORIGIN, IMPACT_LASER, VEC_ORIGIN); 
 	}
 	
 	remove(self);	

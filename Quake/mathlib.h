@@ -124,6 +124,10 @@ void ApplyTranslation(float matrix[16], float x, float y, float z);
 void MatrixTranspose4x3(const float src[16], float dst[12]);
 void ProjectVector(const vec3_t src, const float matrix[16], vec3_t dst);
 
+void VectorProject(vec3_t A, vec3_t B, vec3_t result);
+void VectorProjectOnPlane(vec3_t A, vec3_t B, vec3_t result_project, vec3_t result);
+
+
 qboolean RayVsBox (const vec3_t org, const vec3_t rcpdelta, const vec3_t mins, const vec3_t maxs, float *frac);
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)	\

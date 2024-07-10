@@ -738,7 +738,7 @@ void View_ModelDrift(vec3_t vOrigin, vec3_t vAngles)
 {
 	int	i;
 	float	fSpeed, fDifference, fScale;
-	static	vec3_t	svLastFacing;
+	static	vec3_t	svLastFacing = {0, 0, 0};
 	vec3_t	vForward, vRight, vUp, vDifference;
 
 	AngleVectors(vAngles, vForward, vRight, vUp);

@@ -77,7 +77,8 @@ enumflags OGRESTATE {
 void() OgreGrenadeExplode =
 {
 	removeFromList(self);
-	T_RadiusDamage (self, self.owner, 40, world);
+	T_RadiusDamagePlayer(self, self.owner, 30, world, 128, 64);
+	//T_RadiusDamage (self, self.owner, 40, world);
 	sound (self, CHAN_VOICE, "weapons/r_exp3.wav", 1, ATTN_NORM);
 
 	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
@@ -398,6 +399,7 @@ void() ogre_nail7	=[	$shoot6,		ogre_run	] {setHead('5 2 43');ai_face();}; // 67
 
 void() ogre_snipe_loop = 
 {
+	vector start;
 	Think(0.1);
 	self.think = ogre_snipe_loop;
 	ai_face();
@@ -406,7 +408,9 @@ void() ogre_snipe_loop =
 		self.think = ogre_melee;
 		return;
 	}
-	sendMessageVecVecFlag(findHeadPosition(self), self.enemy.origin, LASER_BLUE, TE_LASERTRACE);
+	start = findHeadPosition(self);
+	traceline (start, self.enemy.origin, ALLOWMONSTERS, self);
+	sendMessageVecVecFlag(start, trace_endpos, LASER_BLUE, TE_LASERTRACE);
 	self.count++;
 	if (self.count > 7) 
 	{

@@ -108,8 +108,10 @@ void VectorPerpendicular(vec3_t A, vec3_t B)
 void VectorProject(vec3_t A, vec3_t B, vec3_t result)
 {
 	vec3_t normB;
+	VectorCopy(B, normB); // you fucking moron
 	VectorNormalize(normB);
 	VectorScale(normB, DotProduct(A, normB), result);
+	//Con_DPrintf(" A[%f %f %f], B[%f %f %f], Result[%f %f %f] \n", A[0], A[1], A[2], B[0], B[1], B[2], result[0], result[1], result[2] );
 }
 
 /*
@@ -120,6 +122,7 @@ void VectorProject(vec3_t A, vec3_t B, vec3_t result)
 void VectorProjectOnPlane(vec3_t A, vec3_t B, vec3_t result_project, vec3_t result)
 {
 	vec3_t normB, project;
+	VectorCopy(B, normB);
 	VectorNormalize(normB);
 	VectorScale(normB, DotProduct(A, normB), project);
 	VectorCopy(project, result_project);
