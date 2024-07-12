@@ -1156,6 +1156,52 @@ void R_Impact(vec3_t org, vec3_t dir, int type)
 	}
 }
 
+void R_ParticleShockwave(vec3_t org, int amplitude)
+{
+	particle_t* p;
+	//vec3_t offset;
+	int angle, height, i;
+	byte shift = 0;
+	for (height = 0; height < 32; height += 2)
+	{
+		for (angle = 0; angle < 36; angle++)
+		{
+			if (!(p = R_AllocParticle()))
+				return;
+
+			p->color = 0x02 + rand() & 6;
+			p->type = pt_static;
+			p->die = cl.time + 1;
+
+			p->org[0] = org[0] + circlex[angle] + (rand() % 16) - 8;
+			p->org[1] = org[1] + circley[angle] + (rand() % 16) - 8;
+			p->org[2] = org[2] + ((rand() % 16) - 8) + height;
+
+			p->vel[0] = (org[0] - p->org[0]) * (amplitude + height);
+			p->vel[1] = (org[1] - p->org[1]) * (amplitude + height);
+			p->vel[2] = (rand() % 64) - 32;
+		}
+	}
+
+	for (i = 0; i < 32; i++)
+	{
+		if (!(p = R_AllocParticle()))
+			return;
+
+		p->color = 0x06 + rand() & 6;
+		p->type = pt_grav;
+		p->die = cl.time + 2;
+
+		p->org[0] = org[0] + (rand() % 48) - 24;
+		p->org[1] = org[1] + (rand() % 48) - 24;
+		p->org[2] = org[2] + (rand() % 48) - 24;
+
+		p->vel[0] = (rand() % 64) - 32;
+		p->vel[1] = (rand() % 64) - 32;
+		p->vel[2] = rand() % 96;
+	}
+}
+
 /*
 void CL_RailTrail(vec3_t start, vec3_t end)
 {

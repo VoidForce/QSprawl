@@ -527,6 +527,7 @@ void() monster_hell_knight =
 	self.gib_threshold = 100;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
 	self.monstertype = TYPE_HELLKNIGHT;
+	self.skinchange = 1;
 
 	self.th_stand = hknight_stand1;
 	self.th_walk = hknight_walk1;

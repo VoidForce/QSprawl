@@ -44,6 +44,46 @@ void() W_Precache =
 	precache_sound ("weapons/gauss_charge3.wav");
 	precache_sound ("weapons/gauss_charge4.wav");
 	precache_sound ("weapons/gauss_charge5.wav");
+	
+	precache_sound ("weapons/deploy_chaingun.wav");
+	precache_sound ("weapons/deploy_gauss.wav");
+	precache_sound ("weapons/deploy_grenade.wav");
+	precache_sound ("weapons/deploy_katana.wav");
+	precache_sound ("weapons/deploy_pistol.wav");
+	precache_sound ("weapons/deploy_shock.wav");
+	precache_sound ("weapons/deploy_shotgun.wav");
+	precache_sound ("weapons/deploy_smgs.wav");
+};
+
+void(float gun) playDeploySound =
+{
+	switch (gun)
+	{
+		case IT_KATANA:
+			sound (self, CHAN_ITEM, "weapons/deploy_katana.wav", 1, ATTN_NORM);
+			break;
+		case IT_PISTOL:
+			sound (self, CHAN_ITEM, "weapons/deploy_pistol.wav", 1, ATTN_NORM);
+			break;
+		case IT_SUPER_SHOTGUN:
+			sound (self, CHAN_ITEM, "weapons/deploy_shotgun.wav", 1, ATTN_NORM);
+			break;
+		case IT_SMGS:
+			sound (self, CHAN_ITEM, "weapons/deploy_smgs.wav", 1, ATTN_NORM);
+			break;
+		case IT_CHAINGUN:
+			sound (self, CHAN_ITEM, "weapons/deploy_chaingun.wav", 1, ATTN_NORM);
+			break;
+		case IT_GRENADE_LAUNCHER:
+			sound (self, CHAN_ITEM, "weapons/deploy_grenade.wav", 1, ATTN_NORM);
+			break;
+		case IT_GAUSS:
+			sound (self, CHAN_ITEM, "weapons/deploy_gauss.wav", 1, ATTN_NORM);
+			break;
+		case IT_SHOCK:
+			sound (self, CHAN_ITEM, "weapons/deploy_shock.wav", 1, ATTN_NORM);
+			break;		
+	}
 };
 
 void(vector x, vector y, vector z) makePunch =
@@ -92,6 +132,8 @@ void(float gun) deployGun =
 	self.viewmodeloffset_angles_x = -60;
 	self.viewmodeloffset_angles_z = -30;
 	addPunchVelocity(40, 0, 0);
+	
+	playDeploySound(gun);
 	
 	self.attack_finished = time + 0.25;
 	
@@ -1745,7 +1787,12 @@ void() ImpulseCommands =
 void() W_WeaponFrame =
 {
 	if (self.sprawlflags & SFL_INQUICKMELEE)
+	{
+		self.think = quickMeleeLoop;
+		if (!self.nextthink)
+			self.nextthink = time + 0.05;
 		return;
+	}
 	
 // quickmelee button suppose to work as semi-auto and perform only one action per press
 	if (!self.b_melee) 

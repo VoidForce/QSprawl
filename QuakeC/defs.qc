@@ -358,6 +358,14 @@ const float	IT_INVULNERABILITY		= 1048576;
 const float	IT_SUIT					= 2097152;
 const float	IT_QUAD					= 4194304;
 
+const float	IT_KATANA				= IT_AXE;
+const float	IT_PISTOL				= IT_SHOTGUN;
+const float	IT_SMGS					= IT_NAILGUN;
+const float	IT_CHAINGUN				= IT_SUPER_NAILGUN;
+const float	IT_GRENADE_LAUNCHER		= IT_GRENADE_LAUNCHER;
+const float	IT_GAUSS				= IT_ROCKET_LAUNCHER;
+const float	IT_SHOCK				= IT_LIGHTNING;
+
 // point content values
 
 const float	CONTENT_EMPTY			= -1;
@@ -403,6 +411,7 @@ const float	SVC_SELLSCREEN		= 33;
 #define	TE_IMPACT				12
 #define TE_HEAD					13
 #define TE_LASERTRACE			14
+#define TE_SHOCKWAVE			15
 
 enum LASERCOLOR:float {
 	LASER_BLUE = 0xd0,
@@ -498,10 +507,6 @@ entity	multi_head;
 .float		style;
 .float		gravity;
 
-.vector	saved_forward;
-.vector	saved_right;
-.vector saved_up;
-
 //
 // monster ai
 //
@@ -578,6 +583,7 @@ const float MF_JUMPDISABLED = 8;
 const float MF_NOACCELERATION = 16;
 const float MF_NOAIRACCELERATION = 32;
 const float MF_FORCEDSLIDE = 64;
+const float MF_AFTERDODGE = 128;
 
 //muzzleflash
 const float	MF_PISTOL = 1;
@@ -668,7 +674,7 @@ enum monstertypes:int {
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
 #define CHAINGUN_DAMAGE			80
-#define CHAINGUN_PENETRATION	0.6
+#define CHAINGUN_PENETRATION	0.3
 #define GRENADE_EXPLOSION		150
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
@@ -694,7 +700,7 @@ const armor_t A_OGRE		= {0.5, 5,		0.1, 5,		0.8};
 const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
 const armor_t A_FIEND		= {0.6, 3,		0.7, 100,	0.8};
 const armor_t A_VORE		= {0.2, 50,		0, 0,		0.8};
-const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 100,	0.95};
+const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 
 #define SOLDIER_HEALTH 		85
 #define SOLDIER_HEAD 		20
@@ -735,6 +741,8 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 100,	0.95};
 .float		shotgun_finished;
 .float		gauss_finished;
 .float		grenade_finished;
+.float		stopmelee_finished;
+.float		jumpreset_time;
 
 .float		chaingun_frame;
 .float 		jump_timer;
@@ -746,7 +754,6 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 100,	0.95};
 .vector		punch_slow;
 .float		punch_time;
 
-.entity		weapon_director; // special entity that handles complex stuff for the player. One extra entity per client.
 .float		deploy_time;
 
 entity		grenade_handler; // global
@@ -852,7 +859,7 @@ entity		grenade_handler; // global
 //
 .float 		pausetime;
 .entity 	movetarget;
-
+.float		skinchange;
 
 //
 // doors

@@ -102,6 +102,8 @@ void(entity targ, entity attacker) Killed =
 	// bump the monster counter
 	if (self.flags & FL_MONSTER)
 	{
+		self.skin = 0;
+		self.skinchange = 0;
 		killed_monsters = killed_monsters + 1;
 		WriteByte (MSG_ALL, SVC_KILLEDMONSTER);
 	}
@@ -264,7 +266,14 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		// i'm gonna use res here for angles difference, it's ugly but who cares
 			res = anglemod(targ.angles_y - attacker.angles_y); //
 			if (res < 75 || res > 285)
+			{
+			// hit back
 				penetration += 0.8;
+				sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
+			// mark as critical hit 
+				attacker.engineflags |= ENF_HITHEAD;
+				attacker.headmarker_time = time + 0.2;
+			}
 			res = 0;
 		}
 		dprint2("penetration: ",ftos(penetration)); endl();
@@ -365,6 +374,8 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (targ.monsterflags & MFL_HASHEAD && targ.health_head <= 0)
 	{
+		targ.skin = 0;
+		targ.skinchange = 0;
 		targ.monsterflags |= MFL_LOST_HEAD;
 		targ.monsterflags -= targ.monsterflags & MFL_HASHEAD;
 		
@@ -546,3 +557,26 @@ void(entity attacker, float damage) T_BeamDamage =
 	}
 };
 
+void(vector epicenter, float radius, vector amount) shakeViewRadius =
+{
+	entity	head;
+	entity oldself;
+	head = findradius(epicenter, radius);
+	
+	while (head)
+	{
+		if (!(head.flags & FL_CLIENT))
+		{
+			head = head.chain;
+			continue;
+		}
+
+		oldself = self;
+		self = head;
+		addShake(amount_x, amount_y, amount_z);
+		amount *= 0.2;
+		addPunchVelocity(amount_x, amount_y, amount_z);
+		self = oldself;
+		head = head.chain;
+	}
+};

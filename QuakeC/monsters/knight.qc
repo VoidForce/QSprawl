@@ -368,8 +368,7 @@ void() monster_knight =
 	self.health_head = KNIGHT_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_KNIGHT;
-	//self.armorclass_body = 5;
-	//self.armorclass_head = 0;
+	self.skinchange = 1;
 	self.gib_threshold = 100;
 
 	self.th_stand = knight_stand1;

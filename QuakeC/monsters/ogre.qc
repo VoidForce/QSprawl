@@ -130,7 +130,7 @@ void() OgreFireGrenade =
 	vector dir;
 	
 	float distance, ttime, blast_time;
-	vector start, end, base_forward,;
+	vector start, end, base_forward, offset;
 	
 	if (self.state & OGRE_NOWEAPON)
 		return;
@@ -142,12 +142,11 @@ void() OgreFireGrenade =
 		start = self.origin + v_forward * 70 + v_up * 37;
 		distance = vlen(self.origin - self.enemy.origin);
 		ttime = distance / 1000; // simplified travel time
-		dprint3("dist ",ftos(distance), " time ");
-		dprint(ftos(ttime));endl();
-		end = self.enemy.origin + self.enemy.velocity * (ttime - 0.1);
+		offset = lerpVector(self.enemy.velocity * (ttime - 0.1), '0 0 0', ttime);
+		end = self.enemy.origin + offset;
 		dir = vectoangles(end - start);
 		dir_x = dir_x + 25 * ttime;
-		dprint2("angle: ",ftos(dir_x));endl();
+
 		//if (dir_x > 89)
 		//	dir_x = 89;
 		makevectors2(dir);
@@ -343,6 +342,29 @@ void() ogre_swing11	=[	$swing11,		ogre_swing12 ] {ai_charge_side();setHead('-2 -
 void() ogre_swing12	=[	$swing12,		ogre_swing13 ] {setHead('3 -7 41');ai_charge(3);}; // 45
 void() ogre_swing13	=[	$swing13,		ogre_swing14 ] {setHead('8 -3 40');ai_charge(8);}; // 46
 void() ogre_swing14	=[	$swing14,		ogre_run	] {setHead('7 2 42');ai_charge(9);}; // 47
+
+void() ogre_smashtouch =
+{
+	self.touch = SUB_Null;
+	if (other.flags & FL_CLIENT)
+		T_Damage (other, self, self, fabs(self.fA) * 0.1, NOFLAGS);
+};
+
+void() ogre_landshake =
+{
+	if ((self.groundentity || self.flags & FL_ONGROUND) && self.fA > 150)
+	{
+		self.fA = min(self.fA, 300);
+		shakeViewRadius(self.origin, 512, [150 + self.fA * random(), self.fA * crandom() * 0.25, self.fA * crandom()]);
+		sendMessageVecFlag(self.origin + '0 0 -20', (self.fA/300) * 254, TE_SHOCKWAVE);
+		self.fA = 0;
+		return;
+	}
+	self.fA = -self.velocity_z;
+	self.thinkA = ogre_landshake;
+	self.nextthinkA = time + 0.1;
+};
+
 // no weapon jump
 void() ogre_jumpsmash	=[	$smash1,		ogre_jumpsmash2	] 
 {
@@ -356,10 +378,14 @@ void() ogre_jumpsmash	=[	$smash1,		ogre_jumpsmash2	]
 	self.velocity = self.velocity * 519;
 	self.velocity_z = 300;
 	self.vA = self.velocity;
+	self.touch = ogre_smashtouch;
 	
 	self.pain_finished = time + 2;
 	self.attack_finished = time + 8;
+	self.thinkA = ogre_landshake;
+	self.nextthinkA = time + 0.1;
 };  // 48 smash
+
 void() ogre_jumpsmash2	=[	$smash2,		ogre_smash3	] {setHead('1 -1 40'); self.velocity = self.vA;}; // 49
 
 void() ogre_smash1	=[	$smash1,		ogre_smash2	] {setHead('3 1 40');ai_charge(6); self.pain_finished = time + 2;}; // 48 smash
@@ -596,11 +622,16 @@ void()	ogre_bdie10	=[	$bdeath10,	decay	] {};
 
 void() ogre_melee =
 {
-	if (random() > 0.5)
+	if (self.fB)
+	{
 		ogre_smash1 ();
-
+		self.fB = 0;
+	}
 	else
+	{
 		ogre_swing1 ();
+		self.fB = 1;
+	}
 };
 
 /*===========
@@ -747,6 +778,7 @@ void() monster_ogre =
 	self.monstertype = TYPE_OGRE;
 	self.state = OGRE_SNIPER;
 	self.yaw_speed = 15;
+	self.skinchange = 1;
 	
 	self.th_stand = ogre_stand1;
 	self.th_walk = ogre_walk1;

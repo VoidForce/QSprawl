@@ -415,6 +415,7 @@ void() monster_enforcer =
 	self.monstertype = TYPE_ENFORCER;
 	self.monster_ammo = 6;
 	self.gib_threshold = 100;
+	self.skinchange = 1;
 
 	self.th_stand = enf_stand1;
 	self.th_walk = enf_walk1;

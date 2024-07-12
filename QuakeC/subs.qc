@@ -651,6 +651,16 @@ void(vector a, vector b, float type) sendMessageVecVec =
 	WriteCoord (MSG_BROADCAST, b_z);
 };
 
+void(vector a, float flag, float type) sendMessageVecFlag =
+{
+	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
+	WriteByte (MSG_BROADCAST, type);
+	WriteCoord (MSG_BROADCAST, a_x);
+	WriteCoord (MSG_BROADCAST, a_y);
+	WriteCoord (MSG_BROADCAST, a_z);
+	WriteByte (MSG_BROADCAST, flag);
+};
+
 void(vector a, float type) sendMessageVec =
 {
 	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
@@ -910,3 +920,15 @@ void (string soundname, float timer = 1) playPainSound =
 		sound (self, CHAN_VOICE, soundname, 1, ATTN_NORM);
 	}
 }
+
+void(float targetskin) changeSkinsSlowmo =
+{
+	entity head;
+
+	head = findfloat(skinchange, 1);
+	while (head)
+	{
+		head.skin = targetskin;
+		head = head.chain;
+	}
+};

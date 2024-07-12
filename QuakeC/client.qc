@@ -582,6 +582,7 @@ void() PutClientInServer =
 	self.invisible_finished = 0;
 	self.invincible_finished = 0;
 	self.invincible_time = 0;
+	self.viewmodeloffset_angles = '0 0 -5';
 
 	DecodeLevelParms ();
 	
@@ -630,9 +631,6 @@ void() PutClientInServer =
 	if (!grenade_handler)
 		grenade_handler = spawn();
 	grenade_handler.classname = "GrenadeHandler";
-	
-	if (!self.weapon_director)
-		self.weapon_director = spawn();
 	
 	self.thinkA = trailPlayer;
 	self.nextthinkA = time + 1;
@@ -878,6 +876,8 @@ void() PlayerJump =
 		if (self.wall_jumps > 2) 
 			return;
 		self.wall_jumps++;
+		if (!self.jumpreset_time)
+			self.jumpreset_time = time + 1.5;
 		
 		z = self.velocity_z;
 		jump_force = clamp(0, time - self.jump_timer, 1);
@@ -1044,7 +1044,6 @@ void() trailPlayer =
 	self.trail3 = self.trail2;
 	self.trail2 = self.trail1;
 	self.trail1 = self.origin + self.velocity * 0.25;
-	self.trail1_z -= 20;
 	self.thinkA = trailPlayer;
 	self.nextthinkA = time + 0.3;
 };
@@ -1239,8 +1238,9 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
 		self.jump_timer = time + 0.5;
 		StopAirAcceleration(0.4);
-		StopAcceleration(0.4);
+		//StopAcceleration(0.4);
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
+		self.speedmodifier = 2;
 	}
 	else 
 	{
@@ -1258,6 +1258,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 			self.jump_timer = time + 0.5;
 			StopAirAcceleration(0.4);
 			sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
+			self.speedmodifier = 2;
 		}
 	}
 };
@@ -1487,6 +1488,28 @@ void() PlayerPreThink =
 	
 	if (self.deadflag == DEAD_DYING)
 		return;	// dying, so do nothing
+//--------------------------------------------------------------------------------
+// reset jumps 
+	if (!(self.flags & FL_ONGROUND))
+	{
+		if (self.jumpreset_time < time && self.jumpreset_time)
+		{
+			if (self.wall_jumps > 0)
+			{
+				self.wall_jumps--;
+				sound (self, CHAN_AUTO, "player/jump_recharged.wav", 1, ATTN_NORM);
+			}
+				
+			if (self.wall_jumps > 0)
+				self.jumpreset_time = time + 1.5;
+			else
+				self.jumpreset_time = 0;
+		}
+	}
+	else
+	{
+		self.jumpreset_time = 0;
+	}
 	
 	if (self.movementflags & MF_NOAIRACCELERATION)
 	{
@@ -1564,7 +1587,7 @@ void() PlayerPreThink =
 			else
 				self.speedmodifier = 1.25;
 			
-			if (self.speedmodifier > 1.25 && self.current_speed < 320 * self.speedmodifier * 0.8)
+			if (self.speedmodifier > 1.25 && self.current_speed < 320 * self.speedmodifier * 0.8 && self.dodge_time < time)
 				self.speedmodifier = 1.25;
 			
 			self.phys_speed = 320 * self.speedmodifier;
@@ -1643,6 +1666,7 @@ void() PlayerPreThink =
 				slowmotion_time = time + SLOWMO_FADE_TIME; //start fade out 
 			
 			slowmotion = 0;
+			changeSkinsSlowmo(0);
 		}
 	}
 	else
@@ -1655,6 +1679,7 @@ void() PlayerPreThink =
 				slowmotion_time = time + SLOWMO_FADE_TIME/2; //start fade in
 			
 			slowmotion = 1;
+			changeSkinsSlowmo(1);
 		}
 	}
 	
@@ -1665,6 +1690,7 @@ void() PlayerPreThink =
 	{
 		slowmotion = 0;
 		slowmotion_time = time;
+		changeSkinsSlowmo(0);
 	}
 	// make changes to timescale
 	if (slowmotion_time > 0)

@@ -108,13 +108,13 @@ void()	army_run1	=[	$run1,		army_run2	] {Think(0.06);setHead('7 1 21'); // 74
 	ai_run(11);
 };
 
-void()	army_run2	=[	$run2,		army_run3	] {Think(0.06);setHead('6 0 22');ai_run(15);}; // 75
-void()	army_run3	=[	$run3,		army_run4	] {Think(0.06);setHead('6 0 21');ai_run(12);}; // 76
-void()	army_run4	=[	$run4,		army_run5	] {Think(0.06);setHead('6 0 21');ai_run(12);}; // 77
-void()	army_run5	=[	$run5,		army_run6	] {Think(0.06);setHead('6 0 21');ai_run(10);}; // 78
-void()	army_run6	=[	$run6,		army_run7	] {Think(0.06);setHead('6 1 22');ai_run(15);}; // 79
-void()	army_run7	=[	$run7,		army_run8	] {Think(0.06);setHead('6 1 21');ai_run(12);}; // 80
-void()	army_run8	=[	$run8,		army_run1	] {Think(0.06);setHead('6 1 20');ai_run(10);}; // 81
+void()	army_run2	=[	$run2,		army_run3	] {Think(0.075);setHead('6 0 22');ai_run(15);}; // 75
+void()	army_run3	=[	$run3,		army_run4	] {Think(0.075);setHead('6 0 21');ai_run(12);}; // 76
+void()	army_run4	=[	$run4,		army_run5	] {Think(0.075);setHead('6 0 21');ai_run(12);}; // 77
+void()	army_run5	=[	$run5,		army_run6	] {Think(0.075);setHead('6 0 21');ai_run(10);}; // 78
+void()	army_run6	=[	$run6,		army_run7	] {Think(0.075);setHead('6 1 22');ai_run(15);}; // 79
+void()	army_run7	=[	$run7,		army_run8	] {Think(0.075);setHead('6 1 21');ai_run(12);}; // 80
+void()	army_run8	=[	$run8,		army_run1	] {Think(0.075);setHead('6 1 20');ai_run(10);}; // 81
 
 void()	army_atk1	=[	$shoot1,	army_atk2	] {setHead('5 0 24');ai_face();};  // 82
 void()	army_atk2	=[	$shoot2,	army_atk3	] {setHead('2 1 24');ai_face();};  // 83
@@ -448,6 +448,7 @@ void() monster_army =
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_SOLDIER;
 	self.gib_threshold = 85;
+	self.skinchange = 1;
 
 	self.th_stand = army_stand1;
 	self.th_walk = army_walk1;

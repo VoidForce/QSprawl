@@ -34,6 +34,7 @@ sfx_t			*cl_sfx_ric1;
 sfx_t			*cl_sfx_ric2;
 sfx_t			*cl_sfx_ric3;
 sfx_t			*cl_sfx_r_exp3;
+sfx_t			*cl_sfx_impact;
 
 /*
 =================
@@ -49,6 +50,7 @@ void CL_InitTEnts (void)
 	cl_sfx_ric2 = S_PrecacheSound ("weapons/ric2.wav");
 	cl_sfx_ric3 = S_PrecacheSound ("weapons/ric3.wav");
 	cl_sfx_r_exp3 = S_PrecacheSound ("weapons/r_exp3.wav");
+	cl_sfx_impact = S_PrecacheSound("misc/impact.wav");
 }
 
 /*
@@ -282,6 +284,15 @@ void CL_ParseTEnt (void)
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
 		S_StartSound(-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+		break;
+
+	case TE_SHOCKWAVE:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		flag = MSG_ReadByte();
+		R_ParticleShockwave(pos, flag); // flag is magnitude
+		S_StartSound(-1, 0, cl_sfx_impact, pos, 1, 1);
 		break;
 
 	/*

@@ -181,13 +181,15 @@ void(vector st, float lflag) ZombieFireHead =
 	local	entity missile;
 	local	vector	org;
 	self.monsterflags -= self.monsterflags & MFL_HASHEAD;
+	self.skinchange = 0;
+	self.skin = 0;
 	setmodel (self, "progs/zombie_headless.mdl");
 	setsize (self, '-16 -16 -24', '16 16 32');
 	
 	// gp into one of the fast pain animations	
 	self.pain_finished = time + 3;
 	self.inpain = 2;
-	self.solid = SOLID_NOT;
+	//self.solid = SOLID_NOT;
 	zombie_paine1 ();
 
 	missile = spawn ();
@@ -585,6 +587,7 @@ void() monster_zombie =
 	self.health = ZOMBIE_HEALTH;
 	self.max_health = ZOMBIE_HEALTH;
 	self.health_head = ZOMBIE_HEAD;
+	self.skinchange = 1;
 
 	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;
 	self.monstertype = TYPE_ZOMBIE;

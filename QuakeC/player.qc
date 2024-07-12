@@ -415,7 +415,7 @@ void() katanaSwingLoop =
 	if (self.weaponframe == 4)
 	{
 		W_FireAxe();
-		if (self.speedmodifier > 1.35)
+		if (self.speedmodifier > 1.35 || self.dodge_time > time)
 		{
 			self.touch = playerBump;
 			consumeAdrenaline(0, 0.5);
@@ -427,8 +427,27 @@ void() katanaSwingLoop =
 		//StopAirAcceleration(0.3);
 		
 		makevectors(self.v_angle);
-		self.velocity += [v_forward_x, v_forward_y, 0] * ( 100 + (400 * (self.speedmodifier - 1.0)));
-		self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
+		
+		if (self.dodge_time > time)
+		{
+		// 10 degrees, 800 power
+			float aimangle;
+			aimangle = v_forward_z;
+
+			if (self.flags & FL_ONGROUND)
+				aimangle = clamp(0.09, aimangle, 0.175); // 5..10 degrees
+			else
+				aimangle = clamp(-0.5, aimangle, 0.175); // -30..10 degrees
+
+			self.velocity = [v_forward_x, v_forward_y, aimangle] * 800;
+	
+			self.katana_charges = 4;
+		}
+		else
+		{
+			self.velocity += [v_forward_x, v_forward_y, 0] * ( 100 + (400 * (self.speedmodifier - 1.0)));
+			self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
+		}
 		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	}
@@ -457,6 +476,7 @@ void() katanaSwingLoop =
 // Quick Melee
 void() quickMeleeStart = 
 {
+	self.stopmelee_finished = time + 0.3;
 	self.sprawlflags |= SFL_INQUICKMELEE | SFL_STOPMELEE;
 	self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	self.weaponmodel = "progs/v_axe.mdl";

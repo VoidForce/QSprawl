@@ -271,7 +271,9 @@ void() worldspawn =
 
 	precache_sound ("player/lburn1.wav");		// lava burn
 	precache_sound ("player/lburn2.wav");		// lava burn
-
+	
+	precache_sound ("player/jump_recharged.wav");	
+	
 	precache_sound ("misc/water1.wav");			// swimming
 	precache_sound ("misc/water2.wav");			// swimming
 
