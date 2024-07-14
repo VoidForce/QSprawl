@@ -676,89 +676,167 @@ AMMO
 
 void() ammo_touch =
 {
-	if (other.classname != "player")
+	float deficit;
+	if (!(other.flags & FL_CLIENT))
 		return;
 
 	if (other.health <= 0)
 		return;
+	
+	if (self.fA > time) // just took from the box, wait a bit
+		return;
 
 // shotgun
-	if (self.weapon == 1)
+	switch (self.weapon)
 	{
-		if (other.ammo_shells >= MAX_SHELLS)
-			return;
+		case 1:
+			if (other.ammo_shells >= MAX_SHELLS)
+				return;
+			
+			deficit = MAX_SHELLS - other.ammo_shells;
+			if (deficit > self.aflag)
+			{
+				other.ammo_shells += self.aflag;
+				deficit = self.aflag; // save amount we took for the message
+				self.aflag = 0;
+			}
+			else
+			{
+				other.ammo_shells = MAX_SHELLS;
+				self.aflag -= deficit;
+			}
+			if (self.aflag > 0)
+				self.frame = 16 - self.aflag;
+			break;
 
-		other.ammo_shells = other.ammo_shells + self.aflag;
-	}
+		case 2:
+			if (other.ammo_nails >= MAX_NAILS)
+				return;
+			
+			deficit = MAX_NAILS - other.ammo_nails;
+			if (deficit > self.aflag)
+			{
+				other.ammo_nails += self.aflag;
+				deficit = self.aflag; // save amount we took for the message
+				self.aflag = 0;
+			}
+			else
+			{
+				other.ammo_nails = MAX_NAILS;
+				self.aflag -= deficit;
+			}
+			if (self.aflag < 51 && !(self.sprawlflags & SFLI_MODELSET))
+			{
+				setmodel (self, "progs/ammo/nails.mdl");
+				setsize (self, '0 0 0', '32 32 56');
+				self.sprawlflags |= SFLI_MODELSET;
+			}
+			break;
 
-	// spikes
-	if (self.weapon == 2)
-	{
-		if (other.ammo_nails >= MAX_NAILS)
-			return;
+		case 3:
 
-		other.ammo_nails = other.ammo_nails + self.aflag;
-	}
+			if (other.ammo_rockets >= MAX_ROCKETS)
+				return;
+			
+			deficit = MAX_ROCKETS - other.ammo_rockets;
+			if (deficit > self.aflag)
+			{
+				other.ammo_rockets += self.aflag;
+				deficit = self.aflag; // save amount we took for the message
+				self.aflag = 0;
+			}
+			else
+			{
+				other.ammo_rockets = MAX_ROCKETS;
+				self.aflag -= deficit;
+			}
+			if (self.aflag > 0)
+				self.frame = 6 - self.aflag;
+			break;
 
-	//	rockets
-	if (self.weapon == 3)
-	{
-		if (other.ammo_rockets >= MAX_ROCKETS)
-			return;
+		case 4:
+			if (other.ammo_cells >= MAX_CELLS)
+				return;
+			
+			deficit = MAX_CELLS - other.ammo_cells;
+			if (deficit > self.aflag)
+			{
+				other.ammo_cells += self.aflag;
+				deficit = self.aflag; // save amount we took for the message
+				self.aflag = 0;
+			}
+			else
+			{
+				other.ammo_cells = MAX_CELLS;
+				self.aflag -= deficit;
+			}
+			if (self.aflag > 0)
+				self.frame = 3 - ceil(self.aflag / 3);
+			break;
 
-		other.ammo_rockets = other.ammo_rockets + self.aflag;
-	}
-
-	//	cells
-	if (self.weapon == 4)
-	{
-		if (other.ammo_cells >= MAX_CELLS)
-			return;
-		other.ammo_cells = other.ammo_cells + self.aflag;
-	}
-	
-	if (self.weapon == 5)
-	{
-		if (other.ammo_bullets >= MAX_BULLETS)
-			return;
-		other.ammo_bullets = other.ammo_bullets + self.aflag;
+		case 5:
+			if (other.ammo_bullets >= MAX_BULLETS)
+				return;
+			
+			deficit = MAX_BULLETS - other.ammo_bullets;
+			if (deficit > self.aflag)
+			{
+				other.ammo_bullets += self.aflag;
+				deficit = self.aflag; // save amount we took for the message
+				self.aflag = 0;
+			}
+			else
+			{
+				other.ammo_bullets = MAX_BULLETS;
+				self.aflag -= deficit;
+			}
+			break;
 	}
 
 	bound_other_ammo ();
 	
-	sprint (other, "You got the ");
+	sprint (other, "You got: ");
+	sprint (other, ftos(deficit));
+	sprint (other, " ");
 	sprint (other, self.netname);
 	sprint (other, "\n");
 	// ammo touch sound
 	sound (other, CHAN_ITEM, "weapons/lock4.wav", 1, ATTN_NORM);
 	stuffcmd (other, "bf\n");
 
-	// change to a better weapon if appropriate
-	/*
-	if ( other.weapon == best )
-	{
-		stemp = self;
-		self = other;
-		deployGun(W_BestWeapon());
-		W_SetCurrentAmmo ();
-		self = stemp;
-	}
-	*/
-
 	// if changed current ammo, update it
 	setAmmo(other);
 	
+	if (!(self.sprawlflags & SFLI_TARGETSFIRED))
+	{
+	// fire all targets / killtargets
+		activator = other;
+		SUB_UseTargets();				
+		self.sprawlflags |= SFLI_TARGETSFIRED;
+	}
+	
+	if (self.aflag > 0)
+	{
+		// next time we can touch this
+		self.effects |= EF_NOLERP;
+		self.fA = time + 0.5;
+		return;
+	}
+		
 	// remove it in single player, or setup for respawning in deathmatch
 	self.model = string_null;
 	self.solid = SOLID_NOT;
 
 	if (deathmatch == 1)
+	{
 		self.nextthink = time + 30;
-	
-	self.think = SUB_regen;
-
-	activator = other;
-	SUB_UseTargets();				// fire all targets / killtargets
+		self.think = SUB_regen;
+	}
+	else
+	{
+		self.nextthink = time + 0.1;
+		self.think = SUB_Remove;
+	}
 };
 
 void (entity who)setAmmo =
@@ -799,19 +877,20 @@ float WEAPON_BIG2 = 1;
 void() item_shells =
 {
 	self.touch = ammo_touch;
-
+	
+	precache_model ("progs/ammo/shells.mdl");
+	setmodel (self, "progs/ammo/shells.mdl");
+	
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("progs/ammo/shells_big.mdl");
-		setmodel (self, "progs/ammo/shells_big.mdl");
 		self.aflag = 16;
+		self.frame = 0; // 16 - 0
 	}
 
 	else
 	{
-		precache_model ("progs/ammo/shells.mdl");
-		setmodel (self, "progs/ammo/shells.mdl");
 		self.aflag = 8;
+		self.frame = 8; // 16 - 8
 	}
 
 	self.weapon = 1;
@@ -852,18 +931,18 @@ void() item_rockets =
 {
 	self.touch = ammo_touch;
 
+	precache_model ("progs/ammo/rockets.mdl");
+	setmodel (self, "progs/ammo/rockets.mdl");
+	
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("progs/ammo/rockets_big.mdl");
-		setmodel (self, "progs/ammo/rockets_big.mdl");
 		self.aflag = 6;
+		self.frame = 0; // 6 - 0
 	}
-
 	else
 	{
-		precache_model ("progs/ammo/rockets.mdl");
-		setmodel (self, "progs/ammo/rockets.mdl");
 		self.aflag = 2;
+		self.frame = 4; // 6 - 4
 	}
 
 	self.weapon = 3;
@@ -878,19 +957,18 @@ void() item_rockets =
 void() item_cells =
 {
 	self.touch = ammo_touch;
-
+	precache_model ("progs/ammo/cells.mdl");
+	setmodel (self, "progs/ammo/cells.mdl");
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("progs/ammo/cells_big.mdl");
-		setmodel (self, "progs/ammo/cells_big.mdl");
-		self.aflag = 9;
+		self.aflag = 9; // cells provide x3 charges per battery
+		self.frame = 0; // 3 - 0
 	}
 
 	else
 	{
-		precache_model ("progs/ammo/cells.mdl");
-		setmodel (self, "progs/ammo/cells.mdl");
 		self.aflag = 3;
+		self.frame = 2; // 3 - 2
 	}
 
 	self.weapon = 4;
@@ -928,69 +1006,45 @@ float WEAPON_SPIKES = 4;
 float WEAPON_BIG = 8;
 void() item_weapon =
 {
-	self.touch = ammo_touch;
-
 	if (self.spawnflags & WEAPON_SHOTGUN)
 	{
+		self.spawnflags -= self.spawnflags & WEAPON_SHOTGUN;
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("progs/ammo/shells_big.mdl");
-			setmodel (self, "progs/ammo/shells_big.mdl");
-			self.aflag = 20;
+			self.spawnflags -= self.spawnflags & WEAPON_BIG;
+			self.spawnflags |= WEAPON_BIG2;
 		}
 
-		else
-		{
-			precache_model ("progs/ammo/shells.mdl");
-			setmodel (self, "progs/ammo/shells.mdl");
-			self.aflag = 10;
-		}
-		self.weapon = 1;
-		self.netname = "shotgun shells";
+		item_shells();
+		return;
 	}
 
 	if (self.spawnflags & WEAPON_SPIKES)
 	{
+		self.spawnflags -= self.spawnflags & WEAPON_SPIKES;
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("progs/ammo/nails.mdl");
-			setmodel (self, "progs/ammo/nails.mdl");
-			self.aflag = 100;
+			self.spawnflags -= self.spawnflags & WEAPON_BIG;
+			self.spawnflags |= WEAPON_BIG2;
 		}
-
-		else
-		{
-			precache_model ("progs/ammo/nails.mdl");
-			setmodel (self, "progs/ammo/nails.mdl");
-			self.aflag = 50;
-		}
-		self.weapon = 2;
-		self.netname = ".45 ACP rounds";
+		
+		item_spikes();
+		return;
 	}
 
 	if (self.spawnflags & WEAPON_ROCKET)
 	{
+		self.spawnflags -= self.spawnflags & WEAPON_ROCKET;
 		if (self.spawnflags & WEAPON_BIG)
 		{
-			precache_model ("progs/ammo/rockets_big.mdl");
-			setmodel (self, "progs/ammo/rockets_big.mdl");
-			self.aflag = 6;
+			self.spawnflags -= self.spawnflags & WEAPON_BIG;
+			self.spawnflags |= WEAPON_BIG2;
 		}
-
-		else
-		{
-			precache_model ("progs/ammo/rockets.mdl");
-			setmodel (self, "progs/ammo/rockets.mdl");
-			self.aflag = 6;
-		}
-		self.weapon = 3;
-		self.netname = "40mm Grenades";
+		
+		item_rockets();
+		return;
 	}
-	
-	setsize (self, '0 0 0', '32 32 56');
-	StartItem ();
 };
-
 
 /*
 ===============================================================================
@@ -1521,4 +1575,108 @@ void() DropBackpack =
 	
 	item.nextthink = time + 120;    // remove after 2 minutes
 	item.think = SUB_Remove;
+};
+
+#define DROP_SHELLS 1
+#define DROP_NAILS 2
+#define DROP_ROCKETS 3
+#define DROP_CELLS 4
+#define DROP_BULLETS 5
+
+void(vector pos, float type, float amount) dropAmmo =
+{
+	entity item;
+	
+	if (amount < 1)
+		return;
+	
+	item = spawn();
+	item.flags = FL_ITEM;
+	item.solid = SOLID_TRIGGER;
+	item.movetype = MOVETYPE_TOSS;
+	setmodel (item, "progs/ammo/ammo_drop.spr");
+	setsize (item, '-16 -16 -16', '16 16 32');
+	setorigin (item, pos);
+	item.touch = ammo_drop_touch;
+	item.fA = type;
+	item.velocity_z = 300;
+	item.velocity_x = -100 + (random() * 200);
+	item.velocity_y = -100 + (random() * 200);
+	item.scale = 0.15;
+	item.think = SUB_Remove;
+	item.nextthink = time + 15;
+	switch (type)
+	{
+		case DROP_SHELLS:
+			item.ammo_shells = amount;
+			item.frame = 3;
+			break;
+		case DROP_NAILS:
+			item.ammo_nails = amount;
+			item.frame = 0;
+			break;
+		case DROP_ROCKETS:
+			item.ammo_rockets = amount;
+			item.frame = 2;
+			break;
+		case DROP_CELLS:
+			item.ammo_cells = amount;
+			item.frame = 4;
+			break;
+		case DROP_BULLETS:
+			item.ammo_bullets = amount;
+			item.frame = 1;
+			break;
+	}
+};
+
+
+void() ammo_drop_touch =
+{
+	if (!(other.flags & FL_CLIENT))
+		return;
+	
+	switch (self.fA)
+	{
+		case DROP_SHELLS:
+			if (other.ammo_shells < MAX_SHELLS)
+				other.ammo_shells += self.ammo_shells;
+			else 
+				return;
+			other.ammo_shells = min(other.ammo_shells, MAX_SHELLS);
+			break;
+		case DROP_NAILS:
+			if (other.ammo_nails < MAX_NAILS)
+				other.ammo_nails += self.ammo_nails;
+			else 
+				return;
+			other.ammo_nails = min(other.ammo_nails, MAX_NAILS);
+			break;
+		case DROP_ROCKETS:
+			if (other.ammo_rockets < MAX_ROCKETS)
+				other.ammo_rockets += self.ammo_rockets;
+			else 
+				return;
+			other.ammo_rockets = min(other.ammo_rockets, MAX_ROCKETS);
+			break;
+		case DROP_CELLS:
+			if (other.ammo_cells < MAX_CELLS)
+				other.ammo_cells += self.ammo_cells;
+			else 
+				return;
+			other.ammo_cells = min(other.ammo_cells, MAX_CELLS);
+			break;
+		case DROP_BULLETS:
+			if (other.ammo_bullets < MAX_BULLETS)
+				other.ammo_bullets += self.ammo_bullets;
+			else 
+				return;
+			other.ammo_bullets = min(other.ammo_bullets, MAX_BULLETS);
+			break;
+	}
+
+	setAmmo(other);
+	sound (other, CHAN_ITEM, "weapons/pkup.wav", 1, ATTN_NORM);
+	//stuffcmd (other, "bf\n");
+	SUB_Remove();
 };

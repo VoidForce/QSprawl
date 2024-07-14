@@ -70,7 +70,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //johnfitz
 
 //johnfitz -- PROTOCOL_NEHAHRA transparency
-#define U_TRANS			(1<<15)
+//#define U_TRANS			(1<<15)
 //johnfitz
 #define	SU_VIEWHEIGHT	(1<<0)
 #define	SU_IDEALPITCH	(1<<1)

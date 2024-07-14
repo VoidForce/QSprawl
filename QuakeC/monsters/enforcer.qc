@@ -341,6 +341,7 @@ void() enf_die =
 	
 	if (self.health_head <= 0)
 	{
+		dropAmmo(self.origin, DROP_SHELLS, 2);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/enforcer_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 36');

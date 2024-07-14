@@ -506,6 +506,7 @@ entity	multi_head;
 .float		light_lev;		// not used by game, but parsed by light util
 .float		style;
 .float		gravity;
+.float		scale;
 
 //
 // monster ai
@@ -595,7 +596,7 @@ const float	MF_GRENADE = 6;
 const float	MF_LG = 7;
 
 //monsterflags, should be only set on monsters
-const float MFL_ISMONSTER = 1; // should be always set by default to every monster
+const float MFL_NOTMONSTER = 1; // should be always set by default to every monster
 const float MFL_HASHEAD = 2; // recieve head damage, additional logic when head is gone
 const float MFL_HEADKILLS = 4; // set this if you want healh_health < 0 to kill target
 const float MFL_PAIN_HEADSHOT = 8; // play special pain animation
@@ -606,8 +607,11 @@ const float MFL_DEAD = 128;
 const float MFL_GIB_ME = 256;
 const float MFL_BOSS = 512;
 const float MFL_CONFUSED = 1024; // monster chase player's trail instead of origin
-const float MFL_FIENDTOUCH = 2048; // fiend only
-const float MFL_LOSTWEAPON = 2048; // ogre only
+const float MFL_SHIELD = 2048;
+const float MFL_FIENDTOUCH = 4096; // fiend only
+const float MFL_LOSTWEAPON = 4096; // ogre only
+//const float MFL_HASDRONE = 4096; // vore only
+
 
 //slowmo states
 const float SLOWMO_VALUE = 0.4;
@@ -628,13 +632,17 @@ const float SFL_INQUICKMELEE = 8;
 const float SFL_STOPMELEE = 16;
 const float SFL_HOLD = 32;
 const float SFL_INERTIA = 64; // remove
-const float SFL_VMOFFSET = 128; // TODO: i need to make something about viewmodel
+const float SFL_VMOFFSET = 128;
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
+const float SFL_UNLIMITED_ADRENALINE = 1024;
 // projectile
 const float SFLP_GRENADE_CHARGED = 1;
 const float SFLP_GRENADE_NOTOUCH = 2;
 const float SFLP_GRENADE_CANTOUCHSOFT = 4;
+// items
+const float SFLI_TARGETSFIRED = 1;
+const float SFLI_MODELSET = 2; // ammo nails change model only once when < 51
 
 // movement inputs
 const float MOVE_FORWARD = 1;
@@ -674,7 +682,7 @@ enum monstertypes:int {
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
 #define CHAINGUN_DAMAGE			80
-#define CHAINGUN_PENETRATION	0.3
+#define CHAINGUN_PENETRATION	0.2
 #define GRENADE_EXPLOSION		150
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
@@ -743,6 +751,8 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 .float		grenade_finished;
 .float		stopmelee_finished;
 .float		jumpreset_time;
+.float		spin_finished;
+.float		pushback_time; // vore shield
 
 .float		chaingun_frame;
 .float 		jump_timer;
@@ -767,6 +777,9 @@ entity		grenade_handler; // global
 .float		hitmarker_time;
 .float		headmarker_time;
 .float		katana_charges;
+
+.float		chaingun_frame;
+.float		chaingun_speed;
 
 .float		forcedslide_timer; // no friction until timer ends
 .float		noairacceleration_timer; // same for air acceleration

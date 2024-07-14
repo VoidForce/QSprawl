@@ -100,31 +100,4 @@ float(float x, float y) pow =
 	return c;
 };
 
-/*
-projects vector A on vector B
-*/
-vector (vector a, vector b) projectOnVector =
-{
-	vector normb;
-	normb = normalize(b);
-	
-	return ( normb * (a * normb) );
-};
-
-/*
-projects vector A on a plane defined by it's normal vector B
-*/
-vector (vector a, vector b) projectOnPlane =
-{
-	return (a - projectOnVector(a,b));
-};
-
-/*
-use entity(vector raypoint, vector direction, vector point) distancetoray = #702; instead;
-float(vector raypoint, vector direction, vector point) DistanceToLine =
-{
-	return vlen(CrossProduct( point - raypoint, direction )) / vlen(direction);
-};
-*/
-
 // zi = (xi – min(x)) / (max(x) – min(x)) normalize to 0..1

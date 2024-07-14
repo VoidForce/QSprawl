@@ -307,6 +307,12 @@ void() sham_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
+	dropAmmo(self.origin, DROP_SHELLS, 16);
+	dropAmmo(self.origin, DROP_NAILS, 100);
+	dropAmmo(self.origin, DROP_ROCKETS, 2);
+	dropAmmo(self.origin, DROP_CELLS, 4);
+	dropAmmo(self.origin, DROP_BULLETS, 20);
+	
 	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin

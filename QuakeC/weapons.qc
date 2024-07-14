@@ -127,6 +127,8 @@ void() resetFlags =
 void(float gun) deployGun =
 {
 	self.lastweapon = self.weapon;
+	if (self.weapon == IT_SUPER_NAILGUN)
+		self.chaingun_speed = 0.1;
 	self.deploy_time = time;
 	
 	self.viewmodeloffset_angles_x = -60;
@@ -150,7 +152,7 @@ void(float gun) deployGun =
 	self.weapon = gun;
 	
 	if (gun == IT_SUPER_NAILGUN)
-		self.weaponframe = 41;
+		self.weaponframe = self.chaingun_frame;
 	
 	W_SetCurrentAmmo ();
 };
@@ -655,7 +657,6 @@ void() W_FireSuperShotgun =
 void(float leftgun) W_FireSMG =
 {
 	local vector dir;
-	local float seedx,seedy;
 	local vector start;
 	local float r;
 	
@@ -696,9 +697,6 @@ void(float leftgun) W_FireSMG =
 	//FireBullets (1, dir, '0.02 0.02 0', 10);
 	checkGrenadeCollision(dir, 8);
 
-	seedx = rint(random()*15);
-	seedy = CIRCLEY[seedx];
-	seedx = CIRCLEX[seedx];
 	//punch_relaxtime
 	makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]); //crandom() * crandom() * 4
 	addPunchVelocity(-6,crandom()*4,0);
@@ -877,11 +875,13 @@ void() W_FireChaingun =
 	checkGrenadeCollision(dir, 8);
 	
 	//makePunch([1,0,0],[0,0,0],[0,0,0]);
-	addPunchVelocity(-10,crandom() * 10,0);
+	//addPunchVelocity(-10,crandom() * 10,0);
 	if (self.wallrun) 
 		self.velocity += v_forward * (-50);
 	else
 		self.velocity += v_forward * (-75);
+	makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]); //crandom() * crandom() * 4
+	addPunchVelocity(-6,crandom()*4,0);
 	addShake(-10, crandom()*10, 0);
 };
 
@@ -1081,7 +1081,7 @@ void(vector p1, vector p2, entity from, float damage) LightningDamage =
 	if (trace_ent.takedamage)
 	{
 		particle (trace_endpos, '0 0 100', 225, damage*4);
-		T_Damage (trace_ent, from, from, damage, 0);
+		T_Damage (trace_ent, from, from, damage, NOFLAGS, 1);
 		if (self.classname == "player")
 		{
 			if (other.classname == "player")
@@ -1095,7 +1095,7 @@ void(vector p1, vector p2, entity from, float damage) LightningDamage =
 	if (trace_ent != e1 && trace_ent.takedamage)
 	{
 		particle (trace_endpos, '0 0 100', 225, damage*4);
-		T_Damage (trace_ent, from, from, damage, 0);
+		T_Damage (trace_ent, from, from, damage, NOFLAGS, 1);
 	}
 
 	e2 = trace_ent;
@@ -1104,7 +1104,7 @@ void(vector p1, vector p2, entity from, float damage) LightningDamage =
 	if (trace_ent != e1 && trace_ent != e2 && trace_ent.takedamage)
 	{
 		particle (trace_endpos, '0 0 100', 225, damage*4);
-		T_Damage (trace_ent, from, from, damage, 0);
+		T_Damage (trace_ent, from, from, damage, NOFLAGS, 1);
 	}
 };
 
@@ -1137,7 +1137,7 @@ void() W_FireLightning =
 		self.t_width = time + 0.6;
 	}
 
-	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
+	//self.currentammo = self.ammo_cells = self.ammo_cells - 1;
 	org = self.origin + v_forward*24 + v_right*8;
 	org_z += self.view_ofs_z - 6;
 	//org = [24, 8, self.view_ofs_z - 6]; // forward, right, verticall offset
@@ -1778,6 +1778,8 @@ void() ImpulseCommands =
 		CheatKeys();
 	if (self.impulse == 14)
 		LastInv();
+	if (self.impulse == 15)
+		self.sprawlflags |= SFL_UNLIMITED_ADRENALINE;
 	if (self.impulse == 255)
 		QuadCheat ();
 		

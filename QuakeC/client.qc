@@ -583,6 +583,7 @@ void() PutClientInServer =
 	self.invincible_finished = 0;
 	self.invincible_time = 0;
 	self.viewmodeloffset_angles = '0 0 -5';
+	self.chaingun_speed = 0.1;
 
 	DecodeLevelParms ();
 	
@@ -1155,6 +1156,8 @@ void() ResetSlowmotion =
 
 float(float amount_frametime, float amount) consumeAdrenaline =
 {
+	if (self.sprawlflags & SFL_UNLIMITED_ADRENALINE)
+		return 1;
 	if (self.engineflags & ENF_ADRENALINE_OFF || self.adrenaline_regentimer > time)
 		return 1;
 

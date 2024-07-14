@@ -519,6 +519,8 @@ void(entity attacker, float damage)	ogre_pain =
 	
 	if (self.monsterflags & MFL_LOSTWEAPON)
 	{
+		dropAmmo(self.origin, DROP_ROCKETS, 1);
+		
 		self.monsterflags -= self.monsterflags & MFL_LOSTWEAPON;
 		self.state |= OGRE_NOWEAPON | OGRE_FAST;
 		self.state -= self.state & OGRE_SNIPER;
@@ -537,6 +539,11 @@ void(entity attacker, float damage)	ogre_pain =
 	
 	if (self.monsterflags & MFL_LOST_HEAD)
 	{
+		if (random() > 0.5)
+			dropAmmo(self.origin, DROP_SHELLS, 4);
+		else
+			dropAmmo(self.origin, DROP_NAILS, 25);
+		
 		self.monsterflags -= self.monsterflags & MFL_LOST_HEAD;
 		self.monsterflags |= MFL_CONFUSED;
 		if (self.state & OGRE_NOWEAPON)
@@ -705,9 +712,11 @@ float() OgreCheckAttack =
 void() ogre_die =
 {
 	self.solid = SOLID_NOT;
+	
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
+		dropAmmo(self.origin, DROP_CELLS, 1);
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
 		ThrowHead ("progs/h_ogre.mdl", self.lasthit_damage);
 		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);

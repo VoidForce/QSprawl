@@ -1089,6 +1089,8 @@ void SCR_DrawCrosshair (void)
 		}
 	}
 
+	// jumps 
+	
 	//GL_SetCanvas (CANVAS_CROSSHAIR);
 	//Draw_Character(-4, -4, crosshair_char);
 }

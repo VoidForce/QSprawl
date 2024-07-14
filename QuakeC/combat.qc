@@ -100,7 +100,7 @@ void(entity targ, entity attacker) Killed =
 	self.enemy = attacker;
 
 	// bump the monster counter
-	if (self.flags & FL_MONSTER)
+	if (self.flags & FL_MONSTER && !(self.sprawlflags & MFL_NOTMONSTER))
 	{
 		self.skin = 0;
 		self.skinchange = 0;
@@ -123,6 +123,9 @@ void(entity victim, entity attacker, float force, float verticalForce) T_Push =
 {
 	vector direction;
 	float modifiedForce;
+	
+	if (victim.pushback_time > time)
+		return;
 	modifiedForce = force;
 	
 	if ( victim.movetype == MOVETYPE_WALK )
@@ -276,25 +279,34 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			}
 			res = 0;
 		}
-		dprint2("penetration: ",ftos(penetration)); endl();
 		penetration = 1 - penetration;
 
-		if (dflags & DF_HEADSHOT)
+		if (targ.monsterflags & MFL_SHIELD)
 		{
-			res = armorstats.head_resistance * penetration;
-			mit = armorstats.head_mitigation * penetration;
+			res = 2;
+			mit = 200;
+			save = 0;
 		}
 		else
-		{	
-			res = armorstats.body_resistance * penetration;
-			mit = armorstats.body_mitigation * penetration;
-		}
-		
-		if ( dflags & DF_EXPLOSION)
 		{
-			res = armorstats.explosives_resistance;
-			mit = 0;
+			if (dflags & DF_HEADSHOT)
+			{
+				res = armorstats.head_resistance * penetration;
+				mit = armorstats.head_mitigation * penetration;
+			}
+			else
+			{	
+				res = armorstats.body_resistance * penetration;
+				mit = armorstats.body_mitigation * penetration;
+			}
+			
+			if ( dflags & DF_EXPLOSION)
+			{
+				res = armorstats.explosives_resistance;
+				mit = 0;
+			}
 		}
+
 		//dprint5("mit: ",ftos(mit)," res: ", ftos(res), "\n");
 		take -= mit * count;
 		if (take < save)

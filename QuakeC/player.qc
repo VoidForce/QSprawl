@@ -507,7 +507,7 @@ void() quickMeleeLoop =
 };
 //------------------------------------------
 // Chaingun
-
+/*
 #define CG_STARTFRAME 76
 #define CG_FIRST 42
 #define CG_SECOND 55
@@ -517,7 +517,200 @@ void() quickMeleeLoop =
 #define CG_SIXTH 84
 #define CG_LAST 90
 #define CG_ENDFRAME 114
+*/
 
+#define CG_STARTFRAME 13
+#define CG_LOOPFRAME 24
+
+#define PRE_FIRST 24
+#define FIRE_FIRST 1
+#define END_FIRST 4
+#define AFTER_FIRST 17
+
+#define PRE_SECOND 16
+#define FIRE_SECOND 5
+#define END_SECOND 8
+#define AFTER_SECOND 21
+
+#define PRE_THIRD 20
+#define FIRE_THIRD 9
+#define END_THIRD 12
+#define AFTER_THIRD 13
+
+void() animateChaingun =
+{
+	//dprint("start: ");
+	//dprint(ftos(self.weaponframe));endl();
+	if (self.spin_finished > time)
+		return;
+	self.attack_finished = time + 0.3;
+	self.sprawlflags |= SFL_HOLD;
+	if (self.chaingun_frame == 0)
+		self.weaponframe = CG_STARTFRAME;
+	else
+	{
+		self.weaponframe++;
+		if (self.weaponframe > CG_LOOPFRAME)
+			self.weaponframe = CG_STARTFRAME;
+	}
+	weaponThink(spinChaingunLoop, self.chaingun_speed);
+};
+
+// --------------- SPIN -----------
+void() spinChaingunLoop =
+{
+	//dprint("spin: ");
+	//dprint(ftos(self.weaponframe));endl();
+	if (!self.button0)
+	{
+		self.attack_finished = time + 0.2;
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+		self.weaponframe++;
+		if (self.weaponframe > CG_LOOPFRAME)
+			self.weaponframe = CG_STARTFRAME;
+		weaponThink(spinDownLoop, self.chaingun_speed);
+		return;
+	}
+
+	self.chaingun_speed -= 0.01;
+	if (self.chaingun_speed < 0.025)
+	{
+	// we spin fast enough, so check for fire positions
+		self.chaingun_speed = 0.025;
+		
+		switch (self.weaponframe)
+		{
+			case PRE_FIRST:
+				self.weaponframe = FIRE_FIRST;
+				goto fire;
+				break;
+				
+			case PRE_SECOND:
+				self.weaponframe = FIRE_SECOND;
+				goto fire;
+				break;
+				
+			case PRE_THIRD:
+				self.weaponframe = FIRE_THIRD;
+				goto fire;
+				break;
+		}
+	}
+		
+	self.weaponframe++;
+	
+	if (self.weaponframe > CG_LOOPFRAME)
+		self.weaponframe = CG_STARTFRAME;
+	
+	self.chaingun_frame = self.weaponframe;
+	
+	weaponThink(spinChaingunLoop, self.chaingun_speed);
+	return; // default exit
+//----------------------------------
+	fire:
+		W_FireChaingun();
+		self.effects = self.effects | EF_MUZZLEFLASH;
+		
+		if (self.ammo_bullets < 1)
+		{
+			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			weaponThink(player_run, 0.05);
+			return;
+		}
+		weaponThink(fireChaingunLoop, self.chaingun_speed);
+};
+
+// --------------- FIRE -----------
+void() fireChaingunLoop =
+{
+	//dprint("fire: ");
+	//dprint(ftos(self.weaponframe));endl();
+	if (!self.button0)
+	{
+		self.attack_finished = time + 0.2;
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+		self.weaponframe++;
+		weaponThink(spinDownLoop, self.chaingun_speed);
+		return;
+	}
+	
+	self.weaponframe++;
+	
+	if (self.weaponframe == CG_STARTFRAME)
+		self.weaponframe = FIRE_FIRST;
+	
+	switch (self.weaponframe)
+	{
+		case FIRE_FIRST:
+			goto fire;
+			break;
+		case FIRE_SECOND:
+			goto fire;
+			break;
+		case FIRE_THIRD:
+			goto fire;
+			break;
+	}
+	self.chaingun_frame = self.weaponframe + 12; // 12 frames offset between fire and flat spin
+	weaponThink(fireChaingunLoop, self.chaingun_speed);	
+	return; // default exit
+//----------------------------------	
+	fire:
+		W_FireChaingun();
+		self.effects = self.effects | EF_MUZZLEFLASH;
+		
+		if (self.ammo_bullets < 1)
+		{
+			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+			weaponThink(player_run, 0.05);
+			return;
+		}
+		weaponThink(fireChaingunLoop, self.chaingun_speed);	
+}
+
+// --------------- SLOWDOWN -----------
+void() spinDownLoop =
+{
+	//dprint("slow: ");
+	//dprint(ftos(self.weaponframe));endl();
+	// spindown after firing;
+	if (self.weaponframe < 13)
+	{
+		switch (self.weaponframe)
+		{
+			case END_FIRST:
+				self.weaponframe = AFTER_FIRST;
+				break;
+			case END_SECOND:
+				self.weaponframe = AFTER_SECOND;
+				break;
+			case END_THIRD:
+				self.weaponframe = AFTER_THIRD;
+				break;
+			default:
+				self.weaponframe++;
+				break;
+		}
+	}
+	else
+		self.weaponframe++;
+
+	if (self.weaponframe > CG_LOOPFRAME)
+		self.weaponframe = CG_STARTFRAME;
+	
+	self.chaingun_frame = self.weaponframe;
+	
+	self.chaingun_speed += 0.005;
+	if (self.chaingun_speed > 0.1)
+	{
+		self.chaingun_speed = 0.1;
+		weaponThink(player_run, 0.1);
+	}
+	else
+		weaponThink(spinDownLoop, self.chaingun_speed);
+	self.spin_finished = time + self.chaingun_speed;
+};
+/*
 void() animateChaingun =
 {
 	self.sprawlflags |= SFL_HOLD;
@@ -559,7 +752,7 @@ void() spinChaingunLoop =
 
 	weaponThink(spinChaingunLoop, 0.025);
 };
-
+*/
 
 //============================================================================
 
@@ -602,21 +795,8 @@ void() light_cool =
 		self.think = light_cool;
 };
 
+
 //============================================================================
-
-
-void() player_rocket1   =[$rockatt1, player_rocket2  ] 
-{
-	self.weaponframe=1;
-	self.effects = self.effects | EF_MUZZLEFLASH | EF_NOLERP2;
-};
-
-void() player_rocket2   =[$rockatt2, player_rocket3  ] {self.weaponframe=2;};
-void() player_rocket3   =[$rockatt3, player_rocket4  ] {self.weaponframe=3;};
-void() player_rocket4   =[$rockatt4, player_rocket5  ] {self.weaponframe=4;};
-void() player_rocket5   =[$rockatt5, player_rocket6  ] {self.weaponframe=5;};
-void() player_rocket6   =[$rockatt6, player_run  ] {self.weaponframe=6; self.sprawlflags |= SFL_RESETWEAPONFRAME;};
-void(float num_bubbles) DeathBubbles;
 
 void() PainSound =
 {

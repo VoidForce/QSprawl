@@ -262,6 +262,9 @@ void() dog_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
+	dropAmmo(self.origin, DROP_SHELLS, 2);
+	dropAmmo(self.origin, DROP_NAILS, 20);
+	
 	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin

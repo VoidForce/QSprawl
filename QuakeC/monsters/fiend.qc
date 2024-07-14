@@ -218,6 +218,7 @@ void() demon_die =
 	// check for gib
 	if (self.lasthit_damage > self.gib_threshold)
 	{
+		dropAmmo(self.origin, DROP_CELLS, 1);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		sendMessageVec(self.origin, TE_EXPLOSION);
 		ThrowHead ("progs/h_demon.mdl", self.health);

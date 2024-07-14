@@ -610,25 +610,7 @@ void CL_ParseUpdate (int bits)
 	}
 	else if (cl.protocol == PROTOCOL_NETQUAKE)
 	{
-		//HACK: if this bit is set, assume this is PROTOCOL_NEHAHRA
-		if (bits & U_TRANS)
-		{
-			float a, b;
-
-			if (warn_about_nehahra_protocol)
-			{
-				Con_Warning ("nonstandard update bit, assuming Nehahra protocol\n");
-				warn_about_nehahra_protocol = false;
-			}
-
-			a = MSG_ReadFloat();
-			b = MSG_ReadFloat(); //alpha
-			if (a == 2)
-				MSG_ReadFloat(); //fullbright (not using this yet)
-			ent->alpha = ENTALPHA_ENCODE(b);
-		}
-		else
-			ent->alpha = ent->baseline.alpha;
+		ent->alpha = ent->baseline.alpha;
 		ent->scale = ent->baseline.scale;
 	}
 	//johnfitz
@@ -758,14 +740,12 @@ void CL_ParseClientdata (void)
 		}
 	}
 
-	
 	//johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & SU_EXTEND1)
 		bits |= (MSG_ReadByte() << 16);
 	if (bits & SU_EXTEND2)
 		bits |= (MSG_ReadByte() << 24);
 	//johnfitz
-	
 
 	if (bits & SU_VIEWHEIGHT)
 		cl.viewheight = MSG_ReadChar (); //9
@@ -793,7 +773,7 @@ void CL_ParseClientdata (void)
 	//johnfitz -- update v_punchangles
 	if (v_punchangles[0][0] != cl.punchangle[0] || v_punchangles[0][1] != cl.punchangle[1] || v_punchangles[0][2] != cl.punchangle[2])
 	{
-		VectorCopy (v_punchangles[0], v_punchangles[1]); // stor current as old
+		VectorCopy (v_punchangles[0], v_punchangles[1]); // store current as old
 		VectorCopy (cl.punchangle, v_punchangles[0]); // set current from data we just read
 		cl.punchtime = cl.time;
 	}
@@ -801,7 +781,7 @@ void CL_ParseClientdata (void)
 	// qSprawl
 	if (v_shakeangles[0][0] != cl.shakeangle[0] || v_shakeangles[0][1] != cl.shakeangle[1] || v_shakeangles[0][2] != cl.shakeangle[2])
 	{
-		VectorCopy(v_shakeangles[0], v_shakeangles[1]); // stor current as old
+		VectorCopy(v_shakeangles[0], v_shakeangles[1]); // store current as old
 		VectorCopy(cl.shakeangle, v_shakeangles[0]); // set current from data we just read
 		cl.shaketime = cl.time;
 	}
@@ -827,7 +807,7 @@ void CL_ParseClientdata (void)
 	cl.inwater = (bits & SU_INWATER) != 0;
 
 	if (bits & SU_WEAPONFRAME)
-		cl.stats[STAT_WEAPONFRAME] = MSG_ReadShort (); //14
+		cl.stats[STAT_WEAPONFRAME] = MSG_ReadByte (); //14
 	else
 		cl.stats[STAT_WEAPONFRAME] = 0;
 

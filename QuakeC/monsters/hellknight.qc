@@ -443,17 +443,19 @@ void() hknight_die =
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
+		dropAmmo(self.origin, DROP_CELLS, 1);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_hellkn.mdl", self.lasthit_damage);
 		ThrowGib ("progs/synth_gib1.mdl", self.lasthit_damage);
 		ThrowGib ("progs/synth_gib2.mdl", self.lasthit_damage);
 		ThrowGib ("progs/synth_gib3.mdl", self.lasthit_damage);
-	
 		return;
 	}
 	
 	if (self.health_head <= 0)
 	{
+		dropAmmo(self.origin, DROP_BULLETS, 5);
+		dropAmmo(self.origin, DROP_NAILS, 25);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/hknight_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 40');

@@ -369,12 +369,12 @@ void() army_die =
 	
 	if (self.health_head <= 0)
 	{
+		dropAmmo(self.origin, DROP_NAILS, 5);
+		
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/soldier_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 32');
 		sendMessageVec(findHeadPosition(self), TE_HEAD); // particle effect
-		//float dangle = anglemod(vectoyaw(self.lasthit_direction) + 180);
-		//self.angles_y = lerp(self.angles_y, dangle, (1 - fabs(fabs(self.angles_y - dangle) - dangle) / 90));
 		self.angles_y += crandom() * 30;
 		if (self.monsterflags & MFL_DROP_HEAD)
 		{

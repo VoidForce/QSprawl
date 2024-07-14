@@ -446,13 +446,18 @@ void() zombie_paine30	=[	$paine30,	zombie_run1		] {setHead('0 0 24');}; //192
 void() zombie_die =
 {
 	//sound (self, CHAN_VOICE, "zombie/z_gib.wav", 1, ATTN_NORM);
-	
 	sendMessageVec(self.origin, TE_EXPLOSION);
 	
 	if (self.monsterflags & MFL_HASHEAD)
+	{
 		ThrowHead ("progs/h_zombie.mdl", self.lasthit_damage);
+		dropAmmo(self.origin, DROP_CELLS, 1);
+	}
 	else
+	{
 		ThrowHead ("progs/m_gib_02.mdl", self.lasthit_damage);
+		dropAmmo(self.origin, DROP_SHELLS, 2);
+	}
 	
 	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
 	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);

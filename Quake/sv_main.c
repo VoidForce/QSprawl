@@ -957,7 +957,7 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg)
 	//johnfitz -- devstats
 stats:
 	//if (msg->cursize > 1024 && dev_peakstats.packetsize <= 1024)
-	//	Con_DWarning ("%i byte packet exceeds standard limit of 1024 (max = %d).\n", msg->cursize, msg->maxsize);
+		//Con_DWarning ("%i byte packet exceeds standard limit of 1024 (max = %d).\n", msg->cursize, msg->maxsize);
 	dev_stats.packetsize = msg->cursize;
 	dev_peakstats.packetsize = q_max(msg->cursize, dev_peakstats.packetsize);
 	//johnfitz
@@ -978,7 +978,7 @@ void SV_CleanupEnts (void)
 	for (e=1 ; e<qcvm->num_edicts ; e++, ent = NEXT_EDICT(ent))
 	{
 		// Qsprawl 
-		ent->v.effects -= (int)ent->v.effects & (EF_MUZZLEFLASH | EF_NOLERP | EF_NOLERP2);
+		ent->v.effects = (int)ent->v.effects & ~(EF_MUZZLEFLASH | EF_NOLERP | EF_NOLERP2);
 	}
 }
 
@@ -1039,6 +1039,18 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 // stuff the sigil bits into the high bits of items for sbar
 	items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
 
+	// stuff the sigil bits into the high bits of items for sbar, or else
+// mix in items2
+	/*
+	eval_t* val;
+	val = GetEdictFieldValueByName(ent, "items2");
+
+	if (val)
+		items = (int)ent->v.items | ((int)val->_float << 23);
+	else
+		items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
+	*/
+
 	if ( (int)ent->v.flags & FL_ONGROUND)
 		bits |= SU_ONGROUND;
 
@@ -1090,11 +1102,6 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	
 	if (bits >= 65536) bits |= SU_EXTEND1; //?
 	if (bits >= 16777216) bits |= SU_EXTEND2; //?
-
-	if (bits & SU_EXTEND1)
-		MSG_WriteByte(msg, bits >> 16); //byte
-	if (bits & SU_EXTEND2)
-		MSG_WriteByte(msg, bits >> 24); //byte
 	
 //-------------------------------------------------------------------------------------------------------------------------------------
 // send the data  **  send the data  **  send the data  **  send the data  **  send the data
@@ -1106,6 +1113,12 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 //start
 	MSG_WriteByte (msg, svc_clientdata); //byte 1 1
 	MSG_WriteShort (msg, bits); //short 2 2 
+
+	if (bits & SU_EXTEND1)
+		MSG_WriteByte(msg, bits >> 16); //byte
+	if (bits & SU_EXTEND2)
+		MSG_WriteByte(msg, bits >> 24); //byte
+
 	if (bits & SU_ANGLES)
 	{
 		MSG_WriteLong(msg, anglesbits); //short 2 3
@@ -1145,7 +1158,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		MSG_WriteShort(msg, ent->v.engineflags); // short 2 13
 
 	if (bits & SU_WEAPONFRAME)
-		MSG_WriteShort (msg, ent->v.weaponframe); // short (new) 2 14
+		MSG_WriteByte (msg, ent->v.weaponframe); // short (new) 2 14
 	if (bits & SU_ARMOR)
 		MSG_WriteByte (msg, ent->v.armorvalue); // byte 1 15
 	if (bits & SU_WEAPON)
