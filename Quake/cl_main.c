@@ -566,7 +566,7 @@ void CL_RelinkEntities (void)
 			for (j=0 ; j<3 ; j++)
 			{
 				delta[j] = ent->msg_origins[0][j] - ent->msg_origins[1][j];
-				if (delta[j] > 100 || delta[j] < -100)
+				if (delta[j] > 200 || delta[j] < -200) // lerp reset issue on fast moving targets?
 				{
 					f = 1;		// assume a teleportation, not a motion
 					ent->lerpflags |= LERP_RESETMOVE; //johnfitz -- don't lerp teleports
@@ -694,7 +694,13 @@ void CL_RelinkEntities (void)
 		else if (ent->model->flags & EF_GRENADE)
 			CL_RocketTrail (ent, 1);
 		else if (ent->model->flags & EF_TRACER3)
-			CL_RocketTrail (ent, 6);
+		{
+			CL_RocketTrail(ent, 6);
+			dl = CL_AllocDlight(i);
+			VectorCopy(ent->origin, dl->origin);
+			dl->radius = 200;
+			dl->die = cl.time + 0.01;
+		}
 		else
 			CL_ResetTrail (ent);
 

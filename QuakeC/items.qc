@@ -142,10 +142,10 @@ void() item_health =
 
 	if (self.spawnflags & H_ROTTEN)
 	{
-		precache_model("progs/health15.mdl");
+		precache_model("progs/health_s.mdl");
 
 		precache_sound("items/r_item1.wav");
-		setmodel(self, "progs/health15.mdl");
+		setmodel(self, "progs/health_s.mdl");
 		self.noise = "items/r_item1.wav";
 		self.healamount = 15;
 		self.healtype = 0;
@@ -153,9 +153,9 @@ void() item_health =
 
 	else if (self.spawnflags & H_MEGA)
 	{
-		precache_model("progs/health100.mdl");
+		precache_model("progs/health_m.mdl");
 		precache_sound("items/r_item2.wav");
-		setmodel(self, "progs/health100.mdl");
+		setmodel(self, "progs/health_m.mdl");
 		self.noise = "items/r_item2.wav";
 		self.healamount = 100;
 		self.healtype = 2;
@@ -163,9 +163,9 @@ void() item_health =
 
 	else
 	{
-		precache_model("progs/health25.mdl");
+		precache_model("progs/health_b.mdl");
 		precache_sound("items/health1.wav");
-		setmodel(self, "progs/health25.mdl");
+		setmodel(self, "progs/health_b.mdl");
 		self.noise = "items/health1.wav";
 		self.healamount = 25;
 		self.healtype = 1;
@@ -204,7 +204,7 @@ void() health_touch =
 	// health touch sound
 	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
 
-	stuffcmd (other, "bf\n");
+	stuffcmd (other, "bfh\n");
 	
 	self.model = string_null;
 	self.solid = SOLID_NOT;
@@ -331,8 +331,11 @@ void() armor_touch =
 	//sprint(other, "You got armor\n");
 	sprint(other, str);
 	// armor touch sound
-	sound(other, CHAN_ITEM, "items/armor1.wav", 1, ATTN_NORM);
-	stuffcmd (other, "bf\n");
+	if (random() > 0.5)
+		sound(other, CHAN_ITEM, "items/armorvest1.wav", 1, ATTN_NORM);
+	else
+		sound(other, CHAN_ITEM, "items/armorvest2.wav", 1, ATTN_NORM);
+	stuffcmd (other, "bfar\n");
 	
 	activator = other;
 	SUB_UseTargets();				// fire all targets / killtargets
@@ -404,13 +407,13 @@ void() bound_other_ammo =
 
 float(float w) RankForWeapon =
 {
-	if (w == IT_LIGHTNING)
+	if (w == IT_SHOCK)
 		return 1;
 
-	if (w == IT_ROCKET_LAUNCHER)
+	if (w == IT_GAUSS)
 		return 2;
 
-	if (w == IT_SUPER_NAILGUN)
+	if (w == IT_CHAINGUN)
 		return 3;
 
 	if (w == IT_GRENADE_LAUNCHER)
@@ -419,7 +422,7 @@ float(float w) RankForWeapon =
 	if (w == IT_SUPER_SHOTGUN)
 		return 5;
 
-	if (w == IT_NAILGUN)
+	if (w == IT_SMGS)
 		return 6;
 
 	return 7;
@@ -430,19 +433,19 @@ float (float w) WeaponCode = //copypasta'd directly from gpl'd qw source on gith
 	if (w == IT_SUPER_SHOTGUN)
 		return 3;
 
-	if (w == IT_NAILGUN)
+	if (w == IT_SMGS)
 		return 4;
 
-	if (w == IT_SUPER_NAILGUN)
+	if (w == IT_CHAINGUN)
 		return 5;
 
 	if (w == IT_GRENADE_LAUNCHER)
 		return 6;
 
-	if (w == IT_ROCKET_LAUNCHER)
+	if (w == IT_GAUSS)
 		return 7;
 
-	if (w == IT_LIGHTNING)
+	if (w == IT_SHOCK)
 		return 8;
 
 	return 1;
@@ -490,21 +493,21 @@ void() weapon_touch =
 	
 	if (self.classname == "weapon_nailgun")
 	{
-		if (leave && (other.items & IT_NAILGUN) )
+		if (leave && (other.items & IT_SMGS) )
 			return;
 
 		hadammo = other.ammo_nails;			
-		new = IT_NAILGUN;
+		new = IT_SMGS;
 		other.ammo_nails = other.ammo_nails + 30;
 	}
 
 	else if (self.classname == "weapon_supernailgun")
 	{
-		if (leave && (other.items & IT_SUPER_NAILGUN) )
+		if (leave && (other.items & IT_CHAINGUN) )
 			return;
 
 		hadammo = other.ammo_rockets;			
-		new = IT_SUPER_NAILGUN;
+		new = IT_CHAINGUN;
 		other.ammo_bullets = other.ammo_bullets + 21;
 	}
 
@@ -520,11 +523,11 @@ void() weapon_touch =
 
 	else if (self.classname == "weapon_rocketlauncher")
 	{
-		if (leave && (other.items & IT_ROCKET_LAUNCHER) )
+		if (leave && (other.items & IT_GAUSS) )
 			return;
 
 		hadammo = other.ammo_rockets;			
-		new = IT_ROCKET_LAUNCHER;
+		new = IT_GAUSS;
 		other.ammo_cells = other.ammo_cells + 10;
 	}
 
@@ -540,11 +543,11 @@ void() weapon_touch =
 
 	else if (self.classname == "weapon_lightning")
 	{
-		if (leave && (other.items & IT_LIGHTNING) )
+		if (leave && (other.items & IT_SHOCK) )
 			return;
 
 		hadammo = other.ammo_rockets;			
-		new = IT_LIGHTNING;
+		new = IT_SHOCK;
 		other.ammo_cells = other.ammo_cells + 16;
 	}
 
@@ -556,7 +559,7 @@ void() weapon_touch =
 	sprint (other, "\n");
 	// weapon touch sound
 	sound (other, CHAN_ITEM, "weapons/pkup.wav", 1, ATTN_NORM);
-	stuffcmd (other, "bf\n");
+	stuffcmd (other, "bfw\n");
 
 	bound_other_ammo ();
 	setAmmo(other);
@@ -585,8 +588,8 @@ void() weapon_touch =
 
 void() weapon_supershotgun =
 {
-	precache_model ("progs/g_shot.mdl");
-	setmodel (self, "progs/g_shot.mdl");
+	precache_model ("progs/g_shotgun.mdl");
+	setmodel (self, "progs/g_shotgun.mdl");
 	self.weapon = IT_SUPER_SHOTGUN;
 	self.netname = "Megatech A8";
 	self.touch = weapon_touch;
@@ -599,9 +602,9 @@ void() weapon_supershotgun =
 
 void() weapon_nailgun =
 {
-	precache_model ("progs/g_nail.mdl");
-	setmodel (self, "progs/g_nail.mdl");
-	self.weapon = IT_NAILGUN;
+	precache_model ("progs/g_smgs.mdl");
+	setmodel (self, "progs/g_smgs.mdl");
+	self.weapon = IT_SMGS;
 	self.netname = "Seburo-Sendai C390 x 2";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
@@ -613,9 +616,9 @@ void() weapon_nailgun =
 
 void() weapon_supernailgun =
 {
-	precache_model ("progs/g_nail2.mdl");
-	setmodel (self, "progs/g_nail2.mdl");
-	self.weapon = IT_SUPER_NAILGUN;
+	precache_model ("progs/g_chaingun.mdl");
+	setmodel (self, "progs/g_chaingun.mdl");
+	self.weapon = IT_CHAINGUN;
 	self.netname = "Megatech HAW201";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
@@ -627,8 +630,8 @@ void() weapon_supernailgun =
 
 void() weapon_grenadelauncher =
 {
-	precache_model ("progs/g_rock.mdl");
-	setmodel (self, "progs/g_rock.mdl");
+	precache_model ("progs/g_grenade.mdl");
+	setmodel (self, "progs/g_grenade.mdl");
 	self.weapon = IT_GRENADE_LAUNCHER;
 	self.netname = "Shogo-Kenbishi Auto-Load";
 	self.touch = weapon_touch;
@@ -641,9 +644,9 @@ void() weapon_grenadelauncher =
 
 void() weapon_rocketlauncher =
 {
-	precache_model ("progs/g_rock2.mdl");
-	setmodel (self, "progs/g_rock2.mdl");
-	self.weapon = IT_ROCKET_LAUNCHER;
+	precache_model ("progs/g_gauss.mdl");
+	setmodel (self, "progs/g_gauss.mdl");
+	self.weapon = IT_GAUSS;
 	self.netname = "Hiro-Enki Y.T. Prototype v2";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
@@ -656,9 +659,9 @@ void() weapon_rocketlauncher =
 
 void() weapon_lightning =
 {
-	precache_model ("progs/g_light.mdl");
-	setmodel (self, "progs/g_light.mdl");
-	self.weapon = IT_LIGHTNING;
+	precache_model ("progs/g_shock.mdl");
+	setmodel (self, "progs/g_shock.mdl");
+	self.weapon = IT_SHOCK;
 	self.netname = "Lightning Rod";
 	self.touch = weapon_touch;
 	setsize (self, '-16 -16 0', '16 16 56');
@@ -904,17 +907,17 @@ void() item_shells =
 void() item_spikes =
 {
 	self.touch = ammo_touch;
-
+	precache_model ("progs/ammo/nails_big.mdl");
+	precache_model ("progs/ammo/nails.mdl");
+	
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		precache_model ("progs/ammo/nails_big.mdl");
 		setmodel (self, "progs/ammo/nails_big.mdl");
 		self.aflag = 100;
 	}
 
 	else
 	{
-		precache_model ("progs/ammo/nails.mdl");
 		setmodel (self, "progs/ammo/nails.mdl");
 		self.aflag = 50;
 	}
@@ -1295,7 +1298,7 @@ void() powerup_touch =
 		self.think = SUB_regen;
 	}	
 
-	sound (other, CHAN_VOICE, self.noise, 1, ATTN_NORM);
+	sound (other, CHAN_AUTO, self.noise, 1, ATTN_NONE);
 	stuffcmd (other, "bf\n");
 	self.solid = SOLID_NOT;
 	other.items = other.items | self.items;
@@ -1523,7 +1526,7 @@ void() BackpackTouch =
 	/*
 		if (self.flags & FL_INWATER)
 		{
-			if (new != IT_LIGHTNING)
+			if (new != IT_SHOCK)
 			{
 				Deathmatch_Weapon (old, new);
 			}
@@ -1583,9 +1586,27 @@ void() DropBackpack =
 #define DROP_CELLS 4
 #define DROP_BULLETS 5
 
-void(vector pos, float type, float amount) dropAmmo =
+void(vector pos, float type, float easy, float normal, float hard, float nightmare) dropAmmo =
 {
 	entity item;
+	float amount;
+	
+	switch (skill)
+	{
+		case 0:
+			amount = easy;
+			break;
+		default:
+		case 1:
+			amount = normal;
+			break;
+		case 2:
+			amount = hard;
+			break;
+		case 3:
+			amount = nightmare;
+			break;
+	}
 	
 	if (amount < 1)
 		return;
@@ -1595,14 +1616,14 @@ void(vector pos, float type, float amount) dropAmmo =
 	item.solid = SOLID_TRIGGER;
 	item.movetype = MOVETYPE_TOSS;
 	setmodel (item, "progs/ammo/ammo_drop.spr");
-	setsize (item, '-16 -16 -16', '16 16 32');
+	setsize (item, '-16 -16 -4', '16 16 32');
 	setorigin (item, pos);
 	item.touch = ammo_drop_touch;
 	item.fA = type;
-	item.velocity_z = 300;
-	item.velocity_x = -100 + (random() * 200);
-	item.velocity_y = -100 + (random() * 200);
-	item.scale = 0.15;
+	item.velocity_z = 150;
+	item.velocity_x = crandom() * 100;
+	item.velocity_y = crandom() * 100;
+	item.scale = 0.10;
 	item.think = SUB_Remove;
 	item.nextthink = time + 15;
 	switch (type)
@@ -1676,7 +1697,148 @@ void() ammo_drop_touch =
 	}
 
 	setAmmo(other);
+	stuffcmd (other, "bfam\n");
 	sound (other, CHAN_ITEM, "weapons/pkup.wav", 1, ATTN_NORM);
-	//stuffcmd (other, "bf\n");
+	SUB_Remove();
+};
+
+// health/armor drops in predifined amount of points
+// Instead it will drop as much instances of drop items as needed to fill requested amount
+
+#define DROP_ARMOR_ONE 		3
+#define DROP_ARMOR			2
+#define DROP_HEALTH_ONE 	1
+#define DROP_HEALTH			0
+
+void(vector pos, float type, float easy, float normal, float hard, float nightmare) dropHealth =
+{
+	entity item;
+	float i, hp, lscale, overheal, amount;
+	
+	switch (skill)
+	{
+		case 0:
+			amount = easy;
+			break;
+		default:
+		case 1:
+			amount = normal;
+			break;
+		case 2:
+			amount = hard;
+			break;
+		case 3:
+			amount = nightmare;
+			break;
+	}
+	
+	if (amount < 1)
+		return;
+	
+	switch (type)
+	{
+		case DROP_HEALTH:
+			hp = 10;
+			overheal = 0;
+			lscale = 0.10;
+			break;
+		case DROP_HEALTH_ONE:
+			hp = 1;
+			overheal = 1;
+			lscale = 0.10;
+			break;
+		case DROP_ARMOR:
+			hp = 10;
+			overheal = 0;
+			lscale = 0.10;
+			break;
+		case DROP_ARMOR_ONE:
+			hp = 1;
+			overheal = 1;
+			lscale = 0.10;
+			break;
+	}
+	
+	for (i = 0; i < amount; i++)
+	{
+		item = spawn();
+		item.flags = FL_ITEM;
+		item.solid = SOLID_TRIGGER;
+		item.movetype = MOVETYPE_TOSS;
+		setmodel (item, "progs/health_drop.spr");
+		setsize (item, '-16 -16 -4', '16 16 32');
+		setorigin (item, pos);
+		if (type < 2)
+			item.touch = health_drop_touch;
+		else
+			item.touch = armor_drop_touch;
+		item.velocity_z = 150;
+		item.velocity_x = crandom() * 100;
+		item.velocity_y = crandom() * 100;
+		item.scale = lscale;
+		item.think = SUB_Remove;
+		item.nextthink = time + 15;
+		item.frame = type;
+		item.fA = overheal;
+		item.health = hp;
+	}
+};
+
+void() health_drop_touch =
+{
+	if (!(other.flags & FL_CLIENT))
+		return;
+	
+	if (!self.fA && other.health >= 100) // overheal not allowed
+		return;
+	
+	other.health += self.health;
+	if (!self.fA)
+	{
+		if (other.health > 100)
+			other.health = 100;
+	}
+
+	sound (other, CHAN_ITEM, "items/health2.wav", 1, ATTN_NORM);
+	stuffcmd (other, "bfh\n");
+	SUB_Remove();
+};
+
+void() armor_drop_touch =
+{
+	if (!(other.flags & FL_CLIENT))
+		return;
+	
+	if (!self.fA && other.armorvalue >= 100) // overheal not allowed
+		return;
+	
+	other.armorvalue += self.health;
+	other.armortype = 1;
+	if (!self.fA)
+	{
+		if (other.armorvalue > 100)
+			other.armorvalue = 100;
+	}
+	
+	removeflag(other.items, IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3);
+
+	if (other.armorvalue < 50)
+		other.items |= IT_ARMOR1;
+	else if (other.armorvalue > 100)
+		other.items |= IT_ARMOR3;
+	else
+		other.items |= IT_ARMOR2;
+
+	//other.items = other.items - (other.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) + bit;
+	if (self.health == 1)
+		sound (other, CHAN_ITEM, "items/armor1.wav", 1, ATTN_NORM);
+	else 
+	{
+		if (random() > 0.5)
+			sound (other, CHAN_ITEM, "items/armor2.wav", 1, ATTN_NORM);
+		else
+			sound (other, CHAN_ITEM, "items/armor3.wav", 1, ATTN_NORM);
+	}
+	stuffcmd (other, "bfar\n");
 	SUB_Remove();
 };

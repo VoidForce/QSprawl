@@ -77,21 +77,25 @@ enumflags OGRESTATE {
 void() OgreGrenadeExplode =
 {
 	removeFromList(self);
-	T_RadiusDamagePlayer(self, self.owner, 30, world, 128, 64);
-	//T_RadiusDamage (self, self.owner, 40, world);
-	sound (self, CHAN_VOICE, "weapons/r_exp3.wav", 1, ATTN_NORM);
-
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
-	WriteCoord (MSG_BROADCAST, self.origin_x);
-	WriteCoord (MSG_BROADCAST, self.origin_y);
-	WriteCoord (MSG_BROADCAST, self.origin_z);
-	//dprint3(" actual travel time: ", ftos(time - self.attack_finished), "\n");
-	self.velocity = '0 0 0';
 	self.touch = SUB_Null;
-	setmodel (self, "progs/s_explod.spr");
 	self.solid = SOLID_NOT;
-	s_explode1 ();
+	self.movetype = MOVETYPE_NONE;
+	
+	if (self.fA)
+	{
+		T_RadiusDamagePlayer(self, self.owner, 20, world, 256, 96, 2);
+		sound (self, CHAN_VOICE, "weapons/pl_explode.wav", 1, ATTN_NORM);
+		sendMessageVec(self.origin, TE_EXPLOSION_PLASMA);
+		setmodel (self, "progs/p_explode.spr");
+		p_explode ();
+	}
+	else
+	{
+		T_RadiusDamagePlayer(self, self.owner, 40, world, 160, 64, 4);
+		sendMessageVec(self.origin, TE_EXPLOSION);
+		setmodel (self, "progs/s_explod.spr");
+		s_explode1 ();
+	}
 };
 
 void() OgreGrenadeTouch =
@@ -99,12 +103,12 @@ void() OgreGrenadeTouch =
 	if (other == self.owner)
 		return;		// don't explode on owner
 
-	if (other.takedamage == DAMAGE_AIM)
+	if (other.takedamage == DAMAGE_AIM || self.fA)
 	{
 		OgreGrenadeExplode();
 		return;
 	}
-
+	self.avelocity = '600 600 600';
 	sound (self, CHAN_VOICE, "weapons/bounce.wav", 1, ATTN_NORM);	// bounce sound
 
 	if (self.velocity == '0 0 0')
@@ -117,6 +121,7 @@ OgreFireGrenade
 ================
 */
 #define OGRE_NADE_VEL 900
+#define OGRE_SNIPER_VEL 1200
 // 1184 //45 // 1024
 // 608 //90 
 // 320 //45
@@ -124,94 +129,115 @@ OgreFireGrenade
 // 1070 314 1.68 - 45d
 // 
 // 350 distance with 0 angle
-void() OgreFireGrenade =
+void(float losthead = 0) OgreFireGrenade =
 {
 	entity missile;
-	vector dir;
-	
-	float distance, ttime, blast_time;
-	vector start, end, base_forward, offset;
+	float distance, ttime, blast_time, sniper, height, vel;
+	vector dir, start, end, base_forward, offset, pos;
 	
 	if (self.state & OGRE_NOWEAPON)
 		return;
+	pos = getPlayerPosition(self.enemy, 0);
+// preparation
 	makevectors2(self.angles);
 	base_forward = v_forward;
 	blast_time = 2.5;
+	sniper = 0;
+	vel = OGRE_NADE_VEL;
+// accurate grenade, plasma
 	if (self.state & OGRE_SNIPER)
 	{
 		start = self.origin + v_forward * 70 + v_up * 37;
-		distance = vlen(self.origin - self.enemy.origin);
-		ttime = distance / 1000; // simplified travel time
-		offset = lerpVector(self.enemy.velocity * (ttime - 0.1), '0 0 0', ttime);
-		end = self.enemy.origin + offset;
+		distance = vlen(self.origin - pos);
+		height = pos_z - self.origin_z;
+		ttime = distance / 1200; // simplified travel time
+		offset = lerpVector( '0 0 0', self.enemy.velocity, ttime);//* (ttime - 0.1)
+		end = pos + offset + [crandom()*8, crandom()*8, crandom()*8];
 		dir = vectoangles(end - start);
-		dir_x = dir_x + 25 * ttime;
+		dir_x = dir_x + 15 * ttime + (height/128);
 
-		//if (dir_x > 89)
-		//	dir_x = 89;
 		makevectors2(dir);
 		dir = lerpv(v_forward, [v_forward_x, base_forward_y, v_forward_z], 0.5);
 		blast_time = ttime + 0.15;
+		sniper = 1;
+		sound (self, CHAN_AUTO, "weapons/f_grenade_far.wav", 1, ATTN_NONE);
+		vel = OGRE_SNIPER_VEL;
 	}
+// somewhat accurate at mid, but overshoots at far
 	else if (self.monsterflags & MFL_HASHEAD)
 	{
 		start = self.origin + v_forward * 70 + v_up * 37;
-		end = self.enemy.trail2 + [random() * 8, random() * 8, 0];
-		dir = normalize((end - start) + '0 0 64');
+		distance = vlen(self.origin - pos);
+		height = pos_z - self.origin_z;
+		end = pos + [crandom() * 16, crandom() * 16, distance*0.8 + height*0.7];
+		offset = pos;
+		end = lerpVector(offset, end, (distance - 256) / 768);
+		dir = normalize(end - start);
 	}
+// random direction
 	else
 		dir = normalize([v_forward_x + crandom() * 0.5 , v_forward_y + crandom() * 0.5, v_forward_z + crandom() * 0.5]);
+	
+// effects, sounds
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
+	
+	missile = spawn ();
+	missile.sprawlflags = SFLP_OGRE; // used when player shoots it
+	missile.isgrenade = 1; // mark as target for grenade shooting
+	appendToList(missile);
+	
+	missile.owner = self;
+	missile.movetype = MOVETYPE_BOUNCE;
+	missile.solid = SOLID_BBOX;
+	missile.touch = OgreGrenadeTouch;
+	missile.nextthink = time + blast_time;
+	missile.think = OgreGrenadeExplode;
+	missile.fA = sniper; // save marker, for explosion 
+	if (sniper)
+	{
+	// sniper shoots plasma grenades
+		setmodel (missile, "progs/p_grenade.mdl");
+		missile.classname = "plasma";
+	}
+	else
+		setmodel (missile, "progs/grenade.mdl");
+	setsize (missile, '0 0 0', '0 0 0');
+	setorigin (missile, self.origin + base_forward * 31 + '0 0 37'); // gun offset
+	
+	missile.velocity = dir * vel;//OGRE_NADE_VEL;
+	missile.angles = vectoangles(missile.velocity);
+	missile.avelocity = '-50 0 0';
+};
 
+void() OgreFirePain =
+{
+// this shit is too unpredictable for lower skills
+	if (skill < 2) 
+		return;
+	if (self.state & OGRE_NOWEAPON)
+		return;
+// fire grenade into direction of the gun is aiming at during pain frame #83
+	entity missile;
+	self.effects = self.effects | EF_MUZZLEFLASH;
+	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
+	
+	makevectors2(self.angles);
 	missile = spawn ();
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
-	missile.velocity = dir * OGRE_NADE_VEL;
-	missile.avelocity = '300 300 300';
-	missile.angles = vectoangles(missile.velocity);
 	missile.touch = OgreGrenadeTouch;
-	missile.nextthink = time + blast_time;
+	missile.nextthink = time + 0.5 + random() * 2;
 	missile.think = OgreGrenadeExplode;
-	//missile.attack_finished = time;
-	setmodel (missile, "progs/grenade.mdl");
-	setsize (missile, '0 0 0', '0 0 0');		
-	setorigin (missile, self.origin + v_forward * 31 + v_up * 37);
 	missile.isgrenade = 1;
 	appendToList(missile);
-	
-	self.effects = self.effects | EF_MUZZLEFLASH;
-	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
-};
-
-void(float side) chainsaw =
-{
-local vector	delta;
-local float 	ldmg;
-
-	if (!self.enemy)
-		return;
-
-	if (!CanDamage (self.enemy, self))
-		return;
-
-	ai_charge(10);
-
-	delta = self.enemy.origin - self.origin;
-
-	if (vlen(delta) > 100)
-		return;
-		
-	ldmg = (random() + random() + random()) * 4;
-	T_Damage (self.enemy, self, self, ldmg, 0);
-	
-	if (side)
-	{
-		makevectors2 (self.angles);
-		if (side == 1)
-			SpawnMeatSpray (self.origin + v_forward*16, crandom() * 100 * v_right);
-		else
-			SpawnMeatSpray (self.origin + v_forward*16, side * v_right);
-	}
+	setmodel (missile, "progs/grenade.mdl");
+	setsize (missile, '0 0 0', '0 0 0');
+	setorigin (missile, self.origin + v_forward * 25 + v_up * 26 + v_right * (-57)); // barrel exit offset
+	missile.velocity = [0.4, -0.9, -0.3] * OGRE_NADE_VEL; // approximate gun direction, not fully normalized
+	missile.angles = vectoangles(missile.velocity);
+	missile.avelocity = '300 300 300';
 };
 
 void() ogre_stand1	=[	$stand1,	ogre_stand2	] {setHead('3 2 45');ai_stand();}; // frame 1 stand
@@ -303,13 +329,54 @@ void() ogre_run_slow14	=[	$walk14,	ogre_run_slow15	] {setHead('9 4 44');	ai_run(
 void() ogre_run_slow15	=[	$walk15,	ogre_run_slow16	] {setHead('6 4 44');	ai_run(3);}; // 24
 void() ogre_run_slow16	=[	$walk16,	ogre_run	] {setHead('6 4 44');	ai_run(4);}; // 25
 
+void() ogre_push_strike = 
+{
+	entity oldself;
+	if (vlen(self.enemy.origin - self.origin) > 100)
+		return;
+	
+	T_Push(self.enemy, self, 400, 100);
+	
+	oldself = self;
+	self = self.enemy;
+	//start
+		ForceStartSlide(0.2);
+		addShake(crandom() * 150, crandom() * 100, random() * 150);
+	//end
+	self = oldself;
+};
+
+void(float side) chainsaw =
+{
+	if (!self.enemy)
+		return;
+
+	if (!CanDamage (self.enemy, self))
+		return;
+
+	ai_charge(10);
+
+	if (vlen(self.enemy.origin - self.origin) > 100)
+		return;
+
+	T_Damage (self.enemy, self, self, (random() + random() + random()) * 4, 0);
+	
+	if (side)
+	{
+		makevectors2 (self.angles);
+		if (side == 1)
+			SpawnMeatSpray (self.origin + v_forward*16, crandom() * 100 * v_right, self.enemy);
+		else
+			SpawnMeatSpray (self.origin + v_forward*16, side * v_right, self.enemy);
+	}
+};
 
 void() ogre_swing1	=[	$swing1,		ogre_swing2	] {setHead('-1 2 40');ai_charge(11); // 34 swing
 sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);
 self.pain_finished = time + 2;};
 void() ogre_swing2	=[	$swing2,		ogre_swing3	] {ai_charge_side();setHead('1 2 41');ai_charge(1);}; // 35
 void() ogre_swing3	=[	$swing3,		ogre_swing4	] {ai_charge_side();setHead('4 2 42');ai_charge(4);}; // 36
-void() ogre_swing4	=[	$swing4,		ogre_swing5	] {ai_charge_side();setHead('7 1 44');ai_charge(13);}; // 37
+void() ogre_swing4	=[	$swing4,		ogre_swing5	] {ai_charge_side();setHead('7 1 44');ai_charge(13);ogre_push_strike();}; // 37
 void() ogre_swing5	=[	$swing5,		ogre_swing6	] {ai_charge_side();setHead('8 -2 42'); // 38
 	ai_charge(9); 
 	chainsaw(0);
@@ -361,6 +428,7 @@ void() ogre_landshake =
 		return;
 	}
 	self.fA = -self.velocity_z;
+	self.yaw_speed = 20;
 	self.thinkA = ogre_landshake;
 	self.nextthinkA = time + 0.1;
 };
@@ -379,6 +447,7 @@ void() ogre_jumpsmash	=[	$smash1,		ogre_jumpsmash2	]
 	self.velocity_z = 300;
 	self.vA = self.velocity;
 	self.touch = ogre_smashtouch;
+	self.yaw_speed = 1;
 	
 	self.pain_finished = time + 2;
 	self.attack_finished = time + 8;
@@ -395,7 +464,7 @@ void() ogre_smash4	=[	$smash4,		ogre_smash5	] {ai_charge_side(); setHead('-3 -6 
 void() ogre_smash5	=[	$smash5,		ogre_smash6	] {ai_charge_side(); setHead('-5 -6 43');ai_charge(4);}; // 52
 void() ogre_smash6	=[	$smash6,		ogre_smash7	] {ai_charge_side(); setHead('-5 -5 45');ai_charge(4); chainsaw(0); sound (self, CHAN_WEAPON, "ogre/ogsawatk.wav", 1, ATTN_NORM);}; // 53
 void() ogre_smash7	=[	$smash7,		ogre_smash8	] {ai_charge_side(); setHead('-4 -5 46');ai_charge(4); chainsaw(0);}; // 54
-void() ogre_smash8	=[	$smash8,		ogre_smash9	] {ai_charge_side(); setHead('4 1 41');ai_charge(10); chainsaw(0);}; // 55
+void() ogre_smash8	=[	$smash8,		ogre_smash9	] {ai_charge_side(); setHead('4 1 41');ai_charge(10); chainsaw(0); ogre_push_strike();}; // 55
 void() ogre_smash9	=[	$smash9,		ogre_smash10 ] {setHead('22 -1 27');ai_charge(13); chainsaw(0);}; // 56
 void() ogre_smash10	=[	$smash10,		ogre_smash11 ] {setHead('25 -3 22');chainsaw(1);}; // 57
 void() ogre_smash11	=[	$smash11,		ogre_smash12 ] {setHead('26 -1 24');  // 58
@@ -438,7 +507,7 @@ void() ogre_snipe_loop =
 	traceline (start, self.enemy.origin, ALLOWMONSTERS, self);
 	sendMessageVecVecFlag(start, trace_endpos, LASER_BLUE, TE_LASERTRACE);
 	self.count++;
-	if (self.count > 7) 
+	if (self.count > 7 - skill) 
 	{
 		self.think = ogre_sniper2;
 		self.count = 0;
@@ -469,7 +538,7 @@ void()	ogre_painc5	=[	$painc5,	ogre_painc6	] {setHead('-4 -2 41');}; // 80
 void()	ogre_painc6	=[	$painc6,	ogre_run	] {setHead('2 4 40');}; // 81
 
 void()	ogre_paind1	=[	$paind1,	ogre_paind2	] {setHead('-12 2 44');}; // 82
-void()	ogre_paind2	=[	$paind2,	ogre_paind3	] {setHead('-15 2 39');ai_pain(10);}; // 83
+void()	ogre_paind2	=[	$paind2,	ogre_paind3	] {setHead('-15 2 39');ai_pain(10); OgreFirePain();}; // 83
 void()	ogre_paind3	=[	$paind3,	ogre_paind4	] {setHead('-18 2 27');ai_pain(9);}; // 84
 void()	ogre_paind4	=[	$paind4,	ogre_paind5	] {setHead('-15 2 19');ai_pain(4);}; // 85
 void()	ogre_paind5	=[	$paind5,	ogre_paind6	] {setHead('-12 1 17');}; // 86
@@ -519,7 +588,7 @@ void(entity attacker, float damage)	ogre_pain =
 	
 	if (self.monsterflags & MFL_LOSTWEAPON)
 	{
-		dropAmmo(self.origin, DROP_ROCKETS, 1);
+		dropAmmo(self.origin, DROP_ROCKETS, 2, 1, 1, 1);
 		
 		self.monsterflags -= self.monsterflags & MFL_LOSTWEAPON;
 		self.state |= OGRE_NOWEAPON | OGRE_FAST;
@@ -540,9 +609,11 @@ void(entity attacker, float damage)	ogre_pain =
 	if (self.monsterflags & MFL_LOST_HEAD)
 	{
 		if (random() > 0.5)
-			dropAmmo(self.origin, DROP_SHELLS, 4);
+			dropAmmo(self.origin, DROP_SHELLS, 8, 4, 4, 2);
 		else
-			dropAmmo(self.origin, DROP_NAILS, 25);
+			dropAmmo(self.origin, DROP_NAILS, 40, 30, 30, 10);
+		
+		dropHealth(self.origin, DROP_ARMOR_ONE, 4, 4, 2, 0);
 		
 		self.monsterflags -= self.monsterflags & MFL_LOST_HEAD;
 		self.monsterflags |= MFL_CONFUSED;
@@ -716,12 +787,18 @@ void() ogre_die =
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
-		dropAmmo(self.origin, DROP_CELLS, 1);
+		dropAmmo(self.origin, DROP_CELLS, 1, 1, 1, 1);
+		dropHealth(self.origin, DROP_ARMOR, 4, 2, 2, 1);
+
+		self.touch = SUB_Null; // 
+		self.thinkA = SUB_Null;
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
 		ThrowHead ("progs/h_ogre.mdl", self.lasthit_damage);
 		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
 		ThrowGib ("progs/ogre_gib_hand.mdl", self.lasthit_damage);
-		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
+		ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage, 2);
+		ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage, 2);
+		ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage, 2);
 		ThrowGib ("progs/ogre_gib_leg.mdl", self.lasthit_damage);
 		ThrowGib ("progs/ogre_gib_plate.mdl", self.lasthit_damage);
 		return;
@@ -757,6 +834,8 @@ void() monster_ogre =
 	precache_model ("progs/ogre_gib_plate.mdl");
 
 	precache_model ("progs/grenade.mdl");
+	precache_model ("progs/p_grenade.mdl");
+	precache_sound ("weapons/pl_explode.wav");
 
 	precache_sound ("ogre/ogdrag.wav");
 	precache_sound ("ogre/ogdth.wav");
@@ -774,6 +853,7 @@ void() monster_ogre =
 	//gnounc
 	self.noise = "ogre/ogwake.wav";	//gnounc
 	self.netname = "Ogre";
+	self.info_name = "Light Mech o.h.G.r.";
 	self.killstring = " was destroyed by the OhGr\n";
 
 	setsize (self, '-32 -32 -24', '32 32 48');
@@ -782,8 +862,9 @@ void() monster_ogre =
 	self.health = OGRE_HEALTH;
 	self.max_health = OGRE_HEALTH;
 	self.health_head = OGRE_HEAD;
+	self.health_head_max = OGRE_HEAD;
 	self.gib_threshold = 180;
-	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;
+	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT | MFL_PUSH_RESISTENT;
 	self.monstertype = TYPE_OGRE;
 	self.state = OGRE_SNIPER;
 	self.yaw_speed = 15;

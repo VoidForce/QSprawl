@@ -127,9 +127,9 @@ Stay facing the enemy
 void() ai_face =
 {
 	if (self.monsterflags & MFL_CONFUSED)
-		self.ideal_yaw = vectoyaw(self.enemy.trail4 - self.origin);
+		self.ideal_yaw = vectoyaw(getPlayerPosition(self.enemy, 4) - self.origin);
 	else
-		self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+		self.ideal_yaw = vectoyaw(getPlayerPosition(self.enemy, 0) - self.origin);
 	ChangeYaw ();
 };
 
@@ -138,7 +138,7 @@ void() ai_face_instant =
 	float oldyawspd;
 	oldyawspd = self.yaw_speed;
 	self.yaw_speed = 360;
-	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+	self.ideal_yaw = vectoyaw(getPlayerPosition(self.enemy, 0) - self.origin);
 	ChangeYaw ();
 	self.yaw_speed = oldyawspd;
 };
@@ -160,15 +160,17 @@ void(float d) ai_charge =
 
 void() ai_charge_side =
 {
-	local	vector	dtemp;
-	local	float	heading;
+	vector	dtemp;
+	float	heading;
+	vector pos;
+	pos = getPlayerPosition(self.enemy, 0);
 	
 	// aim to the left of the enemy for a flyby
-	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
+	self.ideal_yaw = vectoyaw(pos - self.origin);
 	ChangeYaw ();
 
 	makevectors2 (self.angles);
-	dtemp = self.enemy.origin - 30*v_right;
+	dtemp = pos - 30*v_right;
 	heading = vectoyaw(dtemp - self.origin);
 	
 	walkmove(heading, 20);
@@ -181,15 +183,12 @@ ai_melee
 =============*/
 void() ai_melee =
 {
-	local vector	delta;
-	local float 	ldmg;
+	float 	ldmg;
 
 	if (!self.enemy)
 		return;		// removed before stroke
-		
-	delta = self.enemy.origin - self.origin;
 
-	if (vlen(delta) > 80)
+	if (vlen(self.enemy.origin - self.origin) > 80)// exact world position to check for damage
 		return;
 		
 	ldmg = (random() + random() + random()) * 3;
@@ -199,17 +198,14 @@ void() ai_melee =
 
 void() ai_melee_side =
 {
-	local vector	delta;
-	local float 	ldmg;
+	float 	ldmg;
 
 	if (!self.enemy)
 		return;		// removed before stroke
 		
 	ai_charge_side();
-	
-	delta = self.enemy.origin - self.origin;
 
-	if (vlen(delta) > 60)
+	if (vlen(self.enemy.origin - self.origin) > 60)// exact world position to check for damage
 		return;
 
 	if (!CanDamage (self.enemy, self))

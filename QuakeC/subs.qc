@@ -339,21 +339,21 @@ string getNetname(float item_number) =
 {//gnounc
 	switch(item_number) 
 	{
-		case IT_AXE:
+		case IT_KATANA:
 			return "Katana";
-		case IT_SHOTGUN:
+		case IT_PISTOL:
 			return "Mateba Deck-Steir Series D";
 		case IT_SUPER_SHOTGUN:
 			return "Megatech A8";
-		case IT_NAILGUN:
+		case IT_SMGS:
 			return "Seburo-Sendai C390";
-		case IT_SUPER_NAILGUN:
+		case IT_CHAINGUN:
 			return "Megatech HAW201";
 		case IT_GRENADE_LAUNCHER:
 			return "Shogo-Kenbishi Auto-Load";
-		case IT_ROCKET_LAUNCHER:
+		case IT_GAUSS:
 			return "Hiro-Enki Y.T. Prototype";
-		case IT_LIGHTNING:
+		case IT_SHOCK:
 			return "Lightning Rod";
 		case IT_BULLETS:
 			return ".50 BMG Rounds";
@@ -497,21 +497,21 @@ float getAmmotypeByWeapon(float it_num)
 {
 	switch(it_num)
 	{
-		case IT_AXE:
+		case IT_KATANA:
 			return 0;
-		case IT_SHOTGUN:
+		case IT_PISTOL:
 			return IT_NAILS;
 		case IT_SUPER_SHOTGUN:
 			return IT_SHELLS;
-		case IT_NAILGUN:
+		case IT_SMGS:
 			return IT_NAILS;
-		case IT_SUPER_NAILGUN:
+		case IT_CHAINGUN:
 			return IT_NAILS;
 		case IT_GRENADE_LAUNCHER:
 			return IT_ROCKETS;
-		case IT_ROCKET_LAUNCHER:
+		case IT_GAUSS:
 			return IT_CELLS;
-		case IT_LIGHTNING:
+		case IT_SHOCK:
 			return IT_CELLS;
 		default:
 			return IT_SHELLS;
@@ -522,22 +522,22 @@ string getModelByNum(float it_num)
 {
 	switch(it_num)
 	{
-		case IT_AXE:
-			return "progs/v_axe.mdl";
-		case IT_SHOTGUN:
-			return "progs/v_shot.mdl";
+		case IT_KATANA:
+			return "progs/v_katana.mdl";
+		case IT_PISTOL:
+			return "progs/v_pistol.mdl";
 		case IT_SUPER_SHOTGUN:
-			return "progs/v_shot2.mdl";
-		case IT_NAILGUN:
-			return "progs/v_nail.mdl";
-		case IT_SUPER_NAILGUN:
-			return "progs/v_nail2.mdl";
+			return "progs/v_shotgun.mdl";
+		case IT_SMGS:
+			return "progs/v_smgs.mdl";
+		case IT_CHAINGUN:
+			return "progs/v_chaingun.mdl";
 		case IT_GRENADE_LAUNCHER:
-			return "progs/v_rock.mdl";
-		case IT_ROCKET_LAUNCHER:
-			return "progs/v_rock2.mdl";
-		case IT_LIGHTNING:
-			return "progs/v_light.mdl";
+			return "progs/v_grenade.mdl";
+		case IT_GAUSS:
+			return "progs/v_gauss.mdl";
+		case IT_SHOCK:
+			return "progs/v_shock.mdl";
 		case IT_SHELLS:
 			return "maps/b_shell0.bsp";	//b_shell1.bsp is big shells.
 		case IT_NAILS:
@@ -715,6 +715,7 @@ void weaponThink(void() thinkfunc, float timer) =
 		self.weaponframe = 1;
 		return;
 	}
+
 	self.think = thinkfunc;
 	self.nextthink = time + timer;
 };
@@ -794,10 +795,10 @@ void(string gibname, vector direction, float flag) ThrowHeadGib =
 	new.flags = 0;
 };
 
-void(string gibname, float dm) ThrowGib =
+void(string gibname, float dm, float lscale = 1) ThrowGib =
 {
 	local	entity new;
-
+	lscale = clamp(0.1, lscale, 10);
 	new = spawn();
 	new.origin = self.origin + [crandom()*24, crandom()*24, crandom()*32];
 	setmodel (new, gibname);
@@ -813,6 +814,7 @@ void(string gibname, float dm) ThrowGib =
 	new.nextthink = time + 7 + random()*5;
 	new.frame = 0;
 	new.flags = 0;
+	new.scale = lscale;
 };
 
 void(string gibname, float dm) ThrowHead =
@@ -830,22 +832,6 @@ void(string gibname, float dm) ThrowHead =
 	self.origin_z = self.origin_z - 24;
 	self.flags = self.flags - (self.flags & FL_ONGROUND);
 	self.avelocity = crandom() * '0 600 0';
-};
-
-void (entity targ, vector direction, float force, float pflags) Knockback =
-{
-// direction must be normalized
-	if (targ.flags & FL_MONSTER)
-	{
-		if (targ.flags & FL_ONGROUND)
-		{
-			//setorigin(targ, targ.origin + '0 0 5');
-			targ.origin_z += 1;
-			targ.flags -= targ.flags & FL_ONGROUND;
-		}
-		targ.velocity = direction * force;
-		targ.velocity_z = 100;
-	}
 };
 
 void (entity who) flyDeath =
@@ -919,16 +905,35 @@ void (string soundname, float timer = 1) playPainSound =
 		self.painsound_time = time + timer;
 		sound (self, CHAN_VOICE, soundname, 1, ATTN_NORM);
 	}
-}
+};
 
-void(float targetskin) changeSkinsSlowmo =
+void(__inout float main, float flag) removeflag =
 {
-	entity head;
+	main -= main & flag;
+};
 
-	head = findfloat(skinchange, 1);
-	while (head)
+void(__inout float main, float flag) addflag =
+{
+	main |= flag;
+};
+
+vector (entity who, float lag) getPlayerPosition =
+{
+	float p;
+	p = who.trail + lag; // position in trail chain
+	p = clamp(0, p, 4); // 0 - origin, 4 - trail4
+	switch (p)
 	{
-		head.skin = targetskin;
-		head = head.chain;
+		default:
+		case 0:
+			return(who.origin);
+		case 1:
+			return(who.trail1);
+		case 2:
+			return(who.trail2);
+		case 3:
+			return(who.trail3);
+		case 4:
+			return(who.trail4);
 	}
 };

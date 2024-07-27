@@ -827,6 +827,9 @@ const char *ED_FieldValueString (edict_t *ed, ddef_t *d)
 			BIT_CASE (FL_PARTIALGROUND);
 			BIT_CASE (FL_WATERJUMP);
 			BIT_CASE (FL_JUMPRELEASED);
+			BIT_CASE (FL_EXPLOBOX);
+			BIT_CASE (FL_PROJECTILE);
+
 		}
 		else if (ofs == offsetof (entvars_t, spawnflags))
 		{
@@ -841,8 +844,8 @@ const char *ED_FieldValueString (edict_t *ed, ddef_t *d)
 			BIT_CASE (EF_MUZZLEFLASH);
 			BIT_CASE (EF_BRIGHTLIGHT);
 			BIT_CASE (EF_DIMLIGHT);
-			BIT_CASE(EF_NOLERP);
-			BIT_CASE(EF_NOLERP2);
+			BIT_CASE (EF_NOLERP);
+			BIT_CASE (EF_NOLERP2);
 		}
 
 		#undef BIT_CASE
@@ -1994,6 +1997,8 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 		{
 			//qsprawl, crc check information
 			Con_Printf("%d \n", qcvm->progs->crc);
+			Con_Printf("\n\nYou trying to load basegame, please type 'game sprawl'\n\n");
+			Cbuf_InsertText("game sprawl\n");
 			Host_Error("%s system vars have been modified, progdefs.h is out of date", filename);
 		}
 		else

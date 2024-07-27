@@ -65,6 +65,7 @@ typedef enum {
 	CANVAS_BOTTOMRIGHT,
 	CANVAS_TOPRIGHT,
 	CANVAS_CSQC,
+	CANVAS_INFO,
 	CANVAS_INVALID = -1
 } canvastype;
 

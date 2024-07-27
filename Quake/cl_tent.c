@@ -34,6 +34,7 @@ sfx_t			*cl_sfx_ric1;
 sfx_t			*cl_sfx_ric2;
 sfx_t			*cl_sfx_ric3;
 sfx_t			*cl_sfx_r_exp3;
+//sfx_t			*cl_sfx_r_exp3_far;
 sfx_t			*cl_sfx_impact;
 
 /*
@@ -50,6 +51,7 @@ void CL_InitTEnts (void)
 	cl_sfx_ric2 = S_PrecacheSound ("weapons/ric2.wav");
 	cl_sfx_ric3 = S_PrecacheSound ("weapons/ric3.wav");
 	cl_sfx_r_exp3 = S_PrecacheSound ("weapons/r_exp3.wav");
+	//cl_sfx_r_exp3_far = S_PrecacheSound("weapons/r_exp3_far.wav");
 	cl_sfx_impact = S_PrecacheSound("misc/impact.wav");
 }
 
@@ -165,13 +167,25 @@ void CL_ParseTEnt (void)
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
-		R_ParticleExplosion (pos);
+		R_ParticleExplosion (pos, 0);
 		dl = CL_AllocDlight (0);
 		VectorCopy (pos, dl->origin);
 		dl->radius = 350;
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+		//S_StartSound(-1, 0, cl_sfx_r_exp3_far, pos, 1, 0);
+		break;
+	case TE_EXPLOSION_PLASMA:
+		pos[0] = MSG_ReadCoord(cl.protocolflags);
+		pos[1] = MSG_ReadCoord(cl.protocolflags);
+		pos[2] = MSG_ReadCoord(cl.protocolflags);
+		R_ParticleExplosion(pos, 1);
+		dl = CL_AllocDlight(0);
+		VectorCopy(pos, dl->origin);
+		dl->radius = 200;
+		dl->die = cl.time + 0.5;
+		dl->decay = 300;
 		break;
 
 	case TE_LIGHTNING1:				// lightning bolts
@@ -284,6 +298,7 @@ void CL_ParseTEnt (void)
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
 		S_StartSound(-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+		//S_StartSound(-1, 0, cl_sfx_r_exp3_far, pos, 1, 0);
 		break;
 
 	case TE_SHOCKWAVE:

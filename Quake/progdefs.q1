@@ -61,6 +61,7 @@ typedef struct
 	vec3_t	project;
 	vec3_t	reject;
 	vec3_t	reflect;
+	vec3_t	wind;
 } globalvars_t;
 
 typedef struct
@@ -171,6 +172,12 @@ typedef struct
 	float		adrenaline;
 	float		engineflags;
 	float		weapon_skin;
+	float		clip;
+	float		noclip;
+	int			info_ent;
+	float		health_head;
+	float		health_head_max;
+	string_t	info_name;
 } entvars_t;
 
-#define PROGHEADER_CRC 37463
+#define PROGHEADER_CRC 39637

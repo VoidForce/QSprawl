@@ -234,11 +234,10 @@ void() HuntTarget =
 {
 	self.goalentity = self.enemy;
 	self.think = self.th_run;
-	//self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
 	if (self.monsterflags & MFL_CONFUSED)
-		self.ideal_yaw = vectoyaw(self.enemy.trail4 - self.origin);
+		self.ideal_yaw = vectoyaw(getPlayerPosition(self.enemy, 4) - self.origin);
 	else
-		self.ideal_yaw = vectoyaw(self.enemy.trail1 - self.origin);
+		self.ideal_yaw = vectoyaw(getPlayerPosition(self.enemy, 0) - self.origin);
 	self.nextthink = time + 0.1;
 	SUB_AttackFinished (1);	// wait a while before first attack
 };
@@ -649,8 +648,7 @@ void(float dist) ai_run =
 
 	enemy_infront = infront(self.enemy);
 	enemy_range = range(self.enemy);
-	//enemy_yaw = vectoyaw(self.enemy.origin - self.origin);
-	enemy_yaw = vectoyaw(self.enemy.trail1 - self.origin);
+	enemy_yaw = vectoyaw(getPlayerPosition(self.enemy, 0) - self.origin);
 	
 	if (self.attack_state == AS_MISSILE)
 	{

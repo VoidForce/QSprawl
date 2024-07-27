@@ -46,7 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define IRONWAIL_VER_MINOR		7
 #define IRONWAIL_VER_PATCH		99
 #ifndef IRONWAIL_VER_SUFFIX
-#define IRONWAIL_VER_SUFFIX		// optional version suffix string literal like "-beta1"
+#define IRONWAIL_VER_SUFFIX		"-custom"// optional version suffix string literal like "-beta1"
 #endif
 
 #define	QS_STRINGIFY_(x)	#x
@@ -57,7 +57,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	IRONWAIL_VER_STRING		QS_STRINGIFY(IRONWAIL_VER_MAJOR) "." QS_STRINGIFY(IRONWAIL_VER_MINOR) "." QS_STRINGIFY(IRONWAIL_VER_PATCH) IRONWAIL_VER_SUFFIX
 
 #define CONSOLE_TITLE_STRING	"qSprawl Ironwail " IRONWAIL_VER_STRING
-#define WINDOW_TITLE_STRING		"Quake/Ironwail " IRONWAIL_VER_STRING
+#define WINDOW_TITLE_STRING		"qSprawl/Ironwail " IRONWAIL_VER_STRING
 #define CONFIG_NAME				"ironwail.cfg"
 #define SCREENSHOT_PREFIX		"ironwail"
 #define ENGINE_PAK				"ironwail.pak"

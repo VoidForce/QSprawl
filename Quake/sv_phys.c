@@ -87,7 +87,8 @@ SV_CheckVelocity
 void SV_CheckVelocity (edict_t *ent)
 {
 	int		i;
-
+	vec3_t	direction;
+	float	length;
 //
 // bound velocity
 //
@@ -103,10 +104,20 @@ void SV_CheckVelocity (edict_t *ent)
 			Con_Printf ("Got a NaN origin on %s\n", PR_GetString(ent->v.classname));
 			ent->v.origin[i] = 0;
 		}
+
+		VectorCopy(ent->v.velocity, direction);
+		length = VectorNormalize(direction);
+		if (length > 2000)
+		{
+			length = 1995;
+			VectorScale(direction, length, ent->v.velocity);
+		}
+		/*
 		if (ent->v.velocity[i] > sv_maxvelocity.value)
 			ent->v.velocity[i] = sv_maxvelocity.value;
 		else if (ent->v.velocity[i] < -sv_maxvelocity.value)
 			ent->v.velocity[i] = -sv_maxvelocity.value;
+		*/
 	}
 }
 
@@ -418,6 +429,7 @@ void SV_AddGravity (edict_t *ent)
 {
 	float	ent_gravity;
 	eval_t	*val;
+	float wscale;
 
 	val = GetEdictFieldValueByName(ent, "entity_type");
 	if (val->_float == 1) //player type entity
@@ -435,6 +447,21 @@ void SV_AddGravity (edict_t *ent)
 			ent_gravity = 1.0;
 
 		ent->v.velocity[2] -= ent_gravity * sv_gravity.value * host_frametime;
+	}
+
+	// qSprawl: add wind acceleration here as well
+	if ((int)ent->v.flags & FL_ONGROUND)
+		return;
+
+	if (pr_global_struct->wind != vec3_origin)
+	{
+		if ((int)ent->v.flags & (FL_CLIENT | FL_MONSTER))
+			wscale = 0.1;
+		else
+			wscale = 1;
+		ent->v.velocity[0] += pr_global_struct->wind[0] * host_frametime * wscale;
+		ent->v.velocity[1] += pr_global_struct->wind[1] * host_frametime * wscale;
+		ent->v.velocity[2] += pr_global_struct->wind[2] * host_frametime * wscale;
 	}
 }
 
@@ -895,8 +922,8 @@ void SV_WalkMove (edict_t *ent)
 
 // move forward
 	ent->v.velocity[0] = oldvel[0];
-	ent->v. velocity[1] = oldvel[1];
-	ent->v. velocity[2] = 0;
+	ent->v.velocity[1] = oldvel[1];
+	ent->v.velocity[2] = 0;
 	clip = SV_FlyMove (ent, host_frametime, &steptrace);
 
 // check for stuckness, possibly due to the limited precision of floats

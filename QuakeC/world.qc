@@ -229,9 +229,16 @@ void() worldspawn =
 	precache_sound ("misc/r_tele5.wav");
 	precache_sound ("weapons/lock4.wav");		// ammo pick up
 	precache_sound ("weapons/pkup.wav");		// weapon up
-	precache_sound ("items/armor1.wav");		// armor up
-	precache_sound ("weapons/lhit.wav");		//lightning
-	precache_sound ("weapons/lstart.wav");		//lightning start
+	precache_sound ("items/armorvest1.wav");		// armor up
+	precache_sound ("items/armorvest2.wav");
+	precache_sound ("items/armor1.wav");
+	precache_sound ("items/armor2.wav");
+	precache_sound ("items/armor3.wav");
+	precache_sound ("items/health1.wav");
+	precache_sound ("items/health2.wav");
+
+	precache_sound ("weapons/f_shock.wav");		//lightning
+	precache_sound ("weapons/f_shock_loop.wav");		//lightning start
 	precache_sound ("items/damage3.wav");
 	precache_sound ("items/damage2.wav");
 	
@@ -259,7 +266,7 @@ void() worldspawn =
 	precache_sound ("player/death5.wav");
 
 // ax sounds	
-	precache_sound ("weapons/ax1.wav");			// ax swoosh
+	precache_sound ("weapons/f_katana.wav");			// ax swoosh
 	precache_sound ("player/axhit1.wav");		// ax hit meat
 	precache_sound ("player/axhit2.wav");		// ax hit world
 
@@ -299,18 +306,22 @@ void() worldspawn =
 
 	precache_model ("progs/s_bubble.spr");	// drowning bubbles
 	precache_model ("progs/s_explod.spr");	// sprite explosion
+	precache_model ("progs/p_explode.spr");	// sprite explosion
 
-	precache_model ("progs/v_axe.mdl");
-	precache_model ("progs/v_shot.mdl");
-	precache_model ("progs/v_nail.mdl");
-	precache_model ("progs/v_rock.mdl");
-	precache_model ("progs/v_shot2.mdl");
-	precache_model ("progs/v_nail2.mdl");
-	precache_model ("progs/v_rock2.mdl");
+	precache_model ("progs/v_katana.mdl");
+	precache_model ("progs/v_pistol.mdl");
+	precache_model ("progs/v_shotgun.mdl");
+	precache_model ("progs/v_smgs.mdl");
+	precache_model ("progs/v_chaingun.mdl");
+	precache_model ("progs/v_grenade.mdl");
+	precache_model ("progs/v_gauss.mdl");
+	precache_model ("progs/v_shock.mdl");
+	
 	precache_model ("progs/case_mg.mdl");
 	precache_model ("progs/case_shell.mdl");
 	precache_model ("progs/case_pistol.mdl");
 	precache_model ("progs/ammo/ammo_drop.spr");
+	precache_model ("progs/health_drop.spr");
 	
 	precache_model ("progs/bolt.mdl");		// for lightning gun
 	precache_model ("progs/bolt2.mdl");		// for lightning gun
@@ -325,9 +336,6 @@ void() worldspawn =
 	precache_model ("progs/backpack.mdl");
 
 	precache_model ("progs/zom_gib.mdl");
-
-	precache_model ("progs/v_light.mdl");
-	
 
 //
 // Setup light animation tables. 'a' is total darkness, 'z' is maxbright.
@@ -377,10 +385,99 @@ void() worldspawn =
 
 void() StartFrame =
 {
-	teamplay = cvar("teamplay");
+	//teamplay = cvar("teamplay"); // qSprawl is single player only, don't bother to updated
 	skill = cvar("skill");
 	framecount = framecount + 1;
+	
+	SlowMotionLogic();
 };
+
+/*
+	SLOWMO_VALUE = 0.4; 		// 40% time speed
+	SLOWMO_FADE_TIME = 0.25;	// transition will take quarter of a second
+	SLOWMO_FADE_HELPER = 4;		// is 1/SLOWMO_FADE_TIME
+
+enumflags SLOWMOSTATE {
+	SLOWMO_OFF = 0,
+	SLOWMO_ON = 1,
+	SLOWMO_DESIRE_ON,
+	SLOWMO_DESIRE_OFF,
+	SLOWMO_FORCE_OFF,
+};
+
+float	slowmotion;		// flags based?
+float	slowmotion_time;
+float	slowmotion_event_time;
+float	slowmotion_cooldown;
+*/
+
+/*
+	Moved here from player's frame logic, so now it's not dependant on a single client.
+	In addition to that it allows us to play slowmotion events for the whole server, random or deliberate
+*/
+
+void() SlowMotionLogic =
+{
+	/*
+	float value;
+	
+// nothing to do here really
+	if (!slowmotion_flags)
+		return;
+	
+// intermission/death shuts any slow motion immediately
+	if (slowmotion_flags & SLOWMO_FORCE_OFF && slowmotion)
+	{
+		slowmotion = SLOWMO_OFF;
+		slowmotion_transition_time = 0;
+		slowmotion_event_time = 0;
+		slowmotion_cooldown = 99999; // no events fun allowed until next map
+		changeSkinsSlowmo(SKIN_DEFAULT);
+		change_timescale(0);
+		return;
+	}
+
+// during events we don't care about player's actions at all
+	if (slowmotion_event_time > time)
+	{
+	// first time after flag was set, events have no fadein transition and is instant
+	// remember that player's desire sets slowmotion to ON state during fade in transition
+		if (!slowmotion)
+		{
+			slowmotion = SLOWMO_ON;
+			slowmotion_transition_time = 0;
+			change_timescale(SLOWMO_VALUE); // immediate set, no fade in transition
+			changeSkinsSlowmo(SKIN_GLOW); 	// make crit spots (heads) glow
+			return;
+		}
+	// event is over, and player doesn't want to continue
+		else if (slowmotion_event_time < time && !(slowmotion & SLOWMO_DESIRE_ON))
+		{
+			slowmotion |= SLOWMO_TRANSITION;
+			slowmotion_event_time = 0;
+			slowmotion_transition_time = time + SLOWMO_FADE_TIME;
+			value = lerp(1.0, SLOWMO_VALUE, (slowmotion_transition_time - time) * SLOWMO_FADE_HELPER);
+			change_timescale(value);
+		// strip event flag immediately, because we want to catch player's inputs during fade out transition, in the next frame
+			removeflag(slowmotion, SLOWMO_EVENT);
+			return;
+		}
+	}
+	*/
+};
+
+void(float targetskin) changeSkinsSlowmo =
+{
+	entity head;
+
+	head = findfloat(skinchange, 1);
+	while (head)
+	{
+		head.skin = targetskin;
+		head = head.chain;
+	}
+};
+
 
 /*
 ==============================================================================
@@ -428,4 +525,15 @@ void(entity ent) CopyToBodyQueue =
 	bodyqueue_head = bodyqueue_head.owner;
 };
 
+void() spawnWind =
+{
+	wind_ent = spawn();
+	wind_ent.think = windthink;
+	wind_ent.nextthink = time + 1;
+};
 
+void() windthink =
+{
+	self.think = windthink;
+	self.nextthink = time + 1;
+};

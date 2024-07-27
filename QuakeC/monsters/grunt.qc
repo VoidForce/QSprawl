@@ -263,7 +263,7 @@ void() army_fire =
 	
 	org = self.origin + v_forward * 30 + v_right * 8.5 + '0 0 16';
 
-	LaunchLaser(org, self.enemy.origin - self.origin);
+	LaunchLaser(org, getPlayerPosition(self.enemy, 0) - self.origin);
 };
 
 void()	army_die1	=[	$death1,	army_die2	] {};
@@ -369,8 +369,10 @@ void() army_die =
 	
 	if (self.health_head <= 0)
 	{
-		dropAmmo(self.origin, DROP_NAILS, 5);
-		
+		dropAmmo(self.origin, DROP_NAILS, 6, 4, 3, 2);
+		dropHealth(self.origin, DROP_HEALTH, 1, 0, 0, 0);
+		dropHealth(self.origin, DROP_HEALTH_ONE, 0, 4, 3, 2);
+			
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/soldier_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 32');
@@ -437,6 +439,7 @@ void() monster_army =
 	//gnounc
 	self.noise = "soldier/sight1.wav";	//gnounc
 	self.netname = "Grunt";
+	self.info_name = "  Military Police";
 	self.killstring = " was shot by Junta's MP\n";
 
 	setsize (self, '-16 -16 -24', '16 16 32');//40
@@ -445,9 +448,10 @@ void() monster_army =
 	self.health = SOLDIER_HEALTH;
 	self.max_health = SOLDIER_HEALTH;
 	self.health_head = SOLDIER_HEAD;
+	self.health_head_max = SOLDIER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_SOLDIER;
-	self.gib_threshold = 85;
+	self.gib_threshold = 75;
 	self.skinchange = 1;
 
 	self.th_stand = army_stand1;

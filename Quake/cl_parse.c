@@ -853,7 +853,7 @@ void CL_ParseClientdata (void)
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadShort(); //20
+	i = MSG_ReadByte(); //20
 	if (cl.stats[STAT_NAILS] != i)
 	{
 		cl.stats[STAT_NAILS] = i;
@@ -891,12 +891,7 @@ void CL_ParseClientdata (void)
 
 	i = MSG_ReadByte (); //25
 
-	if (cl.stats[STAT_ACTIVEWEAPON] != i)
-	{
-		cl.stats[STAT_ACTIVEWEAPON] = i;
-		Sbar_Changed();
-	}
-	/*
+	
 	if (standard_quake)
 	{
 		if (cl.stats[STAT_ACTIVEWEAPON] != i)
@@ -914,7 +909,10 @@ void CL_ParseClientdata (void)
 			Sbar_Changed ();
 		}
 	}
-	*/
+	// god forgive me for what i have done
+	if (bits & SU_WEAPON2) 
+		cl.stats[STAT_WEAPON] |= (MSG_ReadByte() << 8);
+
 	if (bits & SU_WEAPONALPHA)
 		cl.viewent.alpha = MSG_ReadByte(); //26
 	else
@@ -922,6 +920,9 @@ void CL_ParseClientdata (void)
 	//johnfitz
 	if (bits & SU_WEAPONSKIN)
 		cl.viewent.skinnum = MSG_ReadByte();
+
+	if (bits & SU_HUDINFO)
+		cl.info_ent = MSG_ReadShort();
 
 	CL_SetHudStat (STAT_WEAPONFRAME);
 	CL_SetHudStat (STAT_ARMOR);

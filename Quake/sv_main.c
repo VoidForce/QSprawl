@@ -44,7 +44,11 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	//FIXME: string stats!
 	int items;
 
-	items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
+	/*eval_t* val = GetEdictFieldValue(ent, qcvm->extfields.items2);
+	if (val)
+		items = (int)ent->v.items | ((int)val->_float << 23);
+	else*/
+		items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
 
 	memset(statsi, 0, sizeof(*statsi)*MAX_CL_STATS);
 	memset(statsf, 0, sizeof(*statsf)*MAX_CL_STATS);
@@ -1094,12 +1098,19 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	if ((int)ent->v.engineflags & ENF_CHANGESKIN)
 	{
 		bits |= SU_WEAPONSKIN;
-		(int)ent->v.engineflags = (int)ent->v.engineflags & ~ENF_CHANGESKIN; // use only once
+		ent->v.engineflags -= ENF_CHANGESKIN; // use only once // bitwise operations with cast to int makes things broken, it should be safe to subtract like this
+	}
+	
+	if ((int)ent->v.engineflags & ENF_HUDINFO)
+	{
+		bits |= SU_HUDINFO;
 	}
 
 	if ((int)ent->v.engineflags)
 		bits |= SU_ENGINEFLAGS;
-	
+
+	if (bits & SU_WEAPON && SV_ModelIndex(PR_GetString(ent->v.weaponmodel)) & 0xFF00) bits |= SU_WEAPON2;
+
 	if (bits >= 65536) bits |= SU_EXTEND1; //?
 	if (bits >= 16777216) bits |= SU_EXTEND2; //?
 	
@@ -1168,14 +1179,12 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	// so, for qSprawl we don't need ammo past 200, so the byte size would be enough
 	MSG_WriteByte (msg, ent->v.currentammo); // byte 1 18
 	MSG_WriteByte (msg, ent->v.ammo_shells); // byte 1 19
-	MSG_WriteShort (msg, ent->v.ammo_nails);  // Short 2 20
+	MSG_WriteByte (msg, ent->v.ammo_nails);  // Short 2 20
 	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1 21
 	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1 22
 	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1 23
 	MSG_WriteByte (msg, ent->v.adrenaline * 255); // byte 1 24 
 
-	MSG_WriteByte(msg, ent->v.weapon); //1 25
-	/*
 	if (standard_quake)
 	{
 		MSG_WriteByte (msg, ent->v.weapon); //1 25
@@ -1191,12 +1200,19 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 			}
 		}
 	}
-	*/
+	if (bits & SU_WEAPON2)
+		MSG_WriteByte(msg, SV_ModelIndex(PR_GetString(ent->v.weaponmodel)) >> 8);
+
 	if (bits & SU_WEAPONALPHA)
 		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1 26
 	if (bits & SU_WEAPONSKIN)
 		MSG_WriteByte (msg, ent->v.weapon_skin);
-
+	
+	if (bits & SU_HUDINFO)
+	{
+		other = PROG_TO_EDICT(ent->v.info_ent);
+		MSG_WriteShort(msg, NUM_FOR_EDICT(other));
+	}
 // Hack: Alkaline 1.1 uses bit flags to store the active weapon,
 // but we only send the stat as a byte, which can lead to truncation.
 // If we detect this, re-send the stat separately (as a 32-bit int).

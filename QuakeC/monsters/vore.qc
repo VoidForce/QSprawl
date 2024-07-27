@@ -44,24 +44,72 @@ $frame	walk11 walk12
 ShalMissile
 ================
 */
-
+const vector SIZE_SHIELD = '32 32 48';
+const vector SIZE_NORMAL = '32 32 20';
 
 void() shieldOn =
 {
+	if (self.health < 0)
+		return;
 	self.monsterflags |= MFL_SHIELD;
 	self.eA.frame = 1;
 	self.eA.effects |= EF_NOLERP;
 	self.eA.touch = pushAway;
+	
+	//if (!(other.flags & FL_CLIENT))
+	//	return;
+	//
+	//T_Push(other, self, 600, 200);
+	//other.pushback_time = time + 0.3;
+	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);
 };
 
 void(float timer) shieldOff =
 {
+	if (self.health < 0)
+		return;
+	setsize (self, VEC_HULL2_MIN, SIZE_NORMAL);
 	self.monsterflags -= self.monsterflags & MFL_SHIELD;
 	self.eA.frame = 0;
 	self.eA.effects |= EF_NOLERP;
-	self.eA.touch = SUB_Null;
+	//self.eA.touch = SUB_Null;
 	self.nextthinkA = time + timer;
 	self.thinkA = shieldOn;
+};
+
+void() ShalGrenadeExplode =
+{
+	removeFromList(self);
+	T_RadiusDamagePlayer(self, self.owner, 10, world, 320, 128, 1);
+	sound (self, CHAN_VOICE, "weapons/pl_explode.wav", 1, ATTN_NORM);
+	sendMessageVec(self.origin, TE_EXPLOSION_PLASMA);
+	self.movetype = MOVETYPE_NONE;
+	self.solid = SOLID_NOT;
+	self.touch = SUB_Null;
+	setmodel (self, "progs/p_explode.spr");
+	p_explode ();
+};
+
+void() ShalGrenadeTouch =
+{
+	if (other == self.owner)
+		return;		// don't explode on owner
+
+	if (other.takedamage == DAMAGE_AIM)
+	{
+		T_Damage (other, self, self.owner, 5, NOFLAGS);
+		T_Push (other, self, 100, 0);
+		self.nextthink = time + 0.1;
+		//ShalGrenadeExplode();
+		return;
+	}
+	self.nextthink = time + 0.3;
+	self.touch = SUB_Null;
+	
+	sound (self, CHAN_VOICE, "weapons/bounce.wav", 1, ATTN_NORM);	// bounce sound
+
+	if (self.velocity == '0 0 0')
+		self.avelocity = '0 0 0';
 };
 
 void(vector offset) ShalGrenade =
@@ -70,40 +118,46 @@ void(vector offset) ShalGrenade =
 	vector dir;
 	vector start, end, end_forward;
 	float distance, height;
+	vector pos;
+	
+	pos = getPlayerPosition(self.enemy, 2);
 
 	makevectors2(self.angles);
-	distance = vlen(self.enemy.trail2 - self.origin);
-	height = self.enemy.trail2_z - self.origin_z;
+	distance = vlen(pos - self.origin);
+	height = pos_z - self.origin_z;
 	// too far and too high
+	/*
 	if (distance > 1024 && height > 32)
 	{
 		self.attack_finished = time + 2;
 		return;
-	}
+	}*/
 		
 	start = self.origin + v_forward * offset_x + v_right * offset_y + [0, 0, offset_z];
-	end = self.enemy.trail2 + [random() * 8, random() * 8, 0] + [0, 0, distance*0.8 + height];
-	end_forward = self.enemy.trail2;
+	end = pos + [random() * 8, random() * 8, 0] + [0, 0, distance*0.8 + height];
+	end_forward = pos;
 	end = lerpVector(end_forward, end, (distance - 256) / 768);
 	dir = normalize((end - start) );
 
 	missile = spawn ();
+	missile.classname = "plasma";
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
 	missile.velocity = dir * OGRE_NADE_VEL;
-	missile.avelocity = '300 300 300';
+	missile.avelocity = '300 -300 -300';
 	missile.angles = vectoangles(missile.velocity);
-	missile.touch = OgreGrenadeTouch;
+	missile.touch = ShalGrenadeTouch;
 	missile.nextthink = time + 2.5;
-	missile.think = OgreGrenadeExplode;
-	setmodel (missile, "progs/grenade.mdl");
+	missile.think = ShalGrenadeExplode;
+	setmodel (missile, "progs/p_grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, start);
 	missile.isgrenade = 1;
 	appendToList(missile);
 	self.effects = self.effects | EF_MUZZLEFLASH;
-	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
+	//sound (self, CHAN_WEAPON, "shalrath/attack.wav", 1, ATTN_NORM);
+	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
 };
 
 void(vector offset) ShalMissile =
@@ -112,7 +166,7 @@ void(vector offset) ShalMissile =
 	float distance;
 
 	self.effects = self.effects | EF_MUZZLEFLASH;
-	sound (self, CHAN_WEAPON, "shalrath/attack2.wav", 1, ATTN_NORM);
+	//sound (self, CHAN_WEAPON, "shalrath/attack2.wav", 1, ATTN_NORM);
 	missile = spawn ();
 	missile.classname = "vore_ball";	//gnounc
 	missile.owner = self;
@@ -124,14 +178,15 @@ void(vector offset) ShalMissile =
 
 	missile.origin = self.origin + '0 0 10' + offset;
 	sendMessageVec(missile.origin + '0 0 -8', TE_ROBOTHEAD_EXPLOSION);
-
+	sound (self, CHAN_AUTO, "weapons/r_exp3_far.wav", 1, ATTN_NONE);
+	
 	missile.velocity = [0, 0, 400];
 	missile.angles = vectoangles(missile.velocity);
 	missile.avelocity = [crandom() * 20, crandom()* 20, crandom()* 20 ];
-	distance = vlen(self.origin - self.enemy.origin);
+	distance = vlen(self.origin - getPlayerPosition(self.enemy, 2));
 	missile.fA = -2;
 	distance *= 0.05;
-	missile.vA = self.enemy.trail2 + [crandom() * distance, crandom() * distance, -64 ];
+	missile.vA = getPlayerPosition(self.enemy, 2) + [crandom() * distance, crandom() * distance, -64 ];
 	missile.vB = '0 0 -800';
 	missile.nextthink = time + 0.3;
 	missile.think = ShalIgnition;
@@ -176,15 +231,11 @@ void() ShalMissileTouch =
 	if (other == self.owner)
 		return;		// don't explode on owner
 
-	T_RadiusDamage (self, self.owner, 40, world);
-	sound (self, CHAN_WEAPON, "weapons/r_exp3.wav", 1, ATTN_NORM);
-
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-	WriteByte (MSG_BROADCAST, TE_EXPLOSION);
-	WriteCoord (MSG_BROADCAST, self.origin_x);
-	WriteCoord (MSG_BROADCAST, self.origin_y);
-	WriteCoord (MSG_BROADCAST, self.origin_z);
-
+	//T_RadiusDamage (self, self.owner, 40, world);
+	T_RadiusDamagePlayer(self, self.owner, 20, world, 320, 96);
+	//sound (self, CHAN_WEAPON, "weapons/r_exp3.wav", 1, ATTN_NORM);
+	sendMessageVec(self.origin, TE_EXPLOSION);
+	
 	self.velocity = '0 0 0';
 	self.touch = SUB_Null;
 	setmodel (self, "progs/s_explod.spr");
@@ -202,17 +253,17 @@ void() shal_walk1     =[      $walk2,       shal_walk2    ]
 	ai_walk(6);
 };
 
-void() shal_walk2     =[      $walk3,       shal_walk3    ] {ai_walk(4);};
-void() shal_walk3     =[      $walk4,       shal_walk4    ] {ai_walk(0);};
-void() shal_walk4     =[      $walk5,       shal_walk5    ] {ai_walk(0);};
-void() shal_walk5     =[      $walk6,       shal_walk6    ] {ai_walk(0);};
-void() shal_walk6     =[      $walk7,       shal_walk7    ] {ai_walk(0);};
-void() shal_walk7     =[      $walk8,       shal_walk8    ] {ai_walk(5);};
-void() shal_walk8     =[      $walk9,       shal_walk9    ] {ai_walk(6);};
-void() shal_walk9     =[      $walk10,       shal_walk10    ] {ai_walk(5);};
-void() shal_walk10    =[      $walk11,       shal_walk11    ] {ai_walk(0);};
-void() shal_walk11    =[      $walk12,       shal_walk12    ] {ai_walk(4);};
-void() shal_walk12    =[      $walk1,       shal_walk1    ] {ai_walk(5);};
+void() shal_walk2     =[ $walk3, 	shal_walk3	] {ai_walk(4);};
+void() shal_walk3     =[ $walk4, 	shal_walk4	] {ai_walk(0);};
+void() shal_walk4     =[ $walk5, 	shal_walk5	] {ai_walk(0);};
+void() shal_walk5     =[ $walk6, 	shal_walk6	] {ai_walk(0);};
+void() shal_walk6     =[ $walk7, 	shal_walk7	] {ai_walk(0);};
+void() shal_walk7     =[ $walk8, 	shal_walk8	] {ai_walk(5);};
+void() shal_walk8     =[ $walk9, 	shal_walk9	] {ai_walk(6);};
+void() shal_walk9     =[ $walk10,	shal_walk10	] {ai_walk(5);};
+void() shal_walk10    =[ $walk11,	shal_walk11	] {ai_walk(0);};
+void() shal_walk11    =[ $walk12,	shal_walk12	] {ai_walk(4);};
+void() shal_walk12    =[ $walk1, 	shal_walk1	] {ai_walk(5);};
 
 void() shal_run1     =[      $walk2,       shal_run2    ] 
 {
@@ -221,17 +272,17 @@ void() shal_run1     =[      $walk2,       shal_run2    ]
 	ai_run(6);
 };
 
-void() shal_run2     =[      $walk3,       shal_run3    ] {ai_run(4);};
-void() shal_run3     =[      $walk4,       shal_run4    ] {ai_run(0);};
-void() shal_run4     =[      $walk5,       shal_run5    ] {ai_run(0);};
-void() shal_run5     =[      $walk6,       shal_run6    ] {ai_run(0);};
-void() shal_run6     =[      $walk7,       shal_run7    ] {ai_run(0);};
-void() shal_run7     =[      $walk8,       shal_run8    ] {ai_run(5);};
-void() shal_run8     =[      $walk9,       shal_run9    ] {ai_run(6);};
-void() shal_run9     =[      $walk10,       shal_run10    ] {ai_run(5);};
-void() shal_run10    =[      $walk11,       shal_run11    ] {ai_run(0);};
-void() shal_run11    =[      $walk12,       shal_run12    ] {ai_run(4);};
-void() shal_run12    =[      $walk1,       shal_run1    ] {ai_run(5);};
+void() shal_run2     =[ $walk3, 	shal_run3  ] {ai_run(4);};
+void() shal_run3     =[ $walk4, 	shal_run4  ] {ai_run(0);};
+void() shal_run4     =[ $walk5, 	shal_run5  ] {ai_run(0);};
+void() shal_run5     =[ $walk6, 	shal_run6  ] {ai_run(0);};
+void() shal_run6     =[ $walk7, 	shal_run7  ] {ai_run(0);};
+void() shal_run7     =[ $walk8, 	shal_run8  ] {ai_run(5);};
+void() shal_run8     =[ $walk9, 	shal_run9  ] {ai_run(6);};
+void() shal_run9     =[ $walk10,	shal_run10 ] {ai_run(5);};
+void() shal_run10    =[ $walk11,	shal_run11 ] {ai_run(0);};
+void() shal_run11    =[ $walk12,	shal_run12 ] {ai_run(4);};
+void() shal_run12    =[ $walk1, 	shal_run1  ] {ai_run(5);};
 
 // -- decide attack type
 /*
@@ -246,6 +297,9 @@ void() shal_attack =
 	float distance;
 	vector direction;
 	vector A,B,C;
+	vector pos;
+	
+	pos = getPlayerPosition(self.enemy, 2);
 	
 // shield stuff
 	shieldOff(5 - skill); // 4 seconds down
@@ -253,14 +307,19 @@ void() shal_attack =
 	// 0.87 sin 60
 	// 0.5 cos 60
 // distance without height component
-	distance = vlen([self.origin_x, self.origin_y, 0] - [self.enemy.trail2_x, self.enemy.trail2_y, 0]);
+	distance = vlen([self.origin_x, self.origin_y, 0] - [pos_x, pos_y, 0]);
+	if (distance < 256)
+	{
+		shal_grenade1();
+		return;
+	}
 // direction without height component
-	direction = self.enemy.trail2 - self.origin;
+	direction = pos - self.origin;
 	direction_z = 0;
 	direction = normalize(direction);
 // if player is above vore, compensate
-	if (self.origin_z < self.enemy.trail2_z)
-		A = self.origin + [0,0,self.enemy.trail2_z - self.origin_z];
+	if (self.origin_z < pos_z)
+		A = self.origin + [0, 0, pos_z - self.origin_z];
 	else
 		A = self.origin;
 // 60 degrees up
@@ -274,7 +333,7 @@ void() shal_attack =
 		traceline(B,C, IGNOREMONSTERS, world);
 		if (trace_fraction == 1)
 		{
-			traceline(C, self.enemy.trail2, IGNOREMONSTERS, world);
+			traceline(C, pos, IGNOREMONSTERS, world);
 			if (trace_fraction == 1)
 				shal_missile1();
 			return;
@@ -345,11 +404,10 @@ void(entity attacker, float damage) shalrath_pain =
 void() shalrath_die =
 {
 // remove shield! it's important
-	self.eA.think = SUB_Remove;
-	self.eA.nextthink = time + 0.01;
+	remove(self.eA);
 	
-	dropAmmo(self.origin, DROP_ROCKETS, 4);
-	dropAmmo(self.origin, DROP_CELLS, 4);
+	dropAmmo(self.origin, DROP_ROCKETS, 6, 4, 2, 1);
+	dropAmmo(self.origin, DROP_CELLS, 4, 4, 4, 6);
 	// check for gib
 	if (self.health < -90)
 	{
@@ -388,7 +446,7 @@ void() monster_shalrath =
 	precache_model2 ("progs/shalrath_shield.mdl");
 	precache_model2 ("progs/h_shal.mdl");
 	precache_model ("progs/missle.mdl");
-	precache_model ("progs/grenade.mdl");
+	precache_model ("progs/p_grenade.mdl");
 	
 	precache_model2 ("progs/missle_notrail.mdl");
 	precache_model2 ("progs/shalrath_gib_leg.mdl");
@@ -399,9 +457,11 @@ void() monster_shalrath =
 	precache_sound2 ("shalrath/idle.wav");
 	precache_sound2 ("shalrath/pain.wav");
 	precache_sound2 ("shalrath/sight.wav");
-	precache_sound ("weapons/grenade.wav");
+	precache_sound ("weapons/pl_explode.wav");
+	precache_sound ("weapons/f_grenade.wav");
 	
 	// drone
+	/*
 	precache_model ("progs/drone.mdl");
 	precache_model ("progs/h_wizard.mdl");
 	precache_sound ("wizard/hit.wav");		// used by c code
@@ -410,7 +470,7 @@ void() monster_shalrath =
 	precache_sound ("wizard/widle1.wav");
 	precache_sound ("wizard/widle2.wav");
 	precache_sound ("wizard/wpain.wav");
-	precache_sound ("wizard/wsight.wav");
+	precache_sound ("wizard/wsight.wav");*/
 	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
@@ -420,9 +480,10 @@ void() monster_shalrath =
 	//gnounc
 	self.noise = "shalrath/sight.wav";	//gnounc
 	self.netname = "Vore";
-	self.killstring = " was exploded by a Vore\n";
+	self.info_name = " Artillery Drone";
+	self.killstring = " couldn't survive the artillery strike\n";
 
-	setsize (self, VEC_HULL2_MIN, '32 32 20');
+	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);
 	self.health = VORE_HEALTH;
 	self.max_health = VORE_HEALTH;
 	self.monsterflags |= MFL_ROBOT | MFL_SHIELD;
@@ -456,22 +517,22 @@ void() updateShieldPosition =
 	setorigin(self, self.owner.origin);
 	if (self.fA)
 	{
-		if (self.alpha < 0.5)
+		if (self.alpha < 0.4)
 			self.alpha += 0.025;
 		else
 		{
 			self.fA = 0;
-			self.alpha = 0.5;
+			self.alpha = 0.4;
 		}
 	}
 	else
 	{
-		if (self.alpha > 0.2)
+		if (self.alpha > 0.15)
 			self.alpha -= 0.025;
 		else
 		{
 			self.fA = 1;
-			self.alpha = 0.2;
+			self.alpha = 0.15;
 		}
 	}
 	

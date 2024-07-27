@@ -203,26 +203,19 @@ void(vector st, float lflag) ZombieFireHead =
 	
 	// set missile speed	
 	if (lflag)
-	{
 		missile.velocity = [crandom()* 100, crandom()* 100, 200 + random()* 100];
-	}
 	else
 	{
 		makevectors2 (self.angles);
-
-		missile.velocity = normalize(self.enemy.origin - org);
+		missile.velocity = normalize(getPlayerPosition(self.enemy, 0) - org);
 		missile.velocity = missile.velocity * 600;
 		missile.velocity_z = 200;
 	}
-
-	missile.avelocity = '300 100 200';
-
-	missile.touch = OgreGrenadeExplode;
 	
-	// set missile duration
 	missile.nextthink = time + 2.5;
+	missile.touch = OgreGrenadeExplode;
+	missile.avelocity = '300 100 200';
 	missile.think = SUB_Remove;
-
 	setmodel (missile, "progs/h_zombie.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, org);
@@ -230,8 +223,10 @@ void(vector st, float lflag) ZombieFireHead =
 
 void(vector st) ZombieFireGrenade =
 {
-	local	entity missile;
-	local	vector	org;
+	entity missile;
+	vector	org, pos;
+	
+	pos = getPlayerPosition(self.enemy, 0);
 
 	sound (self, CHAN_WEAPON, "zombie/z_shot1.wav", 1, ATTN_NORM);
 	if (self.monsterflags & MFL_HASHEAD && self.health < ZOMBIE_THROWHEADHP)
@@ -252,9 +247,9 @@ void(vector st) ZombieFireGrenade =
 
 	makevectors2 (self.angles);
 	if (self.monsterflags & MFL_HASHEAD)
-		missile.velocity = normalize(self.enemy.origin - org);
+		missile.velocity = normalize(pos - org);
 	else
-		missile.velocity = normalize([self.enemy.origin_x + crandom()*64,self.enemy.origin_y + crandom()*64,self.enemy.origin_z + crandom()*64] - org);
+		missile.velocity = normalize([pos_x + crandom() * 64, pos_y + crandom() * 64, pos_z + crandom() * 64] - org);
 	missile.velocity = missile.velocity * 600;
 	missile.velocity_z = 200;
 
@@ -451,14 +446,14 @@ void() zombie_die =
 	if (self.monsterflags & MFL_HASHEAD)
 	{
 		ThrowHead ("progs/h_zombie.mdl", self.lasthit_damage);
-		dropAmmo(self.origin, DROP_CELLS, 1);
+		dropAmmo(self.origin, DROP_CELLS, 1, 1, 1, 0);
 	}
 	else
 	{
 		ThrowHead ("progs/m_gib_02.mdl", self.lasthit_damage);
-		dropAmmo(self.origin, DROP_SHELLS, 2);
+		dropAmmo(self.origin, DROP_SHELLS, 6, 4, 2, 2);
 	}
-	
+	dropHealth(self.origin, DROP_ARMOR_ONE, 8, 4, 2, 2);
 	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
 	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
 	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
@@ -492,6 +487,7 @@ void(entity attacker, float take) zombie_pain =
 
 	if (take > 150)
 	{
+		self.health = -1;
 		zombie_die();
 		return;
 	}
@@ -584,6 +580,7 @@ void() monster_zombie =
 	//gnounc
 	self.noise = "zombie/z_idle.wav";	//gnounc
 	self.netname = "zombie";
+	self.info_name = "   Obsolete Bot";
 	self.killstring = " joins the Zombies\n";
 
 	setsize (self, '-16 -16 -24', '16 16 28'); //40
@@ -592,6 +589,7 @@ void() monster_zombie =
 	self.health = ZOMBIE_HEALTH;
 	self.max_health = ZOMBIE_HEALTH;
 	self.health_head = ZOMBIE_HEAD;
+	self.health_head_max = ZOMBIE_HEAD;
 	self.skinchange = 1;
 
 	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;

@@ -87,7 +87,7 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 //johnfitz -- removed RotatePointAroundVector() becuase it's no longer used and my compiler fucked it up anyway
 
 /*
-	find a perpendicular vector on a plane difined by normal (A), returns into (B)
+	find a perpendicular vector on a plane difined by normal (A) and point on the plane(B), returns into (C)
 	assums that A is normalized
 */
 void VectorPerpendicular(vec3_t A, vec3_t B)

@@ -473,6 +473,29 @@ static void PF_vlen (void)
 
 /*
 =================
+PF_vlen2
+
+non squared distance divided by 10000, returns 0 if less than 16 units before division
+=================
+*/
+static void PF_vlen2(void)
+{
+	float* value1;
+	double	new_temp;
+
+	value1 = G_VECTOR(OFS_PARM0);
+
+	new_temp = (double)value1[0] * value1[0] + (double)value1[1] * value1[1] + (double)value1[2] * value1[2];
+	if (new_temp < 16)
+		new_temp = 0;
+	else
+		new_temp = new_temp / 10000;
+
+	G_FLOAT(OFS_RETURN) = new_temp;
+}
+
+/*
+=================
 PF_vectoyaw
 
 float vectoyaw(vector)
@@ -3652,7 +3675,7 @@ builtindef_t pr_builtindefs[] =
 	{"etos",					PF_BOTH(PF_etos),				65,		DP_QC_ETOS},			// string(entity ent)
 
 	{"movetogoal",				PF_SSQC(SV_MoveToGoal),			67},
-	{"precache_file", PF_SSQC(PF_precache_file), 68},
+	{"precache_file",			PF_SSQC(PF_precache_file), 68},
 	{ "makestatic",				PF_SSQC(PF_makestatic),			69 },
 
 	{ "changelevel",				PF_SSQC(PF_changelevel),		70 },
@@ -3749,12 +3772,13 @@ builtindef_t pr_builtindefs[] =
 	{ "tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE },		// float(string str)
 
 	{ "sprintf",				PF_BOTH(PF_sprintf),			627,	DP_QC_SPRINTF },					// string(string fmt, ...)
-	{ "findfloat",				PF_SSQC(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
-	{ "change_timescale",		PF_SSQC(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
-	{ "distancetoray",			PF_SSQC(PF_distancetoray),		702 },	// float(vector raypoint, vector direction, vector point) PF_distancetoray
-	{ "project_onto_vector",	PF_SSQC(PF_ProjectOnVector),	703 },
-	{ "project_onto_plane",		PF_SSQC(PF_ProjectOnPlane),		704 },
-	{ "reflectVector",			PF_SSQC(PF_Reflect),			705 },
+	{ "findfloat",				PF_BOTH(PF_FindFloat),			700 },	// entity(entity start, .string fld, string match) find	= #18
+	{ "change_timescale",		PF_BOTH(PF_change_timescale),	701 }, //void PF_change_timescale(float newvalue)
+	{ "distancetoray",			PF_BOTH(PF_distancetoray),		702 },	// float(vector raypoint, vector direction, vector point) PF_distancetoray
+	{ "project_onto_vector",	PF_BOTH(PF_ProjectOnVector),	703 },
+	{ "project_onto_plane",		PF_BOTH(PF_ProjectOnPlane),		704 },
+	{ "reflectVector",			PF_BOTH(PF_Reflect),			705 },
+	{ "vlen2",					PF_BOTH(PF_vlen2),				706 },	// float(vector v) vlen2			= #706
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

@@ -111,8 +111,17 @@ cvar_t		gl_triplebuffer = {"gl_triplebuffer", "1", CVAR_ARCHIVE};
 
 cvar_t		cl_gun_fovscale = {"cl_gun_fovscale","1",CVAR_ARCHIVE}; // Qrack
 
+
 extern	char	crosshair_char;
 extern	cvar_t	crosshair;
+extern	cvar_t	crosshair_type;
+extern	cvar_t	crosshair_width;
+extern	cvar_t	crosshair_length;
+extern	cvar_t	crosshair_gap;
+extern	cvar_t	crosshair_color;
+extern	cvar_t	crosshair_dot;
+extern	cvar_t	crosshair_alpha;
+
 extern	cvar_t	con_notifyfade;
 extern	cvar_t	con_notifyfadetime;
 
@@ -1042,58 +1051,94 @@ SCR_DrawCrosshair -- johnfitz
 */
 void SCR_DrawCrosshair (void)
 {
-	int lwidth;
-	int lheight;
-	int crosshair_length;
-	int crosshair_width;
-	int half_width;
-	int gap;
-	int color;
+	int screen_width;
+	int screen_height;
+	
+	int cr_half_width;
+	int cr_length;
+	int cr_width;
+	int cr_gap;
+	int cr_color;
+	float cr_alpha;
+
+	int marker_color;
+	int marker_gap;
 
 	if (!crosshair.value)// || scr_viewsize.value >= 130)
 		return;
+	
+	cr_length = (int)crosshair_length.value;
+	cr_width = (int)crosshair_width.value * 2;
+	cr_gap = (int)crosshair_gap.value;
+	cr_color = (int)crosshair_color.value;
+	cr_alpha = crosshair_alpha.value;
 
-	lwidth = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
-	lheight = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
+	screen_width = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
+	screen_height = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
 
-	//lwidth = (int)glwidth * 0.5;
-	//lheight = (int)glheight * 0.5;
-	crosshair_width = (int)glheight / 250;
-	if (crosshair_width < 1)
-		crosshair_width = 1;
-	crosshair_width = crosshair_width - (crosshair_width % 2); // should split at half
-	crosshair_length = crosshair_width * 8;
-	half_width = crosshair_width / 2;
-	gap = crosshair_width * 4;
-	int markergap = crosshair_width * 3;
+	cr_half_width = (int)cr_width / 2;
+	if (cr_half_width < 1)
+		cr_half_width = 1;
 
+	GL_SetCanvas(CANVAS_DEFAULT);
+	if (crosshair_dot.value > 0)
+	{
+		switch ((int)crosshair_dot.value)
+		{
+		default:
+		case 1:
+			Draw_Fill(screen_width - 1, screen_height - 1, 2, 2, cr_color, cr_alpha);
+			break;
+		case 3:
+			Draw_Fill(screen_width - 3, screen_height - 1, 6, 2, cr_color, cr_alpha); // 2 rectangles to form circle
+			Draw_Fill(screen_width - 1, screen_height - 3, 2, 6, cr_color, cr_alpha); 
+		case 2:
+			Draw_Fill(screen_width - 2, screen_height - 2, 4, 4, cr_color, cr_alpha); // square
+			break;
+		case 4:
+
+			break;
+		}
+	}
+
+	switch ((int)crosshair_type.value)
+	{
+	case 0: // no cross, only dot if present
+		break;
+	default:
+	case 1:
+		Draw_Fill(screen_width - cr_half_width, screen_height - cr_gap, cr_width, -cr_length, cr_color, cr_alpha);
+	case 2:
+		Draw_Fill(screen_width - cr_gap, screen_height - cr_half_width, -cr_length, cr_width, cr_color, cr_alpha);
+	case 3:
+		Draw_Fill(screen_width + cr_gap, screen_height - cr_half_width, cr_length, cr_width, cr_color, cr_alpha);
+	case 4:
+		Draw_Fill(screen_width - cr_half_width, screen_height + cr_gap, cr_width, cr_length, cr_color, cr_alpha);
+		break;
+	}
+
+// x cross-like hitmarker
 	if (cl.engineflags & ENF_HITHEAD)
-		color = 251;
+		marker_color = 251;
 	else
-		color = 254;
+		marker_color = 254;
+	marker_gap = 2 + cr_width * 3;
 
-		GL_SetCanvas(CANVAS_DEFAULT);
-	Draw_Fill(lwidth + gap, lheight - half_width, crosshair_length, crosshair_width, 244, 255);
-	//Draw_Fill(lwidth - gap, lheight - 1, -4, 2, 242, 255);
-	Draw_Fill(lwidth - half_width, lheight + gap, crosshair_width, crosshair_length, 244, 255);
-	Draw_Fill(lwidth - half_width, lheight - half_width, crosshair_width, crosshair_width, 244, 255); //dot
-	//Draw_Fill(lwidth - 1, lheight - gap, 2, -4, 242, 255);
 	if (cl.engineflags & ENF_HITMARKER)
 	{
 		for (int i = 0; i < 6; i++)
 		{
-			Draw_Fill(lwidth + markergap - i, lheight + markergap - i, 1, 1, color, 255);
-			Draw_Fill(lwidth - markergap + i, lheight + markergap - i,-1, 1, color, 255);
-			Draw_Fill(lwidth - markergap + i, lheight - markergap + i,-1,-1, color, 255);
-			Draw_Fill(lwidth + markergap - i, lheight - markergap + i, 1,-1, color, 255);
+			Draw_Fill(screen_width + marker_gap - i, screen_height + marker_gap - i, 1, 1, marker_color, 255);
+			Draw_Fill(screen_width - marker_gap + i, screen_height + marker_gap - i,-1, 1, marker_color, 255);
+			Draw_Fill(screen_width - marker_gap + i, screen_height - marker_gap + i,-1,-1, marker_color, 255);
+			Draw_Fill(screen_width + marker_gap - i, screen_height - marker_gap + i, 1,-1, marker_color, 255);
 		}
 	}
-
-	// jumps 
 	
-	//GL_SetCanvas (CANVAS_CROSSHAIR);
-	//Draw_Character(-4, -4, crosshair_char);
+// jumps 
 }
+
+extern void Sbar_DrawSmallNum(int x, int y, int num);
 
 typedef struct
 {
@@ -1392,7 +1437,6 @@ void SCR_DrawEdictInfo (void)
 
 
 //=============================================================================
-
 
 /*
 ==================
@@ -2046,6 +2090,7 @@ void SCR_UpdateScreen (void)
 		SCR_DrawDemoControls ();
 		SCR_DrawSpeed ();
 		SCR_DrawEdictInfo ();
+		//SCR_DrawHealthInfo();
 		SCR_DrawConsole ();
 		M_Draw ();
 		SCR_DrawFPS (); //johnfitz

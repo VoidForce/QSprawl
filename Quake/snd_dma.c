@@ -55,7 +55,7 @@ vec3_t		listener_forward;
 vec3_t		listener_right;
 vec3_t		listener_up;
 
-#define	sound_nominal_clip_dist	1000.0
+#define	sound_nominal_clip_dist	1536.0
 
 int		soundtime;	// sample PAIRS
 int		paintedtime;	// sample PAIRS

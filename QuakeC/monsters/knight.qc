@@ -107,7 +107,7 @@ void() knight_attack =
 	else
 	{
 		//decide if now is a good swing time
-		len = vlen(self.enemy.origin+self.enemy.view_ofs - (self.origin+self.view_ofs));
+		len = vlen(getPlayerPosition(self.enemy, 0) + self.enemy.view_ofs - (self.origin + self.view_ofs));
 		
 		if (len<40)
 			knight_atk1 ();
@@ -302,7 +302,9 @@ void() knight_die =
 	
 	if (self.health_head <= 0)
 	{
-		dropAmmo(self.origin, DROP_NAILS, 10);
+		dropAmmo(self.origin, DROP_NAILS, 20, 10, 5, 5);
+		dropHealth(self.origin, DROP_ARMOR_ONE, 6, 4, 2, 2);
+		
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/knight_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 32');
@@ -359,6 +361,7 @@ void() monster_knight =
 	//gnounc
 	self.noise = "knight/ksight.wav";	//gnounc
 	self.netname = "Knight";
+	self.info_name = " Infiltration Unit";
 	self.killstring = " was slashed by a Junta's Cyborg\n";
 
 	setsize (self, '-16 -16 -24', '16 16 32'); //28
@@ -367,10 +370,11 @@ void() monster_knight =
 	self.health = KNIGHT_HEALTH;
 	self.max_health = KNIGHT_HEALTH;
 	self.health_head = KNIGHT_HEAD;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
+	self.health_head_max = KNIGHT_HEAD;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_SYNTH;
 	self.monstertype = TYPE_KNIGHT;
 	self.skinchange = 1;
-	self.gib_threshold = 100;
+	self.gib_threshold = 75;
 
 	self.th_stand = knight_stand1;
 	self.th_walk = knight_walk1;

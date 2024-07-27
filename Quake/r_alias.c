@@ -281,7 +281,12 @@ void R_SetupAliasLighting (entity_t	*e)
 		lightcolor[1] = 256.0f;
 		lightcolor[2] = 256.0f;
 	}
-
+	if (e->model->flags & MOD_PICKUPS)
+	{
+		lightcolor[0] += 50.0f;
+		lightcolor[1] += 30.0f;
+		lightcolor[2] += 0.0f;
+	}
 	VectorScale (lightcolor, 1.0f / 200.0f, lightcolor);
 }
 

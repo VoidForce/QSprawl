@@ -104,6 +104,8 @@ vector		project;
 vector		reject;
 vector		reflect;
 
+vector		wind;
+
 //================================================
 void		end_sys_globals;		// flag for structure dumping
 //================================================
@@ -161,7 +163,7 @@ void		end_sys_globals;		// flag for structure dumping
 // stats
 .float		health;
 .float		frags;
-.float		weapon;			// one of the IT_SHOTGUN, etc flags
+.float		weapon;			// one of the IT_PISTOL, etc flags
 .string		weaponmodel;
 .float		weaponframe;
 .float		currentammo;
@@ -255,6 +257,12 @@ void		end_sys_globals;		// flag for structure dumping
 .float		adrenaline; // [0 .. 1]
 .float		engineflags;
 .float		weapon_skin;
+.float		clip;
+.float 		noclip;
+.entity		info_ent;
+.float		health_head; // head has separate healthpool, it still can kill the monster or made him headless
+.float		health_head_max;
+.string		info_name;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -292,6 +300,27 @@ const float	FL_PARTIALGROUND		= 1024;	// not all corners are valid
 const float	FL_WATERJUMP			= 2048;	// player jumping out of water
 const float	FL_JUMPRELEASED			= 4096;	// for jump debouncing
 const float FL_EXPLOBOX				= 8192;
+const float FL_PROJECTILE			= 16384;
+
+// do not modify, hardcoded into engine [clipgroups]
+const float CLIP_CLIENT			= 1; 
+const float CLIP_MONSTER		= 2; 
+const float CLIP_PROJECTILE		= 4; 
+const float CLIP_GROUPA			= 8; 
+const float CLIP_GROUPB			= 16;
+const float CLIP_GROUPC			= 32;
+const float CLIP_GROUPD			= 64;
+const float CLIP_GROUPE			= 128;
+
+const float NOCLIP_CLIENT		= CLIP_CLIENT;	
+const float NOCLIP_MONSTER		= CLIP_MONSTER;
+const float NOCLIP_PROJECTILE	= CLIP_PROJECTILE;
+const float NOCLIP_GROUPA		= CLIP_GROUPA;
+const float NOCLIP_GROUPB		= CLIP_GROUPB;
+const float NOCLIP_GROUPC		= CLIP_GROUPC;	
+const float NOCLIP_GROUPD		= CLIP_GROUPD;	
+const float NOCLIP_GROUPE		= CLIP_GROUPE;	
+// do not modify ^^
 
 // edict.movetype values
 const float	MOVETYPE_NONE			= 0;	// never moves
@@ -412,6 +441,7 @@ const float	SVC_SELLSCREEN		= 33;
 #define TE_HEAD					13
 #define TE_LASERTRACE			14
 #define TE_SHOCKWAVE			15
+#define	TE_EXPLOSION_PLASMA		16
 
 enum LASERCOLOR:float {
 	LASER_BLUE = 0xd0,
@@ -474,10 +504,39 @@ entity	activator;		// the entity that activated a trigger or brush
 
 entity	damage_attacker;	// set by T_Damage
 float	framecount;
-float	slowmotion;
+
+// Slow Motion stuff
+
+const float SLOWMO_VALUE = 0.4;
+const float SLOWMO_FADE_TIME = 0.25;
+const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
+
+enumflags SLOWMOSTATE {
+	SLOWMO_OFF = 0,
+	SLOWMO_ON = 1,
+	SLOWMO_PLAYER,
+	SLOWMO_EVENT,
+	SLOWMO_TRANSITION,
+	SLOWMO_DESIRE_ON,
+	SLOWMO_DESIRE_OFF,
+	SLOWMO_FORCE_OFF,
+	SLOWMO_TRANSITION_TO_OFF,
+	SLOWMO_TRANSITION_TO_ON,
+	SLOWMO_NEEDSCHANGE,
+};
+
+float	slowmotion;		// flags based?
+//float 	slowmotion_flags;
 float	slowmotion_time;
+//float	slowmotion_event_time;
+//float	slowmotion_cooldown;
+#define SKIN_DEFAULT 0
+#define SKIN_GLOW 1
+
+// Slow Motion stuff end
 
 float	skill;
+entity wind_ent;
 entity	multi_head;
 // fields related to global multi damage 
 #define M_BODY 0
@@ -486,6 +545,8 @@ entity	multi_head;
 .vector	multi_damage; // x = body, y = head, z = hits count for shotgun
 .entity multi_chain;
 .float 		alpha;
+
+.float blackhole_timer; // shambler's attack
 
 //================================================
 
@@ -560,7 +621,8 @@ const float ENF_HITMARKER = 1;
 const float ENF_ADRENALINE_OFF = 2;
 const float ENF_NOWALLRUN = 4;
 const float ENF_HITHEAD = 8;
-const float ENF_CHANGESKIN = 16;
+const float ENF_CHANGESKIN = 16; // never subtract in QC, only add, cause engine uses standart subtract operation to get rid of this flag
+const float ENF_HUDINFO = 32;
 //-------------------------------------------------------------
 
 #define IMPACT_NORMAL 0
@@ -575,6 +637,7 @@ const float ENF_CHANGESKIN = 16;
 #define IMPACT_ROBOT 9
 #define IMPACT_WALL 10
 #define IMPACT_LASER 11
+#define IMPACT_SHIELD 12
 
 // movement flags
 const float MF_CROUCHINAIR = 1;
@@ -603,20 +666,15 @@ const float MFL_PAIN_HEADSHOT = 8; // play special pain animation
 const float MFL_LOST_HEAD = 16; // mark that we just lost the head, so launch special event
 const float MFL_DROP_HEAD = 32; // we got killed with katana, spawn head model
 const float MFL_ROBOT = 64;
-const float MFL_DEAD = 128;
+const float MFL_SYNTH = 128;
 const float MFL_GIB_ME = 256;
 const float MFL_BOSS = 512;
 const float MFL_CONFUSED = 1024; // monster chase player's trail instead of origin
 const float MFL_SHIELD = 2048;
-const float MFL_FIENDTOUCH = 4096; // fiend only
-const float MFL_LOSTWEAPON = 4096; // ogre only
-//const float MFL_HASDRONE = 4096; // vore only
-
-
-//slowmo states
-const float SLOWMO_VALUE = 0.4;
-const float SLOWMO_FADE_TIME = 0.25;
-const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
+const float MFL_PUSH_RESISTENT = 4096;
+const float MFL_FIENDTOUCH = 8192; // fiend only
+const float MFL_LOSTWEAPON = 8192; // ogre only
+//const float MFL_HASDRONE = 8192; // vore only
 
 const float TYPE_GENERAL = 0;
 const float TYPE_PLAYER = 1;
@@ -631,7 +689,7 @@ const float SFL_LEFTHAND = 4;
 const float SFL_INQUICKMELEE = 8;
 const float SFL_STOPMELEE = 16;
 const float SFL_HOLD = 32;
-const float SFL_INERTIA = 64; // remove
+const float SFL_READYTOSPIN = 64;
 const float SFL_VMOFFSET = 128;
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
@@ -640,6 +698,8 @@ const float SFL_UNLIMITED_ADRENALINE = 1024;
 const float SFLP_GRENADE_CHARGED = 1;
 const float SFLP_GRENADE_NOTOUCH = 2;
 const float SFLP_GRENADE_CANTOUCHSOFT = 4;
+const float SFLP_OGRE = 8;
+
 // items
 const float SFLI_TARGETSFIRED = 1;
 const float SFLI_MODELSET = 2; // ammo nails change model only once when < 51
@@ -675,17 +735,19 @@ enum monstertypes:int {
 	TYPE_VORE
 };
 
+#define KATANA_DAMAGE			30
 #define PISTOL_DAMAGE			50
 #define PISTOL_PENETRATION		-0.3
-#define SMG_DAMAGE				10
+#define SMG_DAMAGE				12
 #define SMG_PENETRATION			0.5
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
-#define CHAINGUN_DAMAGE			80
-#define CHAINGUN_PENETRATION	0.2
+#define CHAINGUN_DAMAGE			120
+#define CHAINGUN_PENETRATION	-0.3
 #define GRENADE_EXPLOSION		150
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
+#define GAUSS_DAMAGE			190
 
 typedef struct {
 	float body_resistance; // percent of damage to decline
@@ -702,12 +764,12 @@ const armor_t A_SOLDIER		= {0, 0,		0, 0,		0};
 const armor_t A_KNIGHT		= {0.25, 0,		0, 0,		0};
 const armor_t A_ENFORCER	= {0.3, 0,		0, 5,		0};
 const armor_t A_DOG			= {0.3, 3,		0, 0,		0.2};
-const armor_t A_SCRAG		= {0.3, 0,		0, 0,		0.2};
+const armor_t A_SCRAG		= {0.0, 0,		0, 0,		0.2};
 const armor_t A_ZOMBIE		= {0.4, 2,		0.2, 1,		0.2};
-const armor_t A_OGRE		= {0.5, 5,		0.1, 5,		0.8};
+const armor_t A_OGRE		= {0.5, 5,		0.3, 2,		0.8};
 const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
-const armor_t A_FIEND		= {0.6, 3,		0.7, 100,	0.8};
-const armor_t A_VORE		= {0.2, 50,		0, 0,		0.8};
+const armor_t A_FIEND		= {0.7, 2,		0.8, 30,	0.8};
+const armor_t A_VORE		= {0.4, 5,		0, 0,		0.8};
 const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 
 #define SOLDIER_HEALTH 		85
@@ -722,23 +784,29 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 #define ZOMBIE_HEALTH		150
 #define ZOMBIE_HEADLESS		50
 #define ZOMBIE_HEAD			50
-#define OGRE_HEALTH			400		
+#define OGRE_HEALTH			500		
 #define OGRE_HEALTH_FAST	250		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
 #define HELLKNIGHT_HEALTH	250
 #define HELLKNIGHT_HEAD		80
-#define FIEND_HEALTH		200
-#define FIEND_HEAD			100
+#define FIEND_HEALTH		300
+#define FIEND_HEAD			50
 #define VORE_HEALTH			400
 #define SHAMBLER_HEALTH		800
-#define SHAMBLER_HEAD		400
+#define SHAMBLER_HEAD		350
 
 // these are player positions stored for monster aiming calculations
 .vector		trail1;
 .vector		trail2;
 .vector		trail3;
 .vector		trail4;
+.float		trail; // position to use, changes with events like dodge and jumps
+.float		trail_time; // used to space out trail normalization
+
+// hud info_ent
+.float 		info_stay_time;
+.float 		info_trace_time;
 
 .float		counter;
 .float		sprawlflags;
@@ -780,6 +848,7 @@ entity		grenade_handler; // global
 
 .float		chaingun_frame;
 .float		chaingun_speed;
+.float		chaingun_count;
 
 .float		forcedslide_timer; // no friction until timer ends
 .float		noairacceleration_timer; // same for air acceleration
@@ -810,8 +879,8 @@ entity		grenade_handler; // global
 .float		gib_threshold; // amount of damage required to gib the monster
 .float 		lasthit_damage; //save amount of damage from last damage taken, used for gibs logic
 .vector		lasthit_direction; // direction to launch the gibs
-.float		health_head; // head has separate healthpool, it still can kill the monster or made him headless
 .float 		fadecount;
+//.float		failed_distance; // accumulated distance monster failed to move // rather use thinkA with trail to origin distance
 
 //
 // extra utility fields, to meet all the needs for complex stuff
@@ -1034,11 +1103,11 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
-entity(.float fld, float match) findfloat = #700 // returns chain of entities
+entity(.float fld, float match) findfloat = #700; // returns chain of entities
 void (float newvalue) change_timescale = #701; // clamped from 0 to 10
 float(vector raypoint, vector direction, vector point) distancetoray = #702; //  // A to B
 void(vector A, vector onto) project_onto_vector = #703; // { "project_vector",			PF_SSQC(PF_ProjectOnVector),	703 }, // A to B, result project_to_vector
 void(vector A, vector onto) project_onto_plane = #704; // { "project_plane",			PF_SSQC(PF_ProjectOnPlane),		704 },
 void(vector A, vector onto, float multiplier) reflectVector = #705; //default multiplier for 1 to 1 reflection is 2
-	
+float(vector v) vlen2 = #706;  // non sqrt distance / 10000, returns 0 if it's < 16 before division
 	

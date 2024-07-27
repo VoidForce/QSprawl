@@ -123,11 +123,13 @@ void() enforcer_fire =
 	vector org;
 	float i;
 	float ri,rr; // random index and random radius
+	vector pos;
+	pos = getPlayerPosition(self.enemy, 0);
 	
 	ai_face();
 	
 	sound (self, CHAN_WEAPON, "soldier/sattck1.wav", 1, ATTN_NORM);	
-	makevectors2(vectoangles([self.enemy.origin_x,self.enemy.origin_y,self.enemy.origin_z + self.enemy.view_ofs_z] - [self.origin_x,self.origin_y,self.origin_z + 16]));
+	makevectors2(vectoangles([pos_x, pos_y, pos_z + self.enemy.view_ofs_z] - [self.origin_x,self.origin_y,self.origin_z + 16]));
 	for (i = 0; i < 10; i++)
 	{
 		ri = rint(random() * 15);
@@ -328,11 +330,12 @@ void() enf_die =
 	self.solid = SOLID_NOT;
 	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
 		self.velocity = self.lasthit_direction;
+
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		ThrowHead ("progs/h_mega.mdl", self.lasthit_damage);
+		ThrowHead ("progs/h_enf.mdl", self.lasthit_damage);
 		ThrowGib ("progs/gib1.mdl", self.lasthit_damage);
 		ThrowGib ("progs/gib2.mdl", self.lasthit_damage);
 		ThrowGib ("progs/gib3.mdl", self.lasthit_damage);
@@ -341,7 +344,10 @@ void() enf_die =
 	
 	if (self.health_head <= 0)
 	{
-		dropAmmo(self.origin, DROP_SHELLS, 2);
+		dropAmmo(self.origin, DROP_SHELLS, 4, 3, 2, 1);
+		dropHealth(self.origin, DROP_ARMOR, 1, 1, 0, 0);
+		dropHealth(self.origin, DROP_HEALTH_ONE, 4, 2, 2, 2);
+		dropHealth(self.origin, DROP_ARMOR_ONE, 0, 0, 2, 2);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/enforcer_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 36');
@@ -351,7 +357,7 @@ void() enf_die =
 		if (self.monsterflags & MFL_DROP_HEAD)
 		{
 			self.monsterflags -= self.monsterflags & MFL_DROP_HEAD;
-			ThrowHeadGib ("progs/h_mega.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
+			ThrowHeadGib ("progs/h_enf.mdl", self.lasthit_direction * 200 + '0 0 100', 1);
 		}
 		else
 		{
@@ -378,7 +384,7 @@ void() monster_enforcer =
 	precache_model2 ("progs/enforcer.mdl");
 	precache_model2 ("progs/enforcer_headless.mdl");
 	
-	precache_model2 ("progs/h_mega.mdl");
+	precache_model2 ("progs/h_enf.mdl");
 	//precache_model2 ("progs/laser.mdl");
 	precache_sound ("soldier/sattck1.wav");
 
@@ -400,6 +406,7 @@ void() monster_enforcer =
 
 	//gnounc
 	self.netname = "enforcer";
+	self.info_name = "     Oni Squad";
 	self.killstring = " was terminated by Oni Squad\n";
 	self.noise = "enforcer/sight1.wav";	//gnounc
 	self.noise1 = "enforcer/sight2.wav";	//gnounc
@@ -412,10 +419,11 @@ void() monster_enforcer =
 	self.health = ENFORCER_HEALTH;
 	self.max_health = ENFORCER_HEALTH;
 	self.health_head = ENFORCER_HEAD;
+	self.health_head_max = ENFORCER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_ENFORCER;
 	self.monster_ammo = 6;
-	self.gib_threshold = 100;
+	self.gib_threshold = 75;
 	self.skinchange = 1;
 
 	self.th_stand = enf_stand1;

@@ -55,9 +55,16 @@ cvar_t	v_iyaw_level = {"v_iyaw_level", "0.3", CVAR_NONE};
 cvar_t	v_iroll_level = {"v_iroll_level", "0.1", CVAR_NONE};
 cvar_t	v_ipitch_level = {"v_ipitch_level", "0.3", CVAR_NONE};
 
-cvar_t	v_idlescale = {"v_idlescale", "0", CVAR_NONE};
+cvar_t	v_idlescale = {"v_idlescale", "3", CVAR_NONE};
 
-cvar_t	crosshair = {"crosshair", "0", CVAR_ARCHIVE};
+cvar_t	crosshair = {"crosshair", "1", CVAR_ARCHIVE};
+cvar_t	crosshair_type = {"crosshair_type", "1", CVAR_ARCHIVE};
+cvar_t	crosshair_width = {"crosshair_width", "1", CVAR_ARCHIVE};
+cvar_t	crosshair_length = {"crosshair_length", "10", CVAR_ARCHIVE};
+cvar_t	crosshair_gap = { "crosshair_gap", "10", CVAR_ARCHIVE };
+cvar_t	crosshair_color = { "crosshair_color", "245", CVAR_ARCHIVE };
+cvar_t	crosshair_dot = { "crosshair_dot", "0", CVAR_ARCHIVE };
+cvar_t	crosshair_alpha = { "crosshair_alpha", "1.0", CVAR_ARCHIVE };
 char	crosshair_char = '\0';
 
 cvar_t	gl_cshiftpercent = {"gl_cshiftpercent", "100", CVAR_NONE};
@@ -372,9 +379,37 @@ When you run over an item, the server sends this command
 void V_BonusFlash_f (void)
 {
 	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 215;
-	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 186;
-	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 69;
+	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 198;
+	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 147;
 	cl.cshifts[CSHIFT_BONUS].percent = 50;
+}
+void V_BonusFlashHealth_f(void)
+{
+	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 255;
+	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 255;
+	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 255;
+	cl.cshifts[CSHIFT_BONUS].percent = 40;
+}
+void V_BonusFlashArmor_f(void)
+{
+	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 35;
+	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 35;
+	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 191;
+	cl.cshifts[CSHIFT_BONUS].percent = 40;
+}
+void V_BonusFlashAmmo_f(void)
+{
+	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 255;
+	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 243;
+	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 27;
+	cl.cshifts[CSHIFT_BONUS].percent = 40;
+}
+void V_BonusFlashWeapon_f(void)
+{
+	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 210;
+	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 0;
+	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 255;
+	cl.cshifts[CSHIFT_BONUS].percent = 40;
 }
 
 /*
@@ -533,7 +568,7 @@ void V_UpdateBlend (void)
 		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
 
 // drop the bonus value
-	cl.cshifts[CSHIFT_BONUS].percent -= frametime*100;
+	cl.cshifts[CSHIFT_BONUS].percent -= frametime*80;
 	if (cl.cshifts[CSHIFT_BONUS].percent <= 0)
 		cl.cshifts[CSHIFT_BONUS].percent = 0;
 
@@ -694,9 +729,14 @@ Idle swaying
 */
 void V_AddIdle (void)
 {
-	r_refdef.viewangles[ROLL] += v_idlescale.value * sin(cl.time*v_iroll_cycle.value) * v_iroll_level.value;
-	r_refdef.viewangles[PITCH] += v_idlescale.value * sin(cl.time*v_ipitch_cycle.value) * v_ipitch_level.value;
-	r_refdef.viewangles[YAW] += v_idlescale.value * sin(cl.time*v_iyaw_cycle.value) * v_iyaw_level.value;
+	entity_t *view;
+	view = &cl.viewent;
+	view->angles[ROLL] += v_idlescale.value * sin(cl.time * v_iroll_cycle.value) * v_iroll_level.value;
+	view->angles[PITCH] += v_idlescale.value * sin(cl.time * v_ipitch_cycle.value) * v_ipitch_level.value;
+	view->angles[YAW] += v_idlescale.value * sin(cl.time * v_iyaw_cycle.value) * v_iyaw_level.value;
+	//r_refdef.viewangles[ROLL] += v_idlescale.value * sin(cl.time*v_iroll_cycle.value) * v_iroll_level.value;
+	//r_refdef.viewangles[PITCH] += v_idlescale.value * sin(cl.time*v_ipitch_cycle.value) * v_ipitch_level.value;
+	//r_refdef.viewangles[YAW] += v_idlescale.value * sin(cl.time*v_iyaw_cycle.value) * v_iyaw_level.value;
 }
 
 
@@ -900,7 +940,7 @@ void V_CalcRefdef (void)
 	blend[1] = v_punchangles[1][1] + (v_punchangles[0][1] - v_punchangles[1][1]) * punchblend;
 	blend[2] = v_punchangles[1][2] + (v_punchangles[0][2] - v_punchangles[1][2]) * punchblend;
 
-	//VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles);
+	//VectorAdd(r_refdef.viewangles, blend, r_refdef.viewangles); //no use 
 	blend[0] *= -1;
 	VectorAdd(view->angles, blend, view->angles);
 // add view shake
@@ -1030,6 +1070,10 @@ void V_Init (void)
 {
 	Cmd_AddCommand ("v_cshift", V_cshift_f);
 	Cmd_AddCommand ("bf", V_BonusFlash_f);
+	Cmd_AddCommand ("bfh", V_BonusFlashHealth_f);
+	Cmd_AddCommand ("bfar", V_BonusFlashArmor_f);
+	Cmd_AddCommand ("bfam", V_BonusFlashAmmo_f);
+	Cmd_AddCommand ("bfw", V_BonusFlashWeapon_f);
 	Cmd_AddCommand ("centerview", V_StartPitchDrift);
 
 	Cvar_RegisterVariable (&v_centermove);
@@ -1045,6 +1089,13 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_idlescale);
 	Cvar_RegisterVariable (&crosshair);
 	Cvar_SetCallback (&crosshair, V_Crosshair_f);
+	Cvar_RegisterVariable (&crosshair_type);
+	Cvar_RegisterVariable (&crosshair_width);
+	Cvar_RegisterVariable (&crosshair_length);
+	Cvar_RegisterVariable (&crosshair_gap);
+	Cvar_RegisterVariable (&crosshair_color);
+	Cvar_RegisterVariable (&crosshair_dot);
+	Cvar_RegisterVariable (&crosshair_alpha);
 	Cvar_RegisterVariable (&gl_cshiftpercent);
 	Cvar_RegisterVariable (&gl_cshiftpercent_contents); // QuakeSpasm
 	Cvar_RegisterVariable (&gl_cshiftpercent_damage); // QuakeSpasm

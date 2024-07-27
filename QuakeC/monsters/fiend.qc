@@ -216,9 +216,10 @@ void() demon_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.lasthit_damage > self.gib_threshold || self.health_head < 0)
 	{
-		dropAmmo(self.origin, DROP_CELLS, 1);
+		dropAmmo(self.origin, DROP_CELLS, 2, 1, 1, 1);
+		dropHealth(self.origin, DROP_ARMOR, 2, 1, 1, 1);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		sendMessageVec(self.origin, TE_EXPLOSION);
 		ThrowHead ("progs/h_demon.mdl", self.health);
@@ -280,19 +281,21 @@ CheckDemonJump
 ==============*/
 float()	CheckDemonJump =
 {
-	local	vector	dist;
-	local	float	d;
+	vector	dist;
+	float	d;
+	vector pos;
+	pos = getPlayerPosition(self.enemy, 0);
 	
 	if (self.fA > time) 
 		return FALSE;
 
-	if (self.origin_z + self.mins_z > self.enemy.origin_z + self.enemy.mins_z + 0.75 * self.enemy.size_z)
+	if (self.origin_z + self.mins_z > pos_z + self.enemy.mins_z + 0.75 * self.enemy.size_z)
 		return FALSE;
 		
-	if (self.origin_z + self.maxs_z < self.enemy.origin_z + self.enemy.mins_z + 0.25 * self.enemy.size_z)
+	if (self.origin_z + self.maxs_z < pos_z + self.enemy.mins_z + 0.25 * self.enemy.size_z)
 		return FALSE;
 		
-	dist = self.enemy.origin - self.origin;
+	dist = pos - self.origin;
 	dist_z = 0;
 	
 	d = vlen(dist);
@@ -328,14 +331,10 @@ float()	DemonCheckAttack =
 
 void(float side)	Demon_Melee =
 {
-	vector delta;
-	
 	ai_face ();
 	walkmove (self.ideal_yaw, 12);	// allow a little closing
 
-	delta = self.enemy.origin - self.origin;
-
-	if (vlen(delta) > 100)
+	if (vlen(self.enemy.origin - self.origin) > 100)
 		return;
 
 	if (!CanDamage (self.enemy, self))
@@ -346,7 +345,7 @@ void(float side)	Demon_Melee =
 	T_Push (other, self, 600, 150);
 
 	makevectors2 (self.angles);
-	SpawnMeatSpray (self.origin + v_forward*16, side * v_right);
+	SpawnMeatSpray (self.origin + v_forward*16, side * v_right, self.enemy);
 };
 
 void() Demon_PushTouch =
@@ -426,16 +425,18 @@ void() monster_demon1 =
 	//gnounc
 	setmodel (self, "progs/demon.mdl");
 	self.noise = "demon/sight2.wav";
-	self.killstring = " was eviscerated by a Fiend\n";
+	self.killstring = " was eviscerated by a robot\n";
 
 	setsize (self, '-32 -32 -24', '32 32 50');
+	self.info_name = " Megatech Fiend v4";
 	self.head_offset = '19 3 6';
 	self.head_size = 8;
 	self.health = FIEND_HEALTH;
 	self.max_health = FIEND_HEALTH;
 	self.health_head = FIEND_HEAD;
+	self.health_head_max = FIEND_HEAD;
 	self.gib_threshold = 180;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT | MFL_PUSH_RESISTENT;
 	self.monstertype = TYPE_FIEND;
 	self.th_stand = demon1_stand1;
 	self.th_walk = demon1_walk1;

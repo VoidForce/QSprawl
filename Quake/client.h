@@ -264,6 +264,8 @@ typedef struct
 	vec3_t		shakevelocity;
 	double		shaketime;
 	int			player_inputs;
+	int			wall_jumps;
+	int			info_ent;
 } client_state_t;
 
 

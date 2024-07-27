@@ -1163,6 +1163,11 @@ void Draw_GetCanvasTransform (canvastype type, drawtransform_t *transform)
 		s = (float)vid.guiwidth/vid.conwidth; //use console scale
 		Draw_Transform (320, 200, s, CANVAS_ALIGN_RIGHT, CANVAS_ALIGN_TOP, transform);
 		break;
+	case CANVAS_INFO:
+		//s = (float)vid.guiwidth / vid.conwidth; //use console scale
+		s = CLAMP(1.0f, scr_sbarscale.value, (float)vid.guiwidth / 80.0f);
+		Draw_Transform (160, 100, s, CANVAS_ALIGN_CENTERX, 0.04, transform);
+		break;
 	default:
 		Sys_Error ("Draw_GetCanvasTransform: bad canvas type");
 	}

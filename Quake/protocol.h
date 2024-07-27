@@ -85,8 +85,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_WEAPON		(1<<10)	// no data follows, the bit is it
 #define SU_ANGLES		(1<<11)
 #define SU_WEAPONSKIN	(1<<12)
-#define SU_WEAPONALPHA	(1<<13)
+#define SU_HUDINFO		(1<<13)
+#define	SU_WEAPON2		(1<<14)
 #define SU_EXTEND1		(1<<15) // another byte to follow
+#define SU_WEAPONALPHA	(1<<16)
 #define SU_EXTEND2		(1<<23) // another byte to follow
 //(1<<13)
 //(1<<14) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
@@ -113,6 +115,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ENF_NOWALLRUN		(1<<2)
 #define ENF_HITHEAD			(1<<3)
 #define ENF_CHANGESKIN		(1<<4)
+#define ENF_HUDINFO			(1<<5)
+// currently send as short
+
 //#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
 /*
 #define	SU_VIEWHEIGHT	(1<<0)
@@ -295,6 +300,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TE_HEAD					13
 #define TE_LASERTRACE			14
 #define TE_SHOCKWAVE			15
+#define TE_EXPLOSION_PLASMA		16
 
 typedef struct
 {

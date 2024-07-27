@@ -56,9 +56,6 @@ dog_bite
 ================*/
 void() dog_bite =
 {
-local vector	delta;
-local float 	ldmg;
-
 	if (!self.enemy)
 		return;
 
@@ -67,28 +64,23 @@ local float 	ldmg;
 	if (!CanDamage (self.enemy, self))
 		return;
 
-	delta = self.enemy.origin - self.origin;
-
-	if (vlen(delta) > 100)
+	if (vlen(self.enemy.origin - self.origin) > 100)
 		return;
-		
-	ldmg = (random() + random() + random()) * 8;
-	T_Damage (self.enemy, self, self, ldmg, 0);
+
+	T_Damage (self.enemy, self, self, (random() + random() + random()) * 8, 0);
 };
 
 void()	Dog_JumpTouch =
 {
-	local	float	ldmg;
-
 	if (self.health <= 0)
 		return;
 		
-	if (other.takedamage)
+	if (other.takedamage && self.fA < time)
 	{
 		if ( vlen(self.velocity) > 300 )
 		{
-			ldmg = 10 + 10*random();
-			T_Damage (other, self, self, ldmg, 0);	
+			T_Damage (other, self, self, 10 + 10*random(), 0);
+			self.fA = time + 2; // time until next touch damage to prevent oneshots
 		}
 	}
 
@@ -262,9 +254,11 @@ void() dog_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	dropAmmo(self.origin, DROP_SHELLS, 2);
-	dropAmmo(self.origin, DROP_NAILS, 20);
-	
+	dropAmmo(self.origin, DROP_SHELLS, 8, 4, 2, 2);
+	dropAmmo(self.origin, DROP_NAILS, 40, 20, 10, 0);
+	dropHealth(self.origin, DROP_ARMOR_ONE, 0, 4, 2, 2);
+	dropHealth(self.origin, DROP_ARMOR, 1, 0, 0, 0);
+
 	if (self.lasthit_damage > self.gib_threshold)
 	{
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
@@ -381,6 +375,7 @@ void() monster_dog =
 	//gnounc
 	self.noise = "dog/dsight.wav";	
 	self.netname = "Rottweiler";
+	self.info_name = "Combat Drone Okami";
 	self.killstring = " was pacified by combat drone Okami\n";
 
 	setsize (self, '-32 -32 -24', '32 32 20');//40
@@ -391,7 +386,7 @@ void() monster_dog =
 	//self.armorclass_body = 5;
 	self.monstertype = TYPE_DOG;
 	self.monsterflags |= MFL_ROBOT;
-	self.gib_threshold = 100;
+	self.gib_threshold = 75;
 
 	self.th_stand = dog_stand1;
 	self.th_walk = dog_walk1;

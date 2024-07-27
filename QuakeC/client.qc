@@ -81,7 +81,7 @@ void() SetChangeParms =
 
 void() SetNewParms =
 {
-	parm1 = IT_SHOTGUN | IT_AXE;
+	parm1 = IT_PISTOL | IT_KATANA;
 	parm2 = 100;
 	parm3 = 0;
 	parm4 = 0;
@@ -582,7 +582,7 @@ void() PutClientInServer =
 	self.invisible_finished = 0;
 	self.invincible_finished = 0;
 	self.invincible_time = 0;
-	self.viewmodeloffset_angles = '0 0 -5';
+	self.viewmodeloffset_angles = '1 1 1';
 	self.chaingun_speed = 0.1;
 
 	DecodeLevelParms ();
@@ -680,6 +680,10 @@ void() info_player_coop =
 {
 };
 
+void() info_wind =
+{
+	
+};
 /*
 ===============================================================================
 
@@ -1044,7 +1048,7 @@ void() trailPlayer =
 	self.trail4 = self.trail3;
 	self.trail3 = self.trail2;
 	self.trail2 = self.trail1;
-	self.trail1 = self.origin + self.velocity * 0.25;
+	self.trail1 = self.origin; // no velocity addition
 	self.thinkA = trailPlayer;
 	self.nextthinkA = time + 0.3;
 };
@@ -1076,6 +1080,8 @@ void() SetMovementParams_Standard =
 
 void(float timer) StopAcceleration =
 {
+	if (self.noacceleration_timer > time)
+		return;
 	self.current_acceleration = self.phys_acceleration;
 	self.phys_acceleration = 0;
 	self.movementflags |= MF_NOACCELERATION;
@@ -1087,13 +1093,18 @@ void(float timer) StopAcceleration =
 
 void() StartAcceleration =
 {
-	self.phys_acceleration = self.current_acceleration;
+	if (self.current_acceleration)
+		self.phys_acceleration = self.current_acceleration;
+	else
+		self.phys_acceleration = 1;
 	self.noacceleration_timer = 0;
 	self.movementflags -= self.movementflags & MF_NOACCELERATION;	
 };
 
 void(float timer) StopAirAcceleration =
 {
+	if (self.noairacceleration_timer > time)
+		return;
 	self.current_airacceleration = self.phys_airacceleration;
 	self.phys_airacceleration = 0;
 	self.movementflags |= MF_NOAIRACCELERATION;
@@ -1105,19 +1116,26 @@ void(float timer) StopAirAcceleration =
 
 void() StartAirAcceleration =
 {
-	self.phys_airacceleration = self.current_airacceleration;
+	if (self.current_airacceleration)
+		self.phys_airacceleration = self.current_airacceleration;
+	else
+		self.phys_airacceleration = 1;
+
 	self.noairacceleration_timer = 0;
 	self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
 };
 
 void(float timer) ForceStartSlide =
 {
+	if (self.forcedslide_timer > time) 
+		return;
+	
 	self.phys_friction = 0;
 	self.movementflags |= MF_FORCEDSLIDE;
 	if (timer < 0)
 		self.forcedslide_timer = time + 7200;
 	else
-		self.forcedslide_timer = timer + timer;
+		self.forcedslide_timer = time + timer;
 };
 
 void() StopSlide =
@@ -1199,9 +1217,9 @@ const float FRONTJUMP[2] = {MOVE_FORWARD,MOVE_FORWARD};
 const float LEFTJUMP[2] = {MOVE_LEFT, MOVE_LEFT}; // count diagonals too
 const float RIGHTJUMP[2] = {MOVE_RIGHT, MOVE_RIGHT};
 
-float (entity who) traceDown =
+float (entity who, float distance = -64) traceDown =
 {
-	traceline(who.origin, who.origin + '0 0 -64', IGNOREMONSTERS, self);
+	traceline(who.origin, who.origin + [0, 0, distance], IGNOREMONSTERS, self);
 	if (trace_fraction != 1)
 		return 1;
 	else 
@@ -1219,8 +1237,6 @@ float (entity who, vector dir_forward, vector dir_right) traceWall =
 
 void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 {
-	if (self.weapon != IT_AXE)
-		return;
 	if (self.b_slide)
 		return;
 	if (self.engineflags & ENF_ADRENALINE_OFF)
@@ -1230,6 +1246,18 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 	if (self.wall_jumps > 2) 
 		return;
 	self.wall_jumps++;
+	
+// shift trail further into the past, so monsters looks confused
+	if (skill == 2)
+	{
+		self.trail++; 
+		self.trail_time = time + 1;
+	}
+	else if (skill < 2)
+	{
+		self.trail += 2; 
+		self.trail_time = time + 1;
+	}
 	
 	if (self.flags & FL_ONGROUND || traceDown(self)) // on ground, slightly above ground
 	{
@@ -1243,7 +1271,8 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		StopAirAcceleration(0.4);
 		//StopAcceleration(0.4);
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
-		self.speedmodifier = 2;
+		if (self.weapon == IT_KATANA)
+			self.speedmodifier = 2;
 	}
 	else 
 	{
@@ -1261,16 +1290,17 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 			self.jump_timer = time + 0.5;
 			StopAirAcceleration(0.4);
 			sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
-			self.speedmodifier = 2;
+			if (self.weapon == IT_KATANA)
+				self.speedmodifier = 2;
 		}
 	}
 };
 #define DODGE_SPEED 500
 void() checkPressCombo =
 {
-	local float i;
-	local float action;
-	local float combo2,combo3,combo4; 
+	float i;
+	float action;
+	float combo1, combo2, combo3, combo4; 
 
 	for (i = 0; i < 3; i++)
 	{
@@ -1278,7 +1308,9 @@ void() checkPressCombo =
 	// no more actions to read, cancel
 		if (!action)
 			return;
-		/*
+		
+	if (skill < 2)
+	{
 	// front jump, combo1
 		if ( FRONTJUMP[combo1] == action)
 			combo1++;
@@ -1291,7 +1323,8 @@ void() checkPressCombo =
 				makeDodge(-96, 0, DODGE_SPEED, 0, MOVE_FORWARD); // forward wall, righ wall, forward velocity, right velocity
 			resetQueue();
 			return;
-		}*/
+		}
+		
 	// back jump, combo2	
 		if ( BACKJUMP[combo2] == action)
 			combo2++;
@@ -1301,10 +1334,11 @@ void() checkPressCombo =
 		if (combo2 == 2)
 		{
 			if (self.dodge_time < time)
-				makeDodge(96, 0, -500, 0, MOVE_BACKWARD); // backwards dodge allowed on the ground
+				makeDodge(96, 0, -DODGE_SPEED, 0, MOVE_BACKWARD); // backwards dodge allowed on the ground
 			resetQueue();
 			return;
 		}
+	}
 	// left jump, combo3	
 		if (LEFTJUMP[combo3] & action)
 			combo3++;
@@ -1415,7 +1449,7 @@ void() catchComboInput =
 
 void() checkMovementInput =
 {
-	if (self.weapon != IT_AXE)
+	if (self.weapon != IT_KATANA && skill < 3)
 		return;
 	catchComboInput();
 // Important! must be set after all the input/combo checks
@@ -1491,6 +1525,15 @@ void() PlayerPreThink =
 	
 	if (self.deadflag == DEAD_DYING)
 		return;	// dying, so do nothing
+	
+// move trail back to origin, until we reach it
+	if (self.trail && self.trail_time < time)
+	{
+		self.trail--;
+		self.trail = clamp(0, self.trail, 4);
+		if (self.trail)
+			self.trail_time = time + 0.5;
+	}
 //--------------------------------------------------------------------------------
 // reset jumps 
 	if (!(self.flags & FL_ONGROUND))
@@ -1518,8 +1561,9 @@ void() PlayerPreThink =
 	{
 		if (self.noairacceleration_timer < time)
 		{
-			self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
-			self.phys_airacceleration = self.current_airacceleration;
+			StartAirAcceleration();
+			//self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
+			//self.phys_airacceleration = self.current_airacceleration;
 		}
 	}
 	
@@ -1527,8 +1571,9 @@ void() PlayerPreThink =
 	{
 		if (self.noacceleration_timer < time)
 		{
-			self.movementflags -= self.movementflags & MF_NOACCELERATION;
-			self.phys_acceleration = self.current_acceleration;
+			StartAcceleration();
+			//self.movementflags -= self.movementflags & MF_NOACCELERATION;
+			//self.phys_acceleration = self.current_acceleration;
 		}
 	}
 	
@@ -1538,6 +1583,7 @@ void() PlayerPreThink =
 		{
 			self.movementflags -= self.movementflags & MF_FORCEDSLIDE;
 			self.phys_friction = 8;
+			self.forcedslide_timer = 0;
 		}
 	}
 	
@@ -1559,7 +1605,7 @@ void() PlayerPreThink =
 // swap to and away from Katana
 	if (self.sprawlflags & SFL_NEEDTOSETSPEED)
 	{
-		if (self.weapon == IT_AXE)
+		if (self.weapon == IT_KATANA)
 			self.speedmodifier = 1.25;
 		else
 			self.speedmodifier = 1;
@@ -1567,7 +1613,7 @@ void() PlayerPreThink =
 		SetMovementParams_Standard(); // not ok
 	}
 //	Katana sprint
-	if (self.weapon == IT_AXE && self.flags & FL_ONGROUND)
+	if (self.weapon == IT_KATANA && self.flags & FL_ONGROUND)
 	{
 		if (self.wallrun || self.b_slide)
 			self.speedmodifier = 1.25;
@@ -1599,11 +1645,11 @@ void() PlayerPreThink =
 		}
 	}
 	
-	local float i;
-	local float delta;
-	local float progress;
-	local float angle_combined;
-	local float velocity_combined;
+	float i;
+	float delta;
+	float progress;
+	float angle_combined;
+	float velocity_combined;
 	
 	if (self.punch_time)
 	{
@@ -1655,7 +1701,7 @@ void() PlayerPreThink =
 	else
 		self.flags = self.flags | FL_JUMPRELEASED;
 
-	local float interpolation;
+	float interpolation;
 	// catch in and out
 	// player can release button during transition phase, so we need to know how deep into transition we was
 	// then start new transition back from that point
@@ -1710,10 +1756,9 @@ void() PlayerPreThink =
 			slowmotion_time = 0;
 	}
 	
-	local vector velocity2d;
-	local float boostspeed;
+	vector velocity2d;
+	float boostspeed;
 
-	//dprint3("speed = ", ftos(self.current_speed), "\r");
 	// Slide button pressed
 	if (self.b_slide)
 	{
@@ -1802,7 +1847,7 @@ void() PlayerPreThink =
 	if (time < self.pausetime)
 		self.velocity = '0 0 0';
 
-	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE)
+	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_KATANA)
 	{
 		deployGun(W_BestWeapon());
 	}
@@ -1821,7 +1866,6 @@ void() PlayerPostThink =
 	if (self.deadflag)
 		return;
 	
-	//dprint3("adrenaline: ", ftos(self.adrenaline), "\n");
 	regenAdrenaline();
 	
 	if (self.sprawlflags & SFL_VMOFFSET)
@@ -1829,12 +1873,9 @@ void() PlayerPostThink =
 		float progress;
 		
 		progress = clamp(0, (time - self.deploy_time) * 4, 1); // 0.4 sec
-		//self.viewmodeloffset_angles_x= lerp(-60, 0, progress);
-		//self.viewmodeloffset_angles_z= lerp(-30, 0, progress);
 
 		if (progress == 1)
 		{
-			//self.viewmodeloffset_angles_x = 0;
 			self.deploy_time = 0;
 			self.sprawlflags -= self.sprawlflags & SFL_VMOFFSET;
 		}
@@ -1867,10 +1908,10 @@ void() PlayerPostThink =
 			sound (self, CHAN_BODY, "player/h2ojump.wav", 1, ATTN_NORM);
 		else if (self.jump_flag < -650)
 		{
-			//T_Damage (self, world, world, 5, 0); // no fall damage in qsprawl
 			addShake(-150,-40,0);
 			sound (self, CHAN_VOICE, "player/land2.wav", 1, ATTN_NORM);
-			self.deathtype = "falling";
+			//T_Damage (self, world, world, 5, 0); // no fall damage in qsprawl
+			//self.deathtype = "falling";
 		}
 		else if (self.jump_flag < -300)
 		{
@@ -2182,13 +2223,13 @@ void(entity targ, entity attacker) ClientObituary =
 
 				rnum = attacker.weapon;
 
-				if (rnum == IT_AXE)
+				if (rnum == IT_KATANA)
 				{
 					deathstring = " was ax-murdered by ";
 					deathstring2 = "\n";
 				}
 
-				if (rnum == IT_SHOTGUN)
+				if (rnum == IT_PISTOL)
 				{
 					deathstring = " chewed on ";
 					deathstring2 = "'s boomstick\n";
@@ -2200,13 +2241,13 @@ void(entity targ, entity attacker) ClientObituary =
 					deathstring2 = "'s buckshot\n";
 				}
 
-				if (rnum == IT_NAILGUN)
+				if (rnum == IT_SMGS)
 				{
 					deathstring = " was nailed by ";
 					deathstring2 = "\n";
 				}
 
-				if (rnum == IT_SUPER_NAILGUN)
+				if (rnum == IT_CHAINGUN)
 				{
 					deathstring = " was punctured by ";
 					deathstring2 = "\n";
@@ -2224,7 +2265,7 @@ void(entity targ, entity attacker) ClientObituary =
 					}
 				}
 
-				if (rnum == IT_ROCKET_LAUNCHER)
+				if (rnum == IT_GAUSS)
 				{
 					if (attacker.super_damage_finished > 0 && targ.health < -40)
 					{
@@ -2261,7 +2302,7 @@ void(entity targ, entity attacker) ClientObituary =
 					}
 				}
 
-				if (rnum == IT_LIGHTNING)
+				if (rnum == IT_SHOCK)
 				{
 					deathstring = " accepts ";
 

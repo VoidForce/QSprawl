@@ -356,7 +356,7 @@ void() spikeshooter_use =
 
 	else
 	{
-		sound (self, CHAN_VOICE, "weapons/spike2.wav", 1, ATTN_NORM);
+		sound (self, CHAN_VOICE, "weapons/f_chaingun.wav", 1, ATTN_NORM);
 		launch_spike (self.origin, self.movedir);
 		newmis.velocity = self.movedir * 500;
 
@@ -395,7 +395,7 @@ void() trap_spikeshooter =
 	}
 
 	else
-		precache_sound ("weapons/spike2.wav");
+		precache_sound ("weapons/f_chaingun.wav");
 };
 
 

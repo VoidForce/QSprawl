@@ -3064,7 +3064,7 @@ Mod_SetExtraFlags -- johnfitz -- set up extra flags that aren't in the mdl
 */
 void Mod_SetExtraFlags (qmodel_t *mod)
 {
-	extern cvar_t r_nolerp_list, r_noshadow_list;
+	extern cvar_t r_nolerp_list, r_noshadow_list, r_brightmodels_list;
 
 	if (!mod || mod->type != mod_alias)
 		return;
@@ -3085,6 +3085,11 @@ void Mod_SetExtraFlags (qmodel_t *mod)
 		!strcmp (mod->name, "progs/boss.mdl"))
 	{
 		mod->flags |= MOD_FBRIGHTHACK;
+	}
+	
+	if (nameInList(r_brightmodels_list.string, mod->name))
+	{
+		mod->flags |= MOD_PICKUPS;
 	}
 }
 

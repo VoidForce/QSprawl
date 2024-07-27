@@ -3088,6 +3088,8 @@ storesetup:
 	if (original[0] || remastered[0])
 	{
 		quakeflavor_t flavor;
+		flavor = QUAKE_FLAVOR_ORIGINAL;
+		/*
 		if (original[0] && remastered[0])
 		{
 			if (COM_CheckParm ("-prefremaster") || COM_CheckParm ("-remaster") || COM_CheckParm ("-remastered"))
@@ -3099,6 +3101,7 @@ storesetup:
 		}
 		else
 			flavor = remastered[0] ? QUAKE_FLAVOR_REMASTERED : QUAKE_FLAVOR_ORIGINAL;
+		*/
 		q_strlcpy (path, flavor == QUAKE_FLAVOR_REMASTERED ? remastered : original, sizeof (path));
 
 		if (COM_SetBaseDir (path))

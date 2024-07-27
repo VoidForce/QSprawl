@@ -119,29 +119,49 @@ void(entity targ, entity attacker) Killed =
 	self = oself;
 };
 
-void(entity victim, entity attacker, float force, float verticalForce) T_Push =
+void(entity targ, entity attacker, float force, float verticalForce, optional float vert_offset) T_Push =
 {
 	vector direction;
 	float modifiedForce;
 	
-	if (victim.pushback_time > time)
+	if (targ.pushback_time > time) // vore shield only
 		return;
+	if (targ.monsterflags & MFL_SHIELD)
+		return;
+	
 	modifiedForce = force;
 	
-	if ( victim.movetype == MOVETYPE_WALK )
+	if ( targ.movetype == MOVETYPE_WALK )
 	{
-	// heavy monsters
-		if (victim.monstertype == TYPE_SHAMBLER)
-			modifiedForce *= 0.5;
-		
-		direction = victim.origin - (attacker.absmin + attacker.absmax) * 0.5;
+		direction = targ.origin - ((attacker.absmin + attacker.absmax) * 0.5 + [0,0,vert_offset]);
 		direction = normalize(direction);
 
-		victim.velocity = victim.velocity + (direction * modifiedForce);
-		victim.velocity_z = victim.velocity_z + verticalForce;
+		targ.velocity = targ.velocity + (direction * modifiedForce);
+		targ.velocity_z = targ.velocity_z + verticalForce;
 		
-		if (victim.flags & FL_ONGROUND)
-			victim.flags = victim.flags - FL_ONGROUND;
+		if (targ.flags & FL_ONGROUND)
+			targ.flags = targ.flags - FL_ONGROUND;
+	}
+};
+
+void (entity targ, vector direction, float force) T_PushDirection =
+{
+	if (targ.monsterflags & (MFL_PUSH_RESISTENT | MFL_BOSS))
+		return;
+	if (targ.monsterflags & MFL_SHIELD)
+		return;
+	
+// direction must be normalized
+	if (targ.flags & FL_MONSTER)
+	{
+		if (targ.flags & FL_ONGROUND)
+		{
+			//setorigin(targ, targ.origin + '0 0 5');
+			targ.origin_z += 1;
+			targ.flags -= targ.flags & FL_ONGROUND;
+		}
+		targ.velocity = direction * force;
+		targ.velocity_z = 100;
 	}
 };
 
@@ -199,6 +219,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	entity oldself;
 	float save;
 	float take;
+	float resdmg;
 
 	if (!targ.takedamage)
 		return;
@@ -206,8 +227,14 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	//gnounc -- shub kill crash fix.
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
-	dprint2("penetration: ",ftos(penetration)); endl();
-	if (attacker.entity_type == TYPE_PLAYER && attacker != targ)
+	
+	if (attacker.flags & FL_CLIENT && targ.flags & FL_MONSTER && !attacker.info_ent)
+	{
+		attacker.info_ent = targ;
+		attacker.engineflags |= ENF_HUDINFO;
+		attacker.info_stay_time = time + 1.5;
+	}
+	if (attacker.entity_type == TYPE_PLAYER && attacker != targ && !(targ.monsterflags & MFL_SHIELD))
 	{
 		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
 		{
@@ -233,8 +260,13 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (targ.entity_type == TYPE_PLAYER)
 	{
+		resdmg = damage;
+		if (skill == 1)
+			resdmg *= 0.6;
+		else if (skill == 0)
+			resdmg *= 0.3;
 		// save damage based on the target's armor level
-		save = ceil(targ.armortype*damage);
+		save = ceil(targ.armortype*resdmg);
 
 		if (save >= targ.armorvalue)
 		{
@@ -244,7 +276,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		}
 		
 		targ.armorvalue = targ.armorvalue - save;
-		take = ceil(damage-save);
+		take = ceil(resdmg-save);
 	}
 	else 
 		take = ceil(damage);
@@ -253,6 +285,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	{
 		float res;
 		float mit;
+		
 	// minimal damage is lower on headshots
 		if (dflags & DF_HEADSHOT)
 			save = take * 0.1;
@@ -268,20 +301,36 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		{
 		// i'm gonna use res here for angles difference, it's ugly but who cares
 			res = anglemod(targ.angles_y - attacker.angles_y); //
-			if (res < 75 || res > 285)
+			if (!(targ.monsterflags & MFL_SHIELD))
 			{
-			// hit back
-				penetration += 0.8;
-				sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
-			// mark as critical hit 
-				attacker.engineflags |= ENF_HITHEAD;
-				attacker.headmarker_time = time + 0.2;
+				if (res < 75 || res > 285)
+				{
+				// hit back
+					penetration += 0.8;
+					sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
+				// mark as critical hit 
+					attacker.engineflags |= ENF_HITHEAD;
+					attacker.headmarker_time = time + 0.2;
+					if (dflags & DF_KATANA)
+						damage *= 2;
+				}
+				else if (res < 90 || res > 270)
+					penetration += 0.3;
 			}
 			res = 0;
 		}
+		
+		if (skill == 1)
+			penetration += 0.2;
+		else if (skill == 0)
+			penetration += 0.4;
+		
 		penetration = 1 - penetration;
-
-		if (targ.monsterflags & MFL_SHIELD)
+	// no extra damage for overpenetration
+		if (penetration < 0)
+			penetration = 0;
+		
+		if (targ.monsterflags & MFL_SHIELD && damage < 1000)
 		{
 			res = 2;
 			mit = 200;
@@ -307,22 +356,15 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			}
 		}
 
-		//dprint5("mit: ",ftos(mit)," res: ", ftos(res), "\n");
 		take -= mit * count;
 		if (take < save)
 			take = save;
-		//dprint3("Damage mit: ",ftos(take), "\n");
+		
 		take *= (1 - res);
-		//dprint3("Damage res: ",ftos(take), "\n");
 		if (take < save)
 			take = save;
+		
 		take = ceil(take);
-	}
-	if (attacker.entity_type == TYPE_PLAYER)
-	{
-		dprint(targ.classname);
-		dprint4(" HP:",ftos(targ.health), " head:",ftos(targ.health_head)); endl();
-		dprint3("Damage: ",ftos(take), "\n");
 	}
 
 	// add to the damage total for clients, which will be sent as a single
@@ -398,6 +440,11 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		if (targ.monsterflags & MFL_HEADKILLS)
 		{
 			//targ.health = -1;
+			if (targ.health > 0) // ok, setting health to 0 will allow gibbing when we want shotgun to leave corpse intact
+			{
+				targ.health = 0;
+				targ.lasthit_damage = 0;
+			}
 			Killed (targ, attacker);
 			return;
 		}
@@ -437,7 +484,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			self.monsterflags |= MFL_LOSTWEAPON;
 	}
 	
-	if (self.th_pain)
+	if (self.th_pain && take > 5)
 	{
 		self.th_pain (attacker, take);
 		// nightmare mode monsters don't go into pain frames often
@@ -487,7 +534,7 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 	}
 };
 
-void(entity inflictor, entity attacker, float damage, entity ignore, float radius, float epicenter) T_RadiusDamagePlayer =
+void(entity inflictor, entity attacker, float damage, entity ignore, float radius, float epicenter, float pushaway = 0) T_RadiusDamagePlayer =
 {
 	float 	points;
 	entity	head;
@@ -524,7 +571,11 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 			}
 
 			if (CanDamage (head, inflictor))
+			{
 				T_Damage (head, inflictor, attacker, points, dflags);
+				if (pushaway) // divide by zero check here
+					T_Push (head, inflictor, lerp(200/pushaway, 500/pushaway, points/damage), 100);
+			}
 		}
 		head = head.chain;
 	}

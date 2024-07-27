@@ -212,7 +212,22 @@ typedef enum
 	FL_PARTIALGROUND			= 1024,	// not all corners are valid
 	FL_WATERJUMP				= 2048,	// player jumping out of water
 	FL_JUMPRELEASED				= 4096,	// for jump debouncing
+	FL_EXPLOBOX					= 8192,
+	FL_PROJECTILE				= 16384,
 } eflags_t;
+
+// edict->clip
+typedef enum
+{
+	CLIP_CLIENT					= 1,
+	CLIP_MONSTER				= 2,
+	CLIP_PROJECTILE				= 4,
+	CLIP_GROUPA					= 8,
+	CLIP_GROUPB					= 16,
+	CLIP_GROUPC					= 32,
+	CLIP_GROUPD					= 64,
+	CLIP_GROUPE					= 128,
+} eclipflags_t;
 
 // entity effects
 typedef enum

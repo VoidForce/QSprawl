@@ -107,6 +107,7 @@ cvar_t	r_lerpmodels = {"r_lerpmodels", "1", CVAR_ARCHIVE};
 cvar_t	r_lerpmove = {"r_lerpmove", "1", CVAR_ARCHIVE};
 cvar_t	r_nolerp_list = {"r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE};
 cvar_t	r_noshadow_list = {"r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE};
+cvar_t	r_brightmodels_list = { "r_brightmodels_list", "progs/ammo/shells.mdl,progs/ammo/cells.mdl,progs/ammo/bullets.mdl,progs/ammo/nails.mdl,progs/ammo/nails_big.mdl,progs/ammo/rockets.mdl,progs/health_s.mdl,progs/health_b.mdl,progs/health_m.mdl,progs/armor.mdl", CVAR_NONE };
 
 extern cvar_t	r_vfog;
 extern cvar_t	vid_fsaa;
@@ -1069,7 +1070,10 @@ static qboolean R_IsViewModelVisible (void)
 
 	//johnfitz -- this fixes a crash
 	if (e->model->type != mod_alias)
+	{
+		e->model->type = mod_alias;
 		return false;
+	}
 
 	return true;
 }
@@ -1590,7 +1594,7 @@ void R_ShowTris (void)
 	int		*ofs;
 	entity_t **entlist = cl_sorted_visedicts;
 
-	if (r_showtris.value < 1 || r_showtris.value > 2 || cl.maxclients > 1)
+	if (r_showtris.value < 1 || r_showtris.value > 3 || cl.maxclients > 1)
 		return;
 
 	GL_BeginGroup ("Show tris");
@@ -1604,24 +1608,29 @@ void R_ShowTris (void)
 	GL_PolygonOffset (OFFSET_SHOWTRIS);
 
 	ofs = cl_modtype_ofs;
-	R_DrawBrushModels_ShowTris  (entlist + ofs[2*mod_brush ], ofs[2*mod_brush +2] - ofs[2*mod_brush ]);
-	R_DrawAliasModels_ShowTris  (entlist + ofs[2*mod_alias ], ofs[2*mod_alias +2] - ofs[2*mod_alias ]);
-	R_DrawSpriteModels_ShowTris (entlist + ofs[2*mod_sprite], ofs[2*mod_sprite+2] - ofs[2*mod_sprite]);
-
-	// viewmodel
-	if (R_IsViewModelVisible ())
+	
+	if (r_showtris.value == 3)
 	{
-		entity_t *e = &cl.viewent;
+		R_DrawAliasModels_ShowTris  (entlist + ofs[2*mod_alias ], ofs[2*mod_alias +2] - ofs[2*mod_alias ]);
+		R_DrawSpriteModels_ShowTris (entlist + ofs[2*mod_sprite], ofs[2*mod_sprite+2] - ofs[2*mod_sprite]);
 
-		if (r_showtris.value != 1.f)
-			GL_DepthRange (ZRANGE_VIEWMODEL);
+		// viewmodel
+		if (R_IsViewModelVisible ())
+		{
+			entity_t *e = &cl.viewent;
 
-		R_DrawAliasModels_ShowTris (&e, 1);
+			if (r_showtris.value != 1.f)
+				GL_DepthRange (ZRANGE_VIEWMODEL);
 
-		GL_DepthRange (ZRANGE_FULL);
+			R_DrawAliasModels_ShowTris (&e, 1);
+
+			GL_DepthRange (ZRANGE_FULL);
+		}
+	
+		R_DrawParticles_ShowTris ();
 	}
-
-	R_DrawParticles_ShowTris ();
+	else
+		R_DrawBrushModels_ShowTris(entlist + ofs[2 * mod_brush], ofs[2 * mod_brush + 2] - ofs[2 * mod_brush]);
 
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	GL_PolygonOffset (OFFSET_NONE);

@@ -303,7 +303,7 @@ void() monster_boss =
 	precache_model ("progs/boss.mdl");
 	precache_model ("progs/lavaball.mdl");
 
-	precache_sound ("weapons/rocket1i.wav");
+	precache_sound ("weapons/rocket.wav");
 	precache_sound ("boss1/out1.wav");
 	precache_sound ("boss1/sight1.wav");
 	precache_sound ("misc/power.wav");

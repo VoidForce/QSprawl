@@ -857,6 +857,11 @@ void SV_ClipToLinks ( areanode_t *node, moveclip_t *clip )
 				continue;	// don't clip against own missiles
 			if (PROG_TO_EDICT(clip->passedict->v.owner) == touch)
 				continue;	// don't clip against owner
+
+			if ((int)touch->v.clip & (int)clip->passedict->v.noclip) 
+				continue;
+			if ((int)touch->v.noclip & (int)clip->passedict->v.clip)
+				continue;
 		}
 
 		if ((int)touch->v.flags & FL_MONSTER)

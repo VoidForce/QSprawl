@@ -88,30 +88,6 @@ void() hellknight_trail =
 	trail.nextthink = time + 0.1;
 };
 
-void(float offset) hknight_shot =
-{
-	local	vector	offang;
-	local	vector	org, vec;
-	
-	offang = vectoangles (self.enemy.origin - self.origin);
-	offang_y = offang_y + offset * 6;
-	
-	makevectors (offang);
-
-	org = self.origin + self.mins + self.size*0.5 + v_forward * 20;
-
-	// set missile speed
-	vec = normalize (v_forward);
-	vec_z = 0 - vec_z + (random() - 0.5)*0.1;
-	
-	launch_spike (org, vec);
-	newmis.classname = "knight_spike";		//changed it to be consistant --gnounc
-	setmodel (newmis, "progs/k_spike.mdl");
-	setsize (newmis, VEC_ORIGIN, VEC_ORIGIN);		
-	newmis.velocity = vec*300;
-	sound (self, CHAN_WEAPON, "hknight/attack1.wav", 1, ATTN_NORM);
-};
-
 void() CheckForCharge =
 {
 	// check for mad charge
@@ -132,6 +108,14 @@ void() CheckForCharge =
 	hknight_char_a1 ();
 };
 
+void() hknight_sound =
+{
+	if (random() > 0.5)
+		sound (self, CHAN_WEAPON, "knight/sword2.wav", 1, ATTN_NORM);
+	else
+		sound (self, CHAN_WEAPON, "knight/sword1.wav", 1, ATTN_NORM);
+};
+
 void() CheckContinueCharge =
 {
 	if (time > self.attack_finished)
@@ -141,11 +125,7 @@ void() CheckContinueCharge =
 		return;		// done charging
 	}
 
-	if (random() > 0.5)
-		sound (self, CHAN_WEAPON, "knight/sword2.wav", 1, ATTN_NORM);
-
-	else
-		sound (self, CHAN_WEAPON, "knight/sword1.wav", 1, ATTN_NORM);
+	hknight_sound();
 };
 
 //===========================================================================
@@ -210,12 +190,12 @@ void()	hknight_pain5	=[	$pain5,		hknight_run1	] {setHead('2 2 33');}; // 42
 
 //============================================================================
 
-void()	hknight_die1	=[	$death1,	hknight_die2	] {ai_forward(10);}; 
-void()	hknight_die2	=[	$death2,	hknight_die3	] {ai_forward(8);};
-void()	hknight_die3	=[	$death3,	hknight_die4	] {ai_forward(7);};
-void()	hknight_die4	=[	$death4,	hknight_die5	] {};
-void()	hknight_die5	=[	$death5,	hknight_die6	] {};
-void()	hknight_die6	=[	$death6,	hknight_die7	] {};
+void()	hknight_die1	=[	$death1,	hknight_die2	] {hellknight_trail();ai_forward(10);}; 
+void()	hknight_die2	=[	$death2,	hknight_die3	] {hellknight_trail();ai_forward(8);};
+void()	hknight_die3	=[	$death3,	hknight_die4	] {hellknight_trail();ai_forward(7);};
+void()	hknight_die4	=[	$death4,	hknight_die5	] {hellknight_trail();};
+void()	hknight_die5	=[	$death5,	hknight_die6	] {hellknight_trail();};
+void()	hknight_die6	=[	$death6,	hknight_die7	] {hellknight_trail();};
 void()	hknight_die7	=[	$death7,	hknight_die8	] {};
 void()	hknight_die8	=[	$death8,	hknight_die9	] {ai_forward(10);};
 void()	hknight_die9	=[	$death9,	hknight_die10	] {ai_forward(11);};
@@ -223,12 +203,12 @@ void()	hknight_die10	=[	$death10,	hknight_die11	] {};
 void()	hknight_die11	=[	$death11,	hknight_die12	] {};
 void()	hknight_die12	=[	$death12,	decay	] {};
 
-void()	hknight_dieb1	=[	$deathb1,	hknight_dieb2	] {};
-void()	hknight_dieb2	=[	$deathb2,	hknight_dieb3	] {};
-void()	hknight_dieb3	=[	$deathb3,	hknight_dieb4	] {};
-void()	hknight_dieb4	=[	$deathb4,	hknight_dieb5	] {};
-void()	hknight_dieb5	=[	$deathb5,	hknight_dieb6	] {};
-void()	hknight_dieb6	=[	$deathb6,	hknight_dieb7	] {};
+void()	hknight_dieb1	=[	$deathb1,	hknight_dieb2	] {hellknight_trail();};
+void()	hknight_dieb2	=[	$deathb2,	hknight_dieb3	] {hellknight_trail();};
+void()	hknight_dieb3	=[	$deathb3,	hknight_dieb4	] {hellknight_trail();};
+void()	hknight_dieb4	=[	$deathb4,	hknight_dieb5	] {hellknight_trail();};
+void()	hknight_dieb5	=[	$deathb5,	hknight_dieb6	] {hellknight_trail();};
+void()	hknight_dieb6	=[	$deathb6,	hknight_dieb7	] {hellknight_trail();};
 void()	hknight_dieb7	=[	$deathb7,	hknight_dieb8	] {};
 void()	hknight_dieb8	=[	$deathb8,	hknight_dieb9	] {};
 void()	hknight_dieb9	=[	$deathb9,	decay	] {};
@@ -241,12 +221,12 @@ void()	hknight_magica3 =[	$magica3,	hknight_magica4	] {setHead('-2 2 35');ai_fac
 void()	hknight_magica4 =[	$magica4,	hknight_magica5	] {setHead('-6 1 35');ai_face();}; // 83
 void()	hknight_magica5 =[	$magica5,	hknight_magica6	] {setHead('-10 0 33');ai_face();}; // 84
 void()	hknight_magica6 =[	$magica6,	hknight_magica7	] {setHead('-13 0 31');ai_face();}; // 85
-void()	hknight_magica7 =[	$magica7,	hknight_magica8	] {setHead('-14 0 30');hknight_shot(-2);}; // 86
-void()	hknight_magica8 =[	$magica8,	hknight_magica9	] {setHead('-1 2 34');hknight_shot(-1);}; // 87
-void()	hknight_magica9 =[	$magica9,	hknight_magica10] {setHead('17 2 27');hknight_shot(0);}; // 88
-void()	hknight_magica10 =[	$magica10,	hknight_magica11] {setHead('25 2 18');hknight_shot(1);}; // 89
-void()	hknight_magica11 =[	$magica11,	hknight_magica12] {setHead('26 2 17');hknight_shot(2);}; // 90
-void()	hknight_magica12 =[	$magica12,	hknight_magica13] {setHead('18 1 25');hknight_shot(3);}; // 91
+void()	hknight_magica7 =[	$magica7,	hknight_magica8	] {setHead('-14 0 30');}; // 86
+void()	hknight_magica8 =[	$magica8,	hknight_magica9	] {setHead('-1 2 34');}; // 87
+void()	hknight_magica9 =[	$magica9,	hknight_magica10] {setHead('17 2 27');}; // 88
+void()	hknight_magica10 =[	$magica10,	hknight_magica11] {setHead('25 2 18');}; // 89
+void()	hknight_magica11 =[	$magica11,	hknight_magica12] {setHead('26 2 17');}; // 90
+void()	hknight_magica12 =[	$magica12,	hknight_magica13] {setHead('18 1 25');}; // 91
 void()	hknight_magica13 =[	$magica13,	hknight_magica14] {setHead('14 1 28');ai_face();}; // 92
 void()	hknight_magica14 =[	$magica14,	hknight_run1	] {setHead('9 2 30');ai_face();}; // 93
 
@@ -258,12 +238,12 @@ void()	hknight_magicb3 =[	$magicb3,	hknight_magicb4	] {setHead('-1 2 35');ai_fac
 void()	hknight_magicb4 =[	$magicb4,	hknight_magicb5	] {setHead('-2 2 35');ai_face();}; // 97
 void()	hknight_magicb5 =[	$magicb5,	hknight_magicb6	] {setHead('-3 2 35');ai_face();}; // 98
 void()	hknight_magicb6 =[	$magicb6,	hknight_magicb7	] {setHead('-3 2 34');ai_face();}; // 99
-void()	hknight_magicb7 =[	$magicb7,	hknight_magicb8	] {setHead('-1 2 33');hknight_shot(-2);}; // 100
-void()	hknight_magicb8 =[	$magicb8,	hknight_magicb9	] {setHead('-1 2 33');hknight_shot(-1);}; // 101
-void()	hknight_magicb9 =[	$magicb9,	hknight_magicb10] {setHead('-3 3 33');hknight_shot(0);}; // 102
-void()	hknight_magicb10 =[	$magicb10,	hknight_magicb11] {setHead('-3 3 33');hknight_shot(1);}; // 103
-void()	hknight_magicb11 =[	$magicb11,	hknight_magicb12] {setHead('-3 3 33');hknight_shot(2);}; // 104
-void()	hknight_magicb12 =[	$magicb12,	hknight_magicb13] {setHead('-1 3 33');hknight_shot(3);}; // 105
+void()	hknight_magicb7 =[	$magicb7,	hknight_magicb8	] {setHead('-1 2 33');}; // 100
+void()	hknight_magicb8 =[	$magicb8,	hknight_magicb9	] {setHead('-1 2 33');}; // 101
+void()	hknight_magicb9 =[	$magicb9,	hknight_magicb10] {setHead('-3 3 33');}; // 102
+void()	hknight_magicb10 =[	$magicb10,	hknight_magicb11] {setHead('-3 3 33');}; // 103
+void()	hknight_magicb11 =[	$magicb11,	hknight_magicb12] {setHead('-3 3 33');}; // 104
+void()	hknight_magicb12 =[	$magicb12,	hknight_magicb13] {setHead('-1 3 33');}; // 105
 void()	hknight_magicb13 =[	$magicb13,	hknight_run1] 	  {setHead('2 3 33');ai_face();}; // 106
 
 //============================================================================
@@ -273,12 +253,12 @@ void()	hknight_magicc2 =[	$magicc2,	hknight_magicc3	] {setHead('7 5 26');ai_face
 void()	hknight_magicc3 =[	$magicc3,	hknight_magicc4	] {setHead('5 10 21');ai_face();}; // 158
 void()	hknight_magicc4 =[	$magicc4,	hknight_magicc5	] {setHead('5 14 16');ai_face();}; // 159
 void()	hknight_magicc5 =[	$magicc5,	hknight_magicc6	] {setHead('8 5 23');ai_face();}; // 160
-void()	hknight_magicc6 =[	$magicc6,	hknight_magicc7	] {setHead('12 1 26');hknight_shot(-2);}; // 161
-void()	hknight_magicc7 =[	$magicc7,	hknight_magicc8	] {setHead('10 -3 29');hknight_shot(-1);}; // 162
-void()	hknight_magicc8 =[	$magicc8,	hknight_magicc9	] {setHead('5 -8 30');hknight_shot(0);}; // 163
-void()	hknight_magicc9 =[	$magicc9,	hknight_magicc10] {setHead('13 -11 28');hknight_shot(1);}; // 164
-void()	hknight_magicc10 =[	$magicc10,	hknight_magicc11] {setHead('13 -9 28');hknight_shot(2);}; // 165
-void()	hknight_magicc11 =[	$magicc11,	hknight_run1] 	  {setHead('13 -2 30');hknight_shot(3);}; // 166
+void()	hknight_magicc6 =[	$magicc6,	hknight_magicc7	] {setHead('12 1 26');  }; // 161
+void()	hknight_magicc7 =[	$magicc7,	hknight_magicc8	] {setHead('10 -3 29'); }; // 162
+void()	hknight_magicc8 =[	$magicc8,	hknight_magicc9	] {setHead('5 -8 30');  }; // 163
+void()	hknight_magicc9 =[	$magicc9,	hknight_magicc10] {setHead('13 -11 28');}; // 164
+void()	hknight_magicc10 =[	$magicc10,	hknight_magicc11] {setHead('13 -9 28'); }; // 165
+void()	hknight_magicc11 =[	$magicc11,	hknight_run1] 	  {setHead('13 -2 30'); }; // 166
 
 //===========================================================================
 
@@ -338,10 +318,11 @@ void() hknight_jumpsmash	=[	$smash1,	hknight_jumpsmash2	]
 	hellknight_trail();
 	self.pain_finished = time + 2;
 };  // 123
+
 void()  hknight_jumpsmash2	=[	$smash2,	hknight_jumpsmash3	] {hellknight_trail();setHead('-1 6 33'); self.velocity = self.vA;}; // 124
 void()	hknight_jumpsmash3	=[	$smash3,	hknight_jumpsmash4	] {hellknight_trail();ai_charge_side(); setHead('-8 8 30');ai_charge(9);}; // 125
 void()	hknight_jumpsmash4	=[	$smash4,	hknight_jumpsmash5	] {hellknight_trail();ai_charge_side(); setHead('-5 4 30');ai_charge(11);}; // 126
-void()	hknight_jumpsmash5	=[	$smash5,	hknight_jumpsmash6	] {hellknight_trail();ai_charge_side(); setHead('5 3 30');ai_charge(10); ai_melee();}; // 127
+void()	hknight_jumpsmash5	=[	$smash5,	hknight_jumpsmash6	] {hellknight_trail();ai_charge_side(); setHead('5 3 30');ai_charge(10); ai_melee();hknight_sound();}; // 127
 void()	hknight_jumpsmash6	=[	$smash6,	hknight_jumpsmash7	] {hellknight_trail();ai_charge_side(); setHead('10 -1 32');ai_charge(7); ai_melee();}; // 128
 void()	hknight_jumpsmash7	=[	$smash7,	hknight_jumpsmash8	] {hellknight_trail();ai_charge_side(); setHead('11 -2 31');ai_charge(12); ai_melee();}; // 129
 void()	hknight_jumpsmash8	=[	$smash8,	hknight_jumpsmash9	] {hellknight_trail();ai_charge_side(); setHead('17 -4 23');ai_charge(2); ai_melee();}; // 130
@@ -422,7 +403,8 @@ void() hknight_melee =
 {
 	hknight_type = hknight_type + 1;
 
-	sound (self, CHAN_WEAPON, "hknight/slash1.wav", 1, ATTN_NORM);
+	hknight_sound();
+	
 	if (hknight_type == 1)
 		hknight_slice1 ();
 
@@ -443,7 +425,8 @@ void() hknight_die =
 	// check for gib
 	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
 	{
-		dropAmmo(self.origin, DROP_CELLS, 1);
+		hellknight_trail();
+		dropAmmo(self.origin, DROP_CELLS, 2, 1, 1, 1);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_hellkn.mdl", self.lasthit_damage);
 		ThrowGib ("progs/synth_gib1.mdl", self.lasthit_damage);
@@ -454,8 +437,10 @@ void() hknight_die =
 	
 	if (self.health_head <= 0)
 	{
-		dropAmmo(self.origin, DROP_BULLETS, 5);
-		dropAmmo(self.origin, DROP_NAILS, 25);
+		dropAmmo(self.origin, DROP_BULLETS, 10, 5, 5, 5);
+		dropAmmo(self.origin, DROP_NAILS, 40, 30, 20, 0);
+		dropHealth(self.origin, DROP_ARMOR, 2, 2, 1, 1);
+
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		setmodel (self, "progs/hknight_headless.mdl");
 		setsize (self, '-16 -16 -24', '16 16 40');
@@ -494,16 +479,13 @@ void() monster_hell_knight =
 	precache_model2 ("progs/hknight.mdl");
 	precache_model2 ("progs/hknight_trail.mdl");
 	precache_model2 ("progs/hknight_headless.mdl"); 
-	precache_model2 ("progs/k_spike.mdl");
 	precache_model2 ("progs/h_hellkn.mdl");
 
-	
 	precache_sound2 ("hknight/attack1.wav");
 	precache_sound2 ("hknight/death1.wav");
 	precache_sound2 ("hknight/pain1.wav");
 	precache_sound2 ("hknight/sight1.wav");
 	precache_sound ("hknight/hit.wav");		// used by C code, so don't sound2
-	precache_sound2 ("hknight/slash1.wav");
 	precache_sound2 ("hknight/idle.wav");
 	precache_sound2 ("hknight/grunt.wav");
 
@@ -518,7 +500,8 @@ void() monster_hell_knight =
 	//gnounc
 	self.noise = "hknight/sight1.wav";	//gnounc
 	self.netname = "Hell Knight";
-	self.killstring = " was slashed by Heavy Elite Oni Squad\n";
+	self.info_name = " Oni Elite Cyborg";
+	self.killstring = " was slashed to death by Heavy Cyborg\n";
 
 	setsize (self, '-16 -16 -24', '16 16 40'); //40
 	self.head_offset = '9 2 32';
@@ -526,8 +509,9 @@ void() monster_hell_knight =
 	self.health = HELLKNIGHT_HEALTH;
 	self.max_health = HELLKNIGHT_HEALTH;
 	self.health_head = HELLKNIGHT_HEAD;
+	self.health_head_max = HELLKNIGHT_HEAD;
 	self.gib_threshold = 100;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT | MFL_SYNTH;
 	self.monstertype = TYPE_HELLKNIGHT;
 	self.skinchange = 1;
 

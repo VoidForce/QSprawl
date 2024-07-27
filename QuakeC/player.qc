@@ -121,7 +121,7 @@ void()	player_stand1 =[	$axstnd1,	player_stand1	]
 		return;
 	}
 
-	if (self.weapon == IT_AXE)
+	if (self.weapon == IT_KATANA)
 	{
 		if (self.walkframe >= 12)
 			self.walkframe = 0;
@@ -143,7 +143,7 @@ void()	player_stand1 =[	$axstnd1,	player_stand1	]
 void()	player_run =[	$rockrun1,	player_run	]
 {
 	// todo: keep it like that for now
-	if (self.weapon == IT_SHOTGUN || self.weapon == IT_SUPER_NAILGUN)
+	if (self.weapon == IT_PISTOL || self.weapon == IT_CHAINGUN)
 		self.effects = self.effects | EF_NOLERP;
 	
 	if (self.sprawlflags & SFL_RESETWEAPONFRAME)
@@ -159,7 +159,7 @@ void()	player_run =[	$rockrun1,	player_run	]
 		return;
 	}
 
-	if (self.weapon == IT_AXE)
+	if (self.weapon == IT_KATANA)
 	{
 		if (self.walkframe == 6)
 			self.walkframe = 0;
@@ -411,10 +411,10 @@ void() katanaSwingLoop =
 	self.weaponframe++;
 	
 	if (self.weaponframe == 2)
-		sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
+		sound (self, CHAN_WEAPON, "weapons/f_katana.wav", 1, ATTN_NORM);
 	if (self.weaponframe == 4)
 	{
-		W_FireAxe();
+		W_SwingKatana();
 		if (self.speedmodifier > 1.35 || self.dodge_time > time)
 		{
 			self.touch = playerBump;
@@ -422,9 +422,9 @@ void() katanaSwingLoop =
 		}
 		self.movementflags |= MF_JUMPDISABLED;
 		
-		//StopAcceleration(0.25);
-		ForceStartSlide(0.4);
-		//StopAirAcceleration(0.3);
+		StopAcceleration(0.25);
+		ForceStartSlide(0.25);
+		StopAirAcceleration(0.25);
 		
 		makevectors(self.v_angle);
 		
@@ -434,7 +434,7 @@ void() katanaSwingLoop =
 			float aimangle;
 			aimangle = v_forward_z;
 
-			if (self.flags & FL_ONGROUND)
+			if (traceDown(self))//(self.flags & FL_ONGROUND)
 				aimangle = clamp(0.09, aimangle, 0.175); // 5..10 degrees
 			else
 				aimangle = clamp(-0.5, aimangle, 0.175); // -30..10 degrees
@@ -445,7 +445,7 @@ void() katanaSwingLoop =
 		}
 		else
 		{
-			self.velocity += [v_forward_x, v_forward_y, 0] * ( 100 + (400 * (self.speedmodifier - 1.0)));
+			self.velocity = [v_forward_x, v_forward_y, 0] * ( 100 + (700 * (self.speedmodifier - 1.0)));
 			self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
 		}
 		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
@@ -454,7 +454,7 @@ void() katanaSwingLoop =
 	
 	if (self.weaponframe > 4 && self.katana_charges > 0 && self.movementflags & MF_JUMPDISABLED)
 	{
-		W_FireAxe();
+		W_SwingKatana();
 		self.katana_charges--;
 	}
 	
@@ -479,9 +479,9 @@ void() quickMeleeStart =
 	self.stopmelee_finished = time + 0.3;
 	self.sprawlflags |= SFL_INQUICKMELEE | SFL_STOPMELEE;
 	self.sprawlflags -= self.sprawlflags & SFL_HOLD;
-	self.weaponmodel = "progs/v_axe.mdl";
+	self.weaponmodel = "progs/v_katana.mdl";
 	
-	sound (self, CHAN_AUTO, "weapons/ax1.wav", 1, ATTN_NORM);
+	sound (self, CHAN_AUTO, "weapons/f_katana.wav", 1, ATTN_NORM);
 	self.weaponframe = 1;
 	self.think = quickMeleeLoop;
 	self.nextthink = time + 0.01;
@@ -493,7 +493,7 @@ void() quickMeleeLoop =
 	self.nextthink = time + 0.05;
 	
 	if (self.weaponframe == 4)
-		W_FireAxe();
+		W_SwingKatana();
 	
 	if (self.weaponframe > 7) //7 39
 	{
@@ -507,17 +507,6 @@ void() quickMeleeLoop =
 };
 //------------------------------------------
 // Chaingun
-/*
-#define CG_STARTFRAME 76
-#define CG_FIRST 42
-#define CG_SECOND 55
-#define CG_THIRD 65
-#define CG_FOURTH 72
-#define CG_FIFTH 78
-#define CG_SIXTH 84
-#define CG_LAST 90
-#define CG_ENDFRAME 114
-*/
 
 #define CG_STARTFRAME 13
 #define CG_LOOPFRAME 24
@@ -537,14 +526,21 @@ void() quickMeleeLoop =
 #define END_THIRD 12
 #define AFTER_THIRD 13
 
+#define CG_FASTEST_SPIN 0.03 // 0.025
+#define CG_SLOWEST_SPIN 0.15 // 0.1
+#define CG_FIRE_STEP 0.02
+#define CG_SPEEDUP_STEP 0.005
+#define CG_SLOWDOWN_STEP 0.01
+#define CG_INERTIA 20
+
 void() animateChaingun =
 {
 	//dprint("start: ");
-	//dprint(ftos(self.weaponframe));endl();
-	if (self.spin_finished > time)
-		return;
+	//dprint2(ftos(self.weaponframe), " after: ");
+
 	self.attack_finished = time + 0.3;
 	self.sprawlflags |= SFL_HOLD;
+	
 	if (self.chaingun_frame == 0)
 		self.weaponframe = CG_STARTFRAME;
 	else
@@ -553,6 +549,10 @@ void() animateChaingun =
 		if (self.weaponframe > CG_LOOPFRAME)
 			self.weaponframe = CG_STARTFRAME;
 	}
+	
+	if (self.chaingun_speed > 0.1)
+		self.chaingun_speed = 0.1;
+	
 	weaponThink(spinChaingunLoop, self.chaingun_speed);
 };
 
@@ -563,7 +563,7 @@ void() spinChaingunLoop =
 	//dprint(ftos(self.weaponframe));endl();
 	if (!self.button0)
 	{
-		self.attack_finished = time + 0.2;
+		self.attack_finished = time + 0.1;
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 		self.weaponframe++;
 		if (self.weaponframe > CG_LOOPFRAME)
@@ -572,11 +572,13 @@ void() spinChaingunLoop =
 		return;
 	}
 
-	self.chaingun_speed -= 0.01;
-	if (self.chaingun_speed < 0.025)
+	//self.chaingun_speed -= CG_SPEEDUP_STEP;
+	self.chaingun_speed *= 0.95;
+	self.chaingun_speed = floor(self.chaingun_speed * 1000) * 0.001;
+	if (self.chaingun_speed < CG_FASTEST_SPIN)
 	{
 	// we spin fast enough, so check for fire positions
-		self.chaingun_speed = 0.025;
+		self.chaingun_speed = CG_FASTEST_SPIN;
 		
 		switch (self.weaponframe)
 		{
@@ -627,9 +629,11 @@ void() fireChaingunLoop =
 	//dprint(ftos(self.weaponframe));endl();
 	if (!self.button0)
 	{
-		self.attack_finished = time + 0.2;
+		self.attack_finished = time + 0.1;
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 		self.weaponframe++;
+		self.chaingun_speed = CG_FIRE_STEP;
+		self.chaingun_count = CG_INERTIA; // how many frames to spin with the same speed
 		weaponThink(spinDownLoop, self.chaingun_speed);
 		return;
 	}
@@ -652,7 +656,7 @@ void() fireChaingunLoop =
 			break;
 	}
 	self.chaingun_frame = self.weaponframe + 12; // 12 frames offset between fire and flat spin
-	weaponThink(fireChaingunLoop, self.chaingun_speed);	
+	weaponThink(fireChaingunLoop, CG_FIRE_STEP);	
 	return; // default exit
 //----------------------------------	
 	fire:
@@ -665,7 +669,7 @@ void() fireChaingunLoop =
 			weaponThink(player_run, 0.05);
 			return;
 		}
-		weaponThink(fireChaingunLoop, self.chaingun_speed);	
+		weaponThink(fireChaingunLoop, CG_FIRE_STEP);	
 }
 
 // --------------- SLOWDOWN -----------
@@ -673,7 +677,12 @@ void() spinDownLoop =
 {
 	//dprint("slow: ");
 	//dprint(ftos(self.weaponframe));endl();
-	// spindown after firing;
+	
+// don't let weaponframe redirect us to animateChaingun, use this loop to catch the input instead
+// otherwise we will have non-lerped transition to the next frame, caused by thinktime interruption
+	self.attack_finished = time + 0.16; 
+	
+// transition from firing frames to standart spin frames, let it finish rotation and reach "end" frames
 	if (self.weaponframe < 13)
 	{
 		switch (self.weaponframe)
@@ -693,66 +702,40 @@ void() spinDownLoop =
 		}
 	}
 	else
+	{
+		if (self.button0)
+		{
+			self.weaponframe++;
+			if (self.weaponframe > CG_LOOPFRAME)
+				self.weaponframe = CG_STARTFRAME;
+			weaponThink(animateChaingun, self.chaingun_speed);
+			return;
+		}
 		self.weaponframe++;
+		if (self.chaingun_count > 0)
+			self.chaingun_count--;
+		else
+		{
+			//self.chaingun_speed += CG_SLOWDOWN_STEP;
+			self.chaingun_speed *= 1.05;
+			self.chaingun_speed = floor(self.chaingun_speed * 1000) * 0.001;
+		}
+	}
 
 	if (self.weaponframe > CG_LOOPFRAME)
 		self.weaponframe = CG_STARTFRAME;
 	
 	self.chaingun_frame = self.weaponframe;
-	
-	self.chaingun_speed += 0.005;
-	if (self.chaingun_speed > 0.1)
+		
+	if (self.chaingun_speed > CG_SLOWEST_SPIN)
 	{
-		self.chaingun_speed = 0.1;
+		self.chaingun_speed = CG_SLOWEST_SPIN;
 		weaponThink(player_run, 0.1);
 	}
 	else
 		weaponThink(spinDownLoop, self.chaingun_speed);
 	self.spin_finished = time + self.chaingun_speed;
 };
-/*
-void() animateChaingun =
-{
-	self.sprawlflags |= SFL_HOLD;
-	self.weaponframe = CG_STARTFRAME;
-	weaponThink(spinChaingunLoop, 0.05);
-};
-
-void() spinChaingunLoop =
-{
-	self.weaponframe+=2;
-
-	switch (self.weaponframe)
-	{
-		//case CG_FIRST:
-		//case CG_SECOND:
-		//case CG_THIRD:
-		//case CG_FOURTH:
-		case CG_FIFTH:
-		case CG_SIXTH:
-		case CG_LAST:
-			W_FireChaingun();
-			self.effects = self.effects | EF_MUZZLEFLASH;
-			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
-			if (self.ammo_bullets < 1)
-			{
-				self.think = player_run;
-				self.nextthink = time + 0.1;
-				return;
-			}
-			self.attack_finished = time + 0.3;
-			break;
-		case CG_ENDFRAME:
-			self.effects |= EF_NOLERP;
-			self.weaponframe = CG_STARTFRAME;
-			self.think = player_run;
-			self.nextthink = time + 0.1;
-			return;
-	}
-
-	weaponThink(spinChaingunLoop, 0.025);
-};
-*/
 
 //============================================================================
 
@@ -917,7 +900,7 @@ void(entity attacker, float damage) player_pain =
 	if (self.invisible_finished > time)
 		return;		// eyes don't have pain frames
 
-	if (self.weapon == IT_AXE)
+	if (self.weapon == IT_KATANA)
 		player_axpain1 ();
 
 	else
@@ -1083,7 +1066,7 @@ void() PlayerDie =
 	self.angles_x = 0;
 	self.angles_z = 0;
 	
-	if (self.weapon == IT_AXE)
+	if (self.weapon == IT_KATANA)
 	{
 		player_die_ax1 ();
 		return;

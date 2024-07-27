@@ -547,14 +547,14 @@ static const char *const knownmods[][2] =
 {
 	{"id1",			"Quake"},
 	{"sprawl",		"Sprawl"},
-	{"hipnotic",	"Scourge of Armagon"},
-	{"rogue",		"Dissolution of Eternity"},
-	{"dopa",		"Dimension of the Past"},
-	{"mg1",			"Dimension of the Machine"},
-	{"q64",			"Quake (Nintendo 64)"},
-	{"ctf",			"Capture The Flag"},
-	{"udob",		"Underdark Overbright"},
-	{"ad",			"Arcane Dimensions"},
+	//{"hipnotic",	"Scourge of Armagon"},
+	//{"rogue",		"Dissolution of Eternity"},
+	//{"dopa",		"Dimension of the Past"},
+	//{"mg1",			"Dimension of the Machine"},
+	//{"q64",			"Quake (Nintendo 64)"},
+	//{"ctf",			"Capture The Flag"},
+	//{"udob",		"Underdark Overbright"},
+	//{"ad",			"Arcane Dimensions"},
 };
 
 typedef struct download_s
@@ -3296,6 +3296,10 @@ static void Host_Give_f (void)
 		sv_player->v.ammo_shells = v;
 		break;
 
+	case 'b':
+		sv_player->v.ammo_bullets = v;
+		break;
+
 	case 'n':
 		sv_player->v.ammo_nails = v;
 		break;
@@ -3316,7 +3320,7 @@ static void Host_Give_f (void)
 	case 'a':
 		if (v > 150)
 		{
-		    sv_player->v.armortype = 0.8;
+		    sv_player->v.armortype = 1;
 		    sv_player->v.armorvalue = v;
 		    sv_player->v.items = sv_player->v.items -
 					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
@@ -3324,7 +3328,7 @@ static void Host_Give_f (void)
 		}
 		else if (v > 100)
 		{
-		    sv_player->v.armortype = 0.6;
+		    sv_player->v.armortype = 1;
 		    sv_player->v.armorvalue = v;
 		    sv_player->v.items = sv_player->v.items -
 					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
@@ -3332,7 +3336,7 @@ static void Host_Give_f (void)
 		}
 		else if (v >= 0)
 		{
-		    sv_player->v.armortype = 0.3;
+		    sv_player->v.armortype = 1;
 		    sv_player->v.armorvalue = v;
 		    sv_player->v.items = sv_player->v.items -
 					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
@@ -3350,8 +3354,10 @@ static void Host_Give_f (void)
 		break;
 	case IT_SHOTGUN:
 	case IT_NAILGUN:
-	case IT_SUPER_NAILGUN:
 		sv_player->v.currentammo = sv_player->v.ammo_nails;
+		break;
+	case IT_SUPER_NAILGUN:
+		sv_player->v.currentammo = sv_player->v.ammo_bullets;
 		break;
 	case IT_GRENADE_LAUNCHER:
 		sv_player->v.currentammo = sv_player->v.ammo_rockets;

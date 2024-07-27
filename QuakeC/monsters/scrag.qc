@@ -36,7 +36,7 @@ $frame pain1 pain2 pain3 pain4
 $frame death1 death2 death3 death4 death5 death6 death7 death8
 
 //---------------------------------------------------------------------------------
-
+/*
 void(entity missile, float mspeed, float accuracy) LaunchMissile =
 {
 	local	vector	vec, move;
@@ -68,7 +68,7 @@ void(entity missile, float mspeed, float accuracy) LaunchMissile =
 	missile.nextthink = time + 5;
 	missile.think = SUB_Remove;	
 };
-
+*/
 void() wizzard_laser =
 {
 	traceline (self.origin + '0 0 10', self.enemy.origin, ALLOWMONSTERS, self);
@@ -84,7 +84,7 @@ void(float offset) wizzard_fire =
 
 	makevectors2(self.angles);
 	start = self.origin + v_right * offset + '0 0 8';
-	dir = self.enemy.trail1;
+	dir = getPlayerPosition(self.enemy, 1);
 	dir = normalize (dir - start);
 	FireBullets (1, dir, '0.01 0.01 0', 4);
 	sendMessageVecVecFlag(start, trace_endpos, MF_SMG, TE_BULLETTRACE);
@@ -304,7 +304,8 @@ void() wiz_die =
 {
 	//self.solid = SOLID_NOT;
 // check for gib
-	dropAmmo(self.origin, DROP_NAILS, 10);
+	dropAmmo(self.origin, DROP_NAILS, 30, 20, 10, 4);
+	dropHealth(self.origin, DROP_ARMOR_ONE, 4, 2, 2, 2);
 	if (self.lasthit_damage > self.gib_threshold)
 	{
 		wiz_explode();
@@ -357,6 +358,7 @@ void() monster_wizard =
 	//gnounc
 	self.noise = "wizard/wsight.wav";	//gnounc
 	self.netname = "Drone";
+	self.info_name = "   Sendai Drone";
 	self.killstring = " couldn't handle this air superiority\n";
 	self.head_size = 0;
 	self.health = SCRAG_HEALTH;

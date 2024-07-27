@@ -1168,7 +1168,6 @@ void Sbar_DrawFace (void)
 
 void Sbar_DrawAdrenaline(void)
 {
-	
 	int baseLength;
 	int baseHeight;
 	int progress;
@@ -1189,6 +1188,75 @@ void Sbar_DrawAdrenaline(void)
 	Draw_Fill((int)glwidth * 0.5 - baseLength * 0.5,	 (int)glheight * 0.88,	   baseLength,	   baseHeight,	   0,	255);
 	Draw_Fill((int)glwidth * 0.5 - baseLength * 0.5,	 (int)glheight * 0.88,	   progress,	   baseHeight,	   color, 255);
 }
+
+
+//extern void Draw_StringEx(float x, float y, float dim, const char* str);
+#define HUD_VERT_OFFSET 12
+#define HUD_BAR_HEIGHT 10
+
+void SCR_DrawHealthInfo(void)
+{
+	int hp, hhp;
+	int maxhp, hmaxhp;
+	int xpos;
+
+	//char* name;
+	edict_t* ed;
+
+	if (!(cl.engineflags & ENF_HUDINFO))
+		return;
+
+	PR_SwitchQCVM(&sv.qcvm);
+	ed = EDICT_NUM(cl.info_ent);
+
+	GL_SetCanvas(CANVAS_INFO);
+
+	hp = (int)q_max_f(ed->v.health,0);
+	maxhp = (int)ed->v.max_health;
+	hhp = (int)q_max_f(ed->v.health_head,0);
+	hmaxhp = (int)ed->v.health_head_max;
+	
+	if (hmaxhp == 0)
+		xpos = 30;
+	else
+		xpos = 0;
+
+// target name
+	Draw_Fill(0, 0, 160, 12, 0, 0.8); // name bg
+	Draw_StringEx(7, 2, 8, PR_GetString(ed->v.info_name)); // name string
+
+// bars
+	if (hp > 0)
+	{
+		//hp
+		Draw_Fill(0, HUD_VERT_OFFSET, 98, HUD_BAR_HEIGHT, 0, 0.8); // bg
+		Draw_Fill(2, HUD_VERT_OFFSET + 2, (int)94 * hp / maxhp, HUD_BAR_HEIGHT - 4, 208, 1); // bar
+		Draw_Fill(0, HUD_VERT_OFFSET + 10, 36, 10, 0, 0.8); // value bg
+		Sbar_DrawSmallNum(10, -2, hp); // value text
+
+
+		//head
+		if (hhp > 0)
+		{
+			Draw_Fill(100, HUD_VERT_OFFSET, 60, HUD_BAR_HEIGHT, 0, 0.8); // bg
+			Draw_Fill(158, HUD_VERT_OFFSET + 2, -(int)56 * hhp / hmaxhp, HUD_BAR_HEIGHT - 4, 251, 1); // bar
+			Draw_Fill(160, HUD_VERT_OFFSET + 10, -36, 10, 0, 0.8); // value bg
+			Sbar_DrawSmallNum(134, -2, hhp); // value text
+		}
+	}
+// dead
+	else
+	{
+		
+		Draw_Fill(0, 16, 160, 12, 0, 0.8); // name bg
+		Draw_StringEx(38, 17, 8, "Terminated"); // name string
+	}
+
+	PR_SwitchQCVM(NULL);
+
+	//Sbar_DrawSmallNum(0, 20, hp, 3, 0);
+}
+
 /*
 ===============
 Sbar_Draw
@@ -1282,6 +1350,8 @@ void Sbar_Draw (void)
 			if (scr_viewsize.value < 110) //johnfitz -- check viewsize instead of sb_lines
 			{
 				Sbar_DrawAdrenaline();
+				SCR_DrawHealthInfo();
+				GL_SetCanvas(CANVAS_SBAR); //johnfitz
 				Sbar_DrawInventory ();
 				if (cl.maxclients != 1)
 					Sbar_DrawFrags ();
@@ -1292,6 +1362,8 @@ void Sbar_Draw (void)
 			if (scr_viewsize.value < 120)
 			{
 				Sbar_DrawAdrenaline();
+				SCR_DrawHealthInfo();
+				GL_SetCanvas(CANVAS_SBAR); //johnfitz
 				Sbar_DrawInventoryQW();
 			}
 			if (cl.maxclients != 1 && scr_viewsize.value < 110)	// qw hides frag count if MiniDeathmatchOverlay is showing
@@ -1319,20 +1391,17 @@ void Sbar_Draw (void)
 	   // keys (hipnotic only)
 
 		// armor
-			if (cl.stats[STAT_ARMOR] > 0)
+			if (cl.items & IT_INVULNERABILITY)
 			{
-				if (cl.items & IT_INVULNERABILITY)
-				{
-					Sbar_DrawNum(24, 0, 666, 3, 1);
-					Sbar_DrawPic(0, 0, draw_disc);
-				}
-				else
-				{
-					Sbar_DrawNum(24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
-					pic = Sbar_ArmorPic();
-					if (pic)
-						Sbar_DrawPic(0, 0, pic);
-				}
+				Sbar_DrawNum(24, 0, 666, 3, 1);
+				Sbar_DrawPic(0, 0, draw_disc);
+			}
+			else if (cl.stats[STAT_ARMOR] > 0)
+			{
+				Sbar_DrawNum(24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+				pic = Sbar_ArmorPic();
+				if (pic)
+					Sbar_DrawPic(0, 0, pic);
 			}
 
 		// face
@@ -1367,6 +1436,8 @@ void Sbar_Draw (void)
 		}
 		else if (scr_viewsize.value < 120) //johnfitz -- check viewsize instead of sb_lines
 		{
+			Sbar_DrawAdrenaline();
+			SCR_DrawHealthInfo();
 			GL_SetCanvas (CANVAS_SBAR2);
 
 			x = (int)(glcanvas.left + SBAR2_MARGIN_X + 0.5f);
