@@ -28,29 +28,7 @@ $cd /raid/quake/id1/models/enforcer
 $origin 0 -6 24
 $base base		
 $skin skin
-/*
-// #define enf_0_7 '-4 2 29'
-self.head_offset = '-4 2 29';
-self.head_offset = '-3 0 27' //8
-self.head_offset = '-2 0 28'
-self.head_offset = '-1 1 29'
-self.head_offset = '-2 1 29.5'
-self.head_offset = '-2 2 30.5'
-self.head_offset = '-2 2 30'
-self.head_offset = '-2 2.5 29'
-self.head_offset = '-2 2.5 28'
-self.head_offset = '-2 3 28'
-self.head_offset = '-2 3 28'
-self.head_offset = '-1.5 2.5 28.5'
-self.head_offset = '-1.5 2 29.5'
-self.head_offset = '-2 1.5 30.5'
-self.head_offset = '-2 1 30.5'
-self.head_offset = '-2 0.5 29.5'
-self.head_offset = '-2 0.5 28.5' //22
 
-23
-*/
-//1-7 '-4 2 29'
 $frame stand1 stand2 stand3 stand4 stand5 stand6 stand7
 
 $frame walk1 walk2 walk3 walk4 walk5 walk6 walk7 walk8 walk9 walk10
@@ -332,7 +310,7 @@ void() enf_die =
 		self.velocity = self.lasthit_direction;
 
 	// check for gib
-	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold || self.monsterflags & MFL_GIB_ME)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_enf.mdl", self.lasthit_damage);
@@ -362,7 +340,7 @@ void() enf_die =
 		else
 		{
 			for (float i = 0; i < 5; i++)
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+				ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (100 + random()*50) + [crandom() * 100, crandom() * 100, random() * 200], 0);
 		}
 	}
 	else
@@ -406,7 +384,7 @@ void() monster_enforcer =
 
 	//gnounc
 	self.netname = "enforcer";
-	self.info_name = "     Oni Squad";
+	//self.info_name = "     Oni Squad";
 	self.killstring = " was terminated by Oni Squad\n";
 	self.noise = "enforcer/sight1.wav";	//gnounc
 	self.noise1 = "enforcer/sight2.wav";	//gnounc

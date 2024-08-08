@@ -259,7 +259,7 @@ void() dog_die =
 	dropHealth(self.origin, DROP_ARMOR_ONE, 0, 4, 2, 2);
 	dropHealth(self.origin, DROP_ARMOR, 1, 0, 0, 0);
 
-	if (self.lasthit_damage > self.gib_threshold)
+	if (self.lasthit_damage > self.gib_threshold || self.monsterflags & MFL_GIB_ME)
 	{
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
 		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
@@ -375,7 +375,7 @@ void() monster_dog =
 	//gnounc
 	self.noise = "dog/dsight.wav";	
 	self.netname = "Rottweiler";
-	self.info_name = "Combat Drone Okami";
+	//self.info_name = "Combat Drone Okami";
 	self.killstring = " was pacified by combat drone Okami\n";
 
 	setsize (self, '-32 -32 -24', '32 32 20');//40

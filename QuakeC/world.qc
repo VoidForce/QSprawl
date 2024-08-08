@@ -237,7 +237,7 @@ void() worldspawn =
 	precache_sound ("items/health1.wav");
 	precache_sound ("items/health2.wav");
 
-	precache_sound ("weapons/f_shock.wav");		//lightning
+	precache_sound ("weapons/f_shock_start.wav");		//lightning
 	precache_sound ("weapons/f_shock_loop.wav");		//lightning start
 	precache_sound ("items/damage3.wav");
 	precache_sound ("items/damage2.wav");
@@ -257,6 +257,15 @@ void() worldspawn =
 	precache_sound ("player/pain4.wav");
 	precache_sound ("player/pain5.wav");
 	precache_sound ("player/pain6.wav");
+	
+// player steps
+
+	precache_sound ("player/step1.wav");
+	precache_sound ("player/step2.wav");
+	precache_sound ("player/step3.wav");
+	precache_sound ("player/step4.wav");
+	precache_sound ("player/step5.wav");
+	precache_sound ("player/step6.wav");
 
 // player death sounds
 	precache_sound ("player/death1.wav");
@@ -389,7 +398,7 @@ void() StartFrame =
 	skill = cvar("skill");
 	framecount = framecount + 1;
 	
-	SlowMotionLogic();
+	//SlowMotionLogic();
 };
 
 /*
@@ -415,10 +424,10 @@ float	slowmotion_cooldown;
 	Moved here from player's frame logic, so now it's not dependant on a single client.
 	In addition to that it allows us to play slowmotion events for the whole server, random or deliberate
 */
-
+/*
 void() SlowMotionLogic =
 {
-	/*
+	
 	float value;
 	
 // nothing to do here really
@@ -463,8 +472,8 @@ void() SlowMotionLogic =
 			return;
 		}
 	}
-	*/
-};
+	
+};*/
 
 void(float targetskin) changeSkinsSlowmo =
 {

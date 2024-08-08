@@ -39,14 +39,10 @@ $frame death1 death2 death3 death4 death5 death6 death7
 $frame	walk1 walk2 walk3 walk4 walk5 walk6 walk7 walk8 walk9 walk10
 $frame	walk11 walk12
 
-/*
-================
-ShalMissile
-================
-*/
 const vector SIZE_SHIELD = '32 32 48';
 const vector SIZE_NORMAL = '32 32 20';
 
+// SHIELD ----------------------------------------------------------
 void() shieldOn =
 {
 	if (self.health < 0)
@@ -77,6 +73,7 @@ void(float timer) shieldOff =
 	self.thinkA = shieldOn;
 };
 
+// GRENADE -----------------------------------------------------------------------
 void() ShalGrenadeExplode =
 {
 	removeFromList(self);
@@ -160,7 +157,8 @@ void(vector offset) ShalGrenade =
 	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
 };
 
-void(vector offset) ShalMissile =
+// MISSILE ------------------------------------------------------------------------------------------
+void(vector offset, float trail) ShalMissile =
 {
 	entity 	missile;
 	float distance;
@@ -183,10 +181,10 @@ void(vector offset) ShalMissile =
 	missile.velocity = [0, 0, 400];
 	missile.angles = vectoangles(missile.velocity);
 	missile.avelocity = [crandom() * 20, crandom()* 20, crandom()* 20 ];
-	distance = vlen(self.origin - getPlayerPosition(self.enemy, 2));
+	distance = vlen(self.origin - getPlayerPosition(self.enemy, trail));
 	missile.fA = -2;
 	distance *= 0.05;
-	missile.vA = getPlayerPosition(self.enemy, 2) + [crandom() * distance, crandom() * distance, -64 ];
+	missile.vA = getPlayerPosition(self.enemy, trail) + [crandom() * distance, crandom() * distance, -64 ];
 	missile.vB = '0 0 -800';
 	missile.nextthink = time + 0.3;
 	missile.think = ShalIgnition;
@@ -219,6 +217,7 @@ void() ShalHome =
 	}
 	self.angles = vectoangles(self.velocity);
 	
+	self.vC = self.velocity;
 	if (self.angles_x > 260 && self.angles_x < 280)
 		return;
 
@@ -228,13 +227,16 @@ void() ShalHome =
 
 void() ShalMissileTouch =
 {
+	vector start;
+
 	if (other == self.owner)
 		return;		// don't explode on owner
 
-	//T_RadiusDamage (self, self.owner, 40, world);
-	T_RadiusDamagePlayer(self, self.owner, 20, world, 320, 96);
-	//sound (self, CHAN_WEAPON, "weapons/r_exp3.wav", 1, ATTN_NORM);
+	T_RadiusDamagePlayer(self, self.owner, 30, world, 320, 32);
 	sendMessageVec(self.origin, TE_EXPLOSION);
+	
+	start = self.origin + (-16 * normalize(self.vC));
+	explodeShrapnel(start, self.owner, skill + rint(random() * 6));
 	
 	self.velocity = '0 0 0';
 	self.touch = SUB_Null;
@@ -242,6 +244,87 @@ void() ShalMissileTouch =
 	self.solid = SOLID_NOT;
 	s_explode1 ();
 };
+
+void(vector org, entity ownr, float count = 1) explodeShrapnel = 
+{ 
+	entity shrapnel;
+	vector dir;
+	float i;
+	float A,B;
+	
+	if (count > 1)
+		for (i=0; i < count; i++)
+		{	
+			A = rint(random() * 15); //bounds check?
+			B = rint(random() * 15);
+			// spherecal coordinates
+			// x = sin A cos B
+			// y = sin A sin B
+			// z = cos A
+			dir = normalize([CIRCLEX[A] * CIRCLEY[B], CIRCLEX[A] * CIRCLEX[B], CIRCLEY[A]] * 100);
+			shrapnel = spawn();
+			shrapnel.owner = ownr;
+			shrapnel.movetype = MOVETYPE_BOUNCE;
+			shrapnel.solid = SOLID_BBOX;
+			shrapnel.angles = vectoangles(dir);
+			shrapnel.touch = shal_shrapnel_touch;
+			shrapnel.classname = "shrapnel";
+			shrapnel.think = SUB_Remove;
+			shrapnel.nextthink = time + 2;
+			shrapnel.thinkA = shrapnelSkinChange;
+			shrapnel.nextthinkA = time + 0.2;
+			setmodel(shrapnel, "progs/shrapnel.mdl");
+			setsize(shrapnel, '0 0 0', '0 0 0');
+			shrapnel.scale = 2;
+			setorigin(shrapnel, org);
+			shrapnel.velocity = dir * (1200 + crandom() * 600);
+			shrapnel.avelocity = [crandom()*100,crandom()*100,crandom()*100];
+		}
+	//shrapnel.avelocity = [random() * 200, random() * 200, random() * 200];
+};
+
+void() shrapnelSkinChange =
+{
+	if (self.skin < 7)
+	{
+		self.skin++;
+		self.thinkA = shrapnelSkinChange;
+		self.nextthinkA = time + 0.1;
+	}
+};
+
+void() shal_shrapnel_touch =
+{
+	vector direction;
+	if (other.solid == SOLID_TRIGGER || self.skin == 7) // assuming our velocity is super low already
+		return;	// trigger field, do nothing
+	
+	if (pointcontents(self.origin) == CONTENT_SKY || self.velocity == '0 0 0')
+	{
+		remove(self);
+		return;
+	}
+	
+	// hit something that bleeds
+	if (other.takedamage == DAMAGE_AIM)
+	{
+		if (other.monsterflags & MFL_SHIELD)
+			sendMessageImpact(self.origin, other.origin, IMPACT_SHIELD, VEC_ORIGIN); 
+		else
+		{
+			direction = normalize(other.origin - self.origin);
+			// make blood
+			if (other.monsterflags & MFL_ROBOT)
+				sendMessageImpact(self.origin, -direction, IMPACT_ROBOT, VEC_ORIGIN); 
+			else
+				sendMessageImpact(self.origin, -direction, IMPACT_FLESH, VEC_ORIGIN); 
+			T_Damage (other, self, self.owner, lerp(2, 20, vlen(self.velocity)/1000), 0);
+		}
+		remove(self);
+	}
+	//self.angles = vectoangles(self.velocity);
+};
+
 
 void() shal_stand     =[      $walk1,       shal_stand    ] {ai_stand();};
 
@@ -299,6 +382,9 @@ void() shal_attack =
 	vector A,B,C;
 	vector pos;
 	
+	if (self.attack_finished > time)
+		return;
+	
 	pos = getPlayerPosition(self.enemy, 2);
 	
 // shield stuff
@@ -353,12 +439,12 @@ void() shal_missile1     =[      $attack1,       shal_missile2    ] {Think(0.05)
 void() shal_missile2     =[      $attack2,       shal_missile3    ] {Think(0.05);ai_face();};
 void() shal_missile3     =[      $attack3,       shal_missile4    ] {Think(0.05);ai_face();};
 void() shal_missile4     =[      $attack4,       shal_missile5    ] {Think(0.05);ai_face();};
-void() shal_missile5     =[      $attack5,       shal_missile6    ] {ShalMissile('-16 -16 0');};
-void() shal_missile6     =[      $attack6,       shal_missile7    ] {ShalMissile('-8 -8 0');};
-void() shal_missile7     =[      $attack7,       shal_missile8    ] {ShalMissile('0 0 0');};
-void() shal_missile8     =[      $attack8,       shal_missile9    ] {ShalMissile('8 8 0');};
-void() shal_missile9     =[      $attack9,       shal_missile10   ] {ShalMissile('16 16 0');};
-void() shal_missile10    =[      $attack10,      shal_missile11   ] {self.attack_finished = time + 4; ai_face();};
+void() shal_missile5     =[      $attack5,       shal_missile6    ] {ShalMissile('-16 -16 0',4);};
+void() shal_missile6     =[      $attack6,       shal_missile7    ] {ShalMissile('-8 -8 0',3);};
+void() shal_missile7     =[      $attack7,       shal_missile8    ] {ShalMissile('0 0 0',2);};
+void() shal_missile8     =[      $attack8,       shal_missile9    ] {ShalMissile('8 8 0',1);};
+void() shal_missile9     =[      $attack9,       shal_missile10   ] {ShalMissile('16 16 0',0);self.attack_finished = time + 4;};
+void() shal_missile10    =[      $attack10,      shal_missile11   ] {ai_face();};
 void() shal_missile11    =[      $attack11,      shal_run1   ] {};
 
 void() shal_grenade1     =[      $attack1,       shal_grenade2    ] {Think(0.05);
@@ -373,8 +459,8 @@ void() shal_grenade5     =[      $attack5,       shal_grenade6    ] {ai_face();S
 void() shal_grenade6     =[      $attack6,       shal_grenade7    ] {ai_face();};
 void() shal_grenade7     =[      $attack7,       shal_grenade8    ] {ai_face();ShalGrenade('0 0 0');};
 void() shal_grenade8     =[      $attack8,       shal_grenade9    ] {ai_face();};
-void() shal_grenade9     =[      $attack9,       shal_grenade10   ] {ai_face();ShalGrenade('16 16 0');};
-void() shal_grenade10    =[      $attack10,      shal_grenade11   ] {self.attack_finished = time + 4; ai_face();};
+void() shal_grenade9     =[      $attack9,       shal_grenade10   ] {ai_face();ShalGrenade('16 16 0');self.attack_finished = time + 4;};
+void() shal_grenade10    =[      $attack10,      shal_grenade11   ] {ai_face();};
 void() shal_grenade11    =[      $attack11,      shal_run1   ] {};
 
 void() shal_pain1       =[      $pain1, shal_pain2      ] {};
@@ -480,7 +566,7 @@ void() monster_shalrath =
 	//gnounc
 	self.noise = "shalrath/sight.wav";	//gnounc
 	self.netname = "Vore";
-	self.info_name = " Artillery Drone";
+	//self.info_name = " Artillery Drone";
 	self.killstring = " couldn't survive the artillery strike\n";
 
 	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);

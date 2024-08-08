@@ -422,9 +422,9 @@ void() katanaSwingLoop =
 		}
 		self.movementflags |= MF_JUMPDISABLED;
 		
-		StopAcceleration(0.25);
-		ForceStartSlide(0.25);
-		StopAirAcceleration(0.25);
+		StopAcceleration(0.25, self);
+		ForceStartSlide(0.25, self);
+		StopAirAcceleration(0.25, self);
 		
 		makevectors(self.v_angle);
 		
@@ -445,7 +445,7 @@ void() katanaSwingLoop =
 		}
 		else
 		{
-			self.velocity = [v_forward_x, v_forward_y, 0] * ( 100 + (700 * (self.speedmodifier - 1.0)));
+			self.velocity = [v_forward_x, v_forward_y, 0] * clamp(self.current_speed, ( 100 + ( 700 * (self.speedmodifier - 1.0) ) ), 1000);
 			self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
 		}
 		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
@@ -461,6 +461,7 @@ void() katanaSwingLoop =
 	if (self.weaponframe == 8 )
 	{
 		self.movementflags -= self.movementflags & MF_JUMPDISABLED;
+		self.touch = SUB_Null;
 	}
 
 	if (self.weaponframe > 39)
@@ -778,6 +779,10 @@ void() light_cool =
 		self.think = light_cool;
 };
 
+void() animateShock =
+{
+	self.shock_charge;
+};
 
 //============================================================================
 
@@ -856,26 +861,30 @@ void() PainSound =
 
 	self.noise = string_null;
 
-	if (rs == 1)
+	switch (rs)
+	{
+
+	case 1:
 		self.noise = "player/pain1.wav";
-
-	else if (rs == 2)
+		break;
+	case 2:
 		self.noise = "player/pain2.wav";
-
-	else if (rs == 3)
+		break;
+	case 3:
 		self.noise = "player/pain3.wav";
-
-	else if (rs == 4)
+		break;
+	case 4:
 		self.noise = "player/pain4.wav";
-
-	else if (rs == 5)
+		break;
+	case 5:
 		self.noise = "player/pain5.wav";
-
-	else
+		break;
+	default:
 		self.noise = "player/pain6.wav";
-
+		break;
+	}
 	sound (self, CHAN_VOICE, self.noise, 1, ATTN_NORM);
-	return;
+
 };
 
 void()	player_pain1 =	[	$pain1,	player_pain2	] {PainSound();self.weaponframe=0;};

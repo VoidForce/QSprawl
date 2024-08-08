@@ -139,6 +139,11 @@ typedef enum
 	STAT_ITEMS			= 15,	//replaces clc_clientdata info
 	STAT_BULLETS		= 16,
 	STAT_ADRENALINE		= 17,
+	STAT_INFO_HP		= 18,
+	STAT_INFO_HP_MAX	= 19,
+	STAT_INFO_HEAD		= 20,
+	STAT_INFO_HEAD_MAX	= 21,
+	STAT_INFO_TYPE		= 22,
 } stat_t;
 
 // stock defines
@@ -174,6 +179,19 @@ typedef enum
 	IT_SIGIL4			= (1<<31),
 } items_t;
 
+typedef enum {
+	MONSTER_SOLDIER,
+	MONSTER_KNIGHT,
+	MONSTER_ENFORCER,
+	MONSTER_DOG,
+	MONSTER_SCRAG,
+	MONSTER_ZOMBIE,
+	MONSTER_OGRE,
+	MONSTER_FIEND,
+	MONSTER_HELLKNIGHT,
+	MONSTER_SHAMBLER,
+	MONSTER_VORE,
+} monstertypes_t;
 //===========================================
 
 #define	MAX_SCOREBOARD		16

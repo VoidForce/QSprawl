@@ -923,7 +923,7 @@ void() item_spikes =
 	}
 
 	self.weapon = 2;
-	self.netname = ".45 ACP rounds";
+	self.netname = ".45 ACP-AP rounds";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -1743,7 +1743,7 @@ void(vector pos, float type, float easy, float normal, float hard, float nightma
 			lscale = 0.10;
 			break;
 		case DROP_HEALTH_ONE:
-			hp = 1;
+			hp = 4 - skill;
 			overheal = 1;
 			lscale = 0.10;
 			break;
@@ -1753,7 +1753,7 @@ void(vector pos, float type, float easy, float normal, float hard, float nightma
 			lscale = 0.10;
 			break;
 		case DROP_ARMOR_ONE:
-			hp = 1;
+			hp = 4 - skill;
 			overheal = 1;
 			lscale = 0.10;
 			break;

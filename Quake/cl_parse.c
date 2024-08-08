@@ -922,7 +922,38 @@ void CL_ParseClientdata (void)
 		cl.viewent.skinnum = MSG_ReadByte();
 
 	if (bits & SU_HUDINFO)
-		cl.info_ent = MSG_ReadShort();
+	{
+		i = MSG_ReadShort();
+		if (cl.stats[STAT_INFO_HP] != i)
+		{
+			cl.stats[STAT_INFO_HP] = i;
+			Sbar_Changed();
+		}
+		i = MSG_ReadShort();
+		if (cl.stats[STAT_INFO_HP_MAX] != i)
+		{
+			cl.stats[STAT_INFO_HP_MAX] = i;
+			Sbar_Changed();
+		}
+		i = MSG_ReadShort();
+		if (cl.stats[STAT_INFO_HEAD] != i)
+		{
+			cl.stats[STAT_INFO_HEAD] = i;
+			Sbar_Changed();
+		}
+		i = MSG_ReadShort();
+		if (cl.stats[STAT_INFO_HEAD_MAX] != i)
+		{
+			cl.stats[STAT_INFO_HEAD_MAX] = i;
+			Sbar_Changed();
+		}
+		i = MSG_ReadByte();
+		if (cl.stats[STAT_INFO_TYPE] != i)
+		{
+			cl.stats[STAT_INFO_TYPE] = i;
+			Sbar_Changed();
+		}
+	}
 
 	CL_SetHudStat (STAT_WEAPONFRAME);
 	CL_SetHudStat (STAT_ARMOR);
@@ -936,6 +967,11 @@ void CL_ParseClientdata (void)
 	CL_SetHudStat (STAT_CELLS);
 	CL_SetHudStat (STAT_BULLETS);
 	CL_SetHudStat (STAT_ADRENALINE);
+	CL_SetHudStat (STAT_INFO_HP);
+	CL_SetHudStat (STAT_INFO_HP_MAX);
+	CL_SetHudStat (STAT_INFO_HEAD);
+	CL_SetHudStat (STAT_INFO_HEAD_MAX);
+	CL_SetHudStat (STAT_INFO_TYPE);
 
 	//johnfitz -- lerping
 	//ericw -- this was done before the upper 8 bits of cl.stats[STAT_WEAPON] were filled in, breaking on large maps like zendar.bsp
@@ -1355,6 +1391,14 @@ void CL_ParseServerMessage (void)
 			cl.stats[i] = MSG_ReadLong ();
 			cl.statsf[i] = cl.stats[i];
 			break;
+
+		/*case svc_updatestat_short:
+			i = MSG_ReadByte();
+			if (i < 0 || i >= MAX_CL_STATS)
+				Sys_Error("svc_updatestat: %i is invalid", i);
+			cl.stats[i] = MSG_ReadShort();
+			cl.statsf[i] = cl.stats[i];
+			break;*/
 
 		case svc_spawnstaticsound:
 			CL_ParseStaticSound (1); //johnfitz -- added parameter

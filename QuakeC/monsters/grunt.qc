@@ -355,7 +355,7 @@ void() army_die =
 	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
 		self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold || self.monsterflags & MFL_GIB_ME)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_guard.mdl", self.lasthit_damage);
@@ -386,7 +386,7 @@ void() army_die =
 		else
 		{
 			for (float i = 0; i < 5; i++)
-			ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+				ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (100 + random()*50) + [crandom() * 100, crandom() * 100, random() * 200], 0);
 		}
 	}
 	else
@@ -439,7 +439,7 @@ void() monster_army =
 	//gnounc
 	self.noise = "soldier/sight1.wav";	//gnounc
 	self.netname = "Grunt";
-	self.info_name = "  Military Police";
+	//self.info_name = "  Military Police";
 	self.killstring = " was shot by Junta's MP\n";
 
 	setsize (self, '-16 -16 -24', '16 16 32');//40

@@ -205,6 +205,7 @@ void() func_plat =
 	self.classname = "plat";
 	self.solid = SOLID_BSP;
 	self.movetype = MOVETYPE_PUSH;
+	self.sprawlflags |= SFL_MOVINGSOLID;
 	setorigin (self, self.origin);	
 	setmodel (self, self.model);
 	setsize (self, self.mins , self.maxs);
@@ -354,6 +355,7 @@ void() func_train =
 	self.cnt = 1;
 	self.solid = SOLID_BSP;
 	self.movetype = MOVETYPE_PUSH;
+	self.sprawlflags |= SFL_MOVINGSOLID;
 	self.blocked = train_blocked;
 	self.use = train_use;
 	self.classname = "train";

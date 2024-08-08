@@ -331,19 +331,13 @@ void() ogre_run_slow16	=[	$walk16,	ogre_run	] {setHead('6 4 44');	ai_run(4);}; /
 
 void() ogre_push_strike = 
 {
-	entity oldself;
 	if (vlen(self.enemy.origin - self.origin) > 100)
 		return;
 	
 	T_Push(self.enemy, self, 400, 100);
 	
-	oldself = self;
-	self = self.enemy;
-	//start
-		ForceStartSlide(0.2);
-		addShake(crandom() * 150, crandom() * 100, random() * 150);
-	//end
-	self = oldself;
+	ForceStartSlide(0.2, self.enemy);
+	addShakeToClient(crandom() * 150, crandom() * 100, random() * 150, self.enemy);
 };
 
 void(float side) chainsaw =
@@ -853,7 +847,7 @@ void() monster_ogre =
 	//gnounc
 	self.noise = "ogre/ogwake.wav";	//gnounc
 	self.netname = "Ogre";
-	self.info_name = "Light Mech o.h.G.r.";
+	//self.info_name = "Light Mech o.h.G.r.";
 	self.killstring = " was destroyed by the OhGr\n";
 
 	setsize (self, '-32 -32 -24', '32 32 48');

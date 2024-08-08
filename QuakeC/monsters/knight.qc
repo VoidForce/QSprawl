@@ -176,11 +176,11 @@ void()	knight_runatk1	=[	$runattack1, knight_runatk2	] {Think(0.04);setHead('2 1
 void()	knight_runatk2	=[	$runattack2,	knight_runatk3	] {Think(0.04);setHead('-2 9 23');ai_charge_side();};  // 19
 void()	knight_runatk3	=[	$runattack3,	knight_runatk4	] {Think(0.04);setHead('-2 8 21');ai_charge_side();};  // 20
 void()	knight_runatk4	=[	$runattack4,	knight_runatk5	] {Think(0.04);setHead('1 7 24');ai_charge_side();};  // 21
-void()	knight_runatk5	=[	$runattack5,	knight_runatk6	] {Think(0.04);setHead('5 10 23');ai_melee_side();knight_trail();self.alpha = 1;};   // 22
-void()	knight_runatk6	=[	$runattack6,	knight_runatk7	] {Think(0.04);setHead('9 -7 20');ai_melee_side();knight_trail();};   // 23
-void()	knight_runatk7	=[	$runattack7,	knight_runatk8	] {Think(0.04);setHead('8 -13 18');ai_melee_side();knight_trail();};   // 24
-void()	knight_runatk8	=[	$runattack8,	knight_runatk9	] {Think(0.04);setHead('5 -10 23');ai_melee_side();knight_trail();};   // 25
-void()	knight_runatk9	=[	$runattack9,	knight_runatk10	] {Think(0.04);setHead('2 -7 25');ai_melee_side();knight_trail();};   // 26
+void()	knight_runatk5	=[	$runattack5,	knight_runatk6	] {Think(0.04);setHead('5 10 23');ai_melee_side(1);knight_trail();self.alpha = 1;};   // 22
+void()	knight_runatk6	=[	$runattack6,	knight_runatk7	] {Think(0.04);setHead('9 -7 20');knight_trail();};   // 23
+void()	knight_runatk7	=[	$runattack7,	knight_runatk8	] {Think(0.04);setHead('8 -13 18');ai_melee_side(1);knight_trail();};   // 24
+void()	knight_runatk8	=[	$runattack8,	knight_runatk9	] {Think(0.04);setHead('5 -10 23');knight_trail();};   // 25
+void()	knight_runatk9	=[	$runattack9,	knight_runatk10	] {Think(0.04);setHead('2 -7 25');ai_melee_side(1);knight_trail();};   // 26
 void()	knight_runatk10	=[	$runattack10,	knight_runatk11	] {Think(0.04);setHead('2 -3 24');ai_charge_side();};  // 27
 void()	knight_runatk11	=[	$runattack11,	knight_run1	]	  {Think(0.04);setHead('2 0 23');ai_charge(10);self.alpha = 0.4;};     // 28
 
@@ -197,9 +197,9 @@ void()	knight_atk2	=[	$attackb2,		knight_atk3	] {Think(0.04);setHead('1 1 24');a
 void()	knight_atk3	=[	$attackb3,		knight_atk4	] {Think(0.04);setHead('-4 2 24');ai_charge(4);};              // 45
 void()	knight_atk4	=[	$attackb4,		knight_atk5	] {Think(0.04);setHead('-2 2 23');ai_charge(0);};              // 46
 void()	knight_atk5	=[	$attackb5,		knight_atk6	] {Think(0.04);setHead('-6 1 21');ai_charge(3);};              // 47
-void()	knight_atk6	=[	$attackb6,		knight_atk7	] {Think(0.04);setHead('5 0 22');ai_charge(4); ai_melee();knight_trail();};  // 48
-void()	knight_atk7	=[	$attackb7,		knight_atk8	] {Think(0.04);setHead('13 -3 19');ai_charge(1); ai_melee();knight_trail();};  // 49
-void()	knight_atk8	=[	$attackb8,		knight_atk9	] {Think(0.04);setHead('12 -4 18');ai_charge(3); ai_melee();knight_trail();};  // 50
+void()	knight_atk6	=[	$attackb6,		knight_atk7	] {Think(0.04);setHead('5 0 22');ai_charge(4); ai_melee(1);knight_trail();};  // 48
+void()	knight_atk7	=[	$attackb7,		knight_atk8	] {Think(0.04);setHead('13 -3 19');ai_charge(1); knight_trail();};  // 49
+void()	knight_atk8	=[	$attackb8,		knight_atk9	] {Think(0.04);setHead('12 -4 18');ai_charge(3); ai_melee(1);knight_trail();};  // 50
 void()	knight_atk9	=[	$attackb9,		knight_atk10] {Think(0.04);setHead('19 -3 7');ai_charge(1);};              // 51
 void()	knight_atk10=[	$attackb10,		knight_run1	] {Think(0.04);setHead('17 -5 11');ai_charge(5);self.alpha = 0.4;};              // 52
 
@@ -289,7 +289,7 @@ void() knight_die =
 	if (!(self.monsterflags & MFL_DROP_HEAD)) // if we chop the head off with katana body should stay and head fly
 		self.velocity = self.lasthit_direction;
 	// check for gib
-	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold)
+	if (self.health <= 0 && self.lasthit_damage > self.gib_threshold || self.monsterflags & MFL_GIB_ME)
 	{
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
 		ThrowHead ("progs/h_knight.mdl", self.lasthit_damage);
@@ -318,7 +318,7 @@ void() knight_die =
 		else
 		{
 			for (float i = 0; i < 5; i++)
-			ThrowHeadGib ("progs/smallgib_synth.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+				ThrowHeadGib ("progs/smallgib.mdl", self.lasthit_direction * (100 + random()*50) + [crandom() * 100, crandom() * 100, random() * 200], 0);
 		}
 	}
 	else
@@ -361,7 +361,7 @@ void() monster_knight =
 	//gnounc
 	self.noise = "knight/ksight.wav";	//gnounc
 	self.netname = "Knight";
-	self.info_name = " Infiltration Unit";
+	//self.info_name = " Infiltration Unit";
 	self.killstring = " was slashed by a Junta's Cyborg\n";
 
 	setsize (self, '-16 -16 -24', '16 16 32'); //28

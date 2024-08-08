@@ -358,7 +358,7 @@ void() monster_wizard =
 	//gnounc
 	self.noise = "wizard/wsight.wav";	//gnounc
 	self.netname = "Drone";
-	self.info_name = "   Sendai Drone";
+	//self.info_name = "   Sendai Drone";
 	self.killstring = " couldn't handle this air superiority\n";
 	self.head_size = 0;
 	self.health = SCRAG_HEALTH;

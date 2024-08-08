@@ -65,6 +65,11 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	statsf[STAT_BULLETS] = ent->v.ammo_bullets;
 	statsf[STAT_ADRENALINE] = ent->v.adrenaline*255;
 	statsf[STAT_ACTIVEWEAPON] = ent->v.weapon;	//sent in a way that does NOT depend upon the current mod...
+	statsf[STAT_INFO_HP] = ent->v.info_hp;	
+	statsf[STAT_INFO_HP_MAX] = ent->v.info_hp_max;
+	statsf[STAT_INFO_HEAD] = ent->v.info_head;
+	statsf[STAT_INFO_HEAD_MAX] = ent->v.info_head_max;
+	statsf[STAT_INFO_TYPE] = ent->v.info_type;
 
 	//FIXME: add support for clientstat/globalstat qc builtins.
 
@@ -1207,11 +1212,15 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha //1 26
 	if (bits & SU_WEAPONSKIN)
 		MSG_WriteByte (msg, ent->v.weapon_skin);
-	
+
+// todo: update only hp and head if the same target
 	if (bits & SU_HUDINFO)
 	{
-		other = PROG_TO_EDICT(ent->v.info_ent);
-		MSG_WriteShort(msg, NUM_FOR_EDICT(other));
+		MSG_WriteShort(msg, (int)ent->v.info_hp);
+		MSG_WriteShort(msg, (int)ent->v.info_hp_max);
+		MSG_WriteShort(msg, (int)ent->v.info_head);
+		MSG_WriteShort(msg, (int)ent->v.info_head_max);
+		MSG_WriteByte(msg, (int)ent->v.info_type);
 	}
 // Hack: Alkaline 1.1 uses bit flags to store the active weapon,
 // but we only send the stat as a byte, which can lead to truncation.

@@ -144,7 +144,7 @@ void() sham_smash10    =[      $smash10,      sham_smash11   ] {Think(0.05);setH
 	amplitude = lerp(350, 100, delta/768);
 	shakeViewRadius(self.origin, 768, [amplitude, amplitude * 0.4 * crandom(), amplitude * crandom()]);
 	sendMessageVecFlag(self.origin + '0 0 -20', 600, TE_SHOCKWAVE);
-	T_RadiusDamagePlayer(self, self, 40, world, 512, 64);
+	T_RadiusDamagePlayer(self, self, 40, self, 512, 64);
 	T_Push(self.enemy, self, amplitude * 1.5, 270, -32);
 
 	if (delta > 100)
@@ -165,9 +165,8 @@ void() sham_smash12    =[      $smash12,      sham_run1	   ] {setHead('22 1 34')
 
 void(float side) ShamClaw =
 {
-	local vector	delta;
-	local float 	ldmg;
-	entity oldself;
+	vector	delta;
+	float 	ldmg;
 
 	if (!self.enemy)
 		return;
@@ -180,12 +179,11 @@ void(float side) ShamClaw =
 		return;
 	
 	T_Push(self.enemy, self, 300, 0);
-	oldself = self;
-	self = self.enemy;
-	ForceStartSlide(0.2);
-	StopAcceleration(0.2);
-	addShake(random() * side, random() * side, random() * side);
-	self = oldself;
+
+	ForceStartSlide(0.2, self.enemy); // change_client
+	StopAcceleration(0.2, self.enemy); // change_client
+	addShakeToClient(random() * side, random() * side, random() * side, self.enemy);
+
 	ldmg = (random() + random() + random()) * 20;
 	T_Damage (self.enemy, self, self, ldmg, 0);
 	sound (self, CHAN_VOICE, "shambler/smack.wav", 1, ATTN_NORM);
@@ -245,17 +243,12 @@ void() sham_melee =
 
 void() sham_suck =
 {
-	entity oldself;
 	float distance;
-	oldself = self;
-	self = self.enemy;
 	
-	StopAcceleration(0.4);
-	//ForceStartSlide(0.4);
-	StopAirAcceleration(0.4);
-	addShake(100 + random() * 50,0,0);
-	
-	self = oldself;
+	StopAcceleration(0.4, self.enemy); // change_client
+	StopAirAcceleration(0.4, self.enemy); // change_client
+	addShakeToClient(100 + random() * 50,0,0, self.enemy);
+
 	self.enemy.velocity = VEC_ORIGIN;
 	distance = vlen(self.enemy.origin - self.origin);
 	distance += 600;
@@ -318,7 +311,11 @@ void(entity attacker, float damage)	sham_pain =
 
 //============================================================================
 
-void() sham_death1      =[      $death1,       sham_death2     ] {};
+void() sham_death1      =[      $death1,       sham_death2     ] 
+{	
+	if (self.monsterflags & MFL_SHAM_EXPLODE)
+		sound (self, CHAN_AUTO, "shambler/buildup.wav", 1, ATTN_NORM);
+};
 void() sham_death2      =[      $death2,       sham_death3     ] {};
 void() sham_death3      =[      $death3,       sham_death4     ] {};
 void() sham_death4      =[      $death4,       sham_death5     ] {};
@@ -328,7 +325,13 @@ void() sham_death7      =[      $death7,       sham_death8     ] {};
 void() sham_death8      =[      $death8,       sham_death9     ] {};
 void() sham_death9      =[      $death9,       sham_death10    ] {};
 void() sham_death10     =[      $death10,      sham_death11    ] {};
-void() sham_death11     =[      $death11,      decay    ] {};
+void() sham_death11     =[      $death11,      decay    ] {
+	if (self.monsterflags & MFL_SHAM_EXPLODE)
+	{
+		self.think = sham_explode;
+		self.nextthink = time + 2;
+	}
+};
 
 void() sham_die =
 {
@@ -356,6 +359,8 @@ void() sham_die =
 		ThrowGib ("progs/shambler_gib_shield.mdl", self.lasthit_damage);
 		return;
 	}
+	if (self.health_head < 1)
+		self.monsterflags |= MFL_SHAM_EXPLODE;
 
 	// regular death
 	sound (self, CHAN_VOICE, "shambler/sdeath.wav", 1, ATTN_NORM);
@@ -364,16 +369,23 @@ void() sham_die =
 
 void() sham_explode =
 {
+	T_RadiusDamagePlayer(self, self, 60, world, 512, 128, 0.25);
+	explodeShrapnel([self.origin_x, self.origin_y, self.origin_z + 16], self, skill + rint(random() * 6));
+	addShakeToClient(random() * 300, crandom() * 400, crandom() * 300, self.enemy);
+	
+	sound (self, CHAN_AUTO, "shambler/explosion.wav", 1, ATTN_NORM); // shambler specific sound
+	sendMessageVecFlag(self.origin + '0 0 8', 1200, TE_SHOCKWAVE);
+	sendMessageVec(self.origin + '0 0 8', TE_ROBOTHEAD_EXPLOSION);
 	sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
-	ThrowHead ("progs/h_shams.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
-	ThrowGib ("progs/shambler_gib_leg_up.mdl", self.lasthit_damage);
-	ThrowGib ("progs/shambler_gib_leg_bottom.mdl", self.lasthit_damage);
-	ThrowGib ("progs/shambler_gib_shield.mdl", self.lasthit_damage);
+	ThrowHead ("progs/h_shams.mdl", 300);
+	ThrowGib ("progs/m_gib_01.mdl", 300);
+	ThrowGib ("progs/m_gib_02.mdl", 300);
+	ThrowGib ("progs/m_gib_03.mdl", 300);
+	ThrowGib ("progs/m_gib_04.mdl", 300);
+	ThrowGib ("progs/m_gib_05.mdl", 300);
+	ThrowGib ("progs/shambler_gib_leg_up.mdl", 300);
+	ThrowGib ("progs/shambler_gib_leg_bottom.mdl", 300);
+	ThrowGib ("progs/shambler_gib_shield.mdl", 300);
 	return;
 };
 
@@ -456,6 +468,8 @@ void() monster_shambler =
 	precache_model ("progs/shambler_gib_leg_bottom.mdl");
 	precache_model ("progs/shambler_gib_shield.mdl");
 	
+	precache_sound ("shambler/buildup.wav");
+	precache_sound ("shambler/explosion.wav");
 	precache_sound ("shambler/sattck1.wav");
 	precache_sound ("shambler/sboom.wav");
 	precache_sound ("shambler/sdeath.wav");
@@ -476,7 +490,7 @@ void() monster_shambler =
 	//gnounc
 	self.noise = "shambler/ssight.wav";	//gnounc
 	self.netname = "Shambler";
-	self.info_name = "    BERZERKER"; // empty spaces are for aligning
+	//self.info_name = "    BERZERKER"; // empty spaces are for aligning
 	self.killstring = " was obliterated by the Berzerker\n";
 
 	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);

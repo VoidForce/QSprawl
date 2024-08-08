@@ -1193,38 +1193,74 @@ void Sbar_DrawAdrenaline(void)
 //extern void Draw_StringEx(float x, float y, float dim, const char* str);
 #define HUD_VERT_OFFSET 12
 #define HUD_BAR_HEIGHT 10
+#define INFO_OFFSET_X 80
+#define INFO_OFFSET_Y 2
+#define INFO_SIZE 8
+extern void Draw_StringExInfo(float x, float y, float dim, const char* str);
 
 void SCR_DrawHealthInfo(void)
 {
 	int hp, hhp;
 	int maxhp, hmaxhp;
 	int xpos;
-
-	//char* name;
-	edict_t* ed;
+	int ent_type;
 
 	if (!(cl.engineflags & ENF_HUDINFO))
 		return;
 
-	PR_SwitchQCVM(&sv.qcvm);
-	ed = EDICT_NUM(cl.info_ent);
-
 	GL_SetCanvas(CANVAS_INFO);
 
-	hp = (int)q_max_f(ed->v.health,0);
-	maxhp = (int)ed->v.max_health;
-	hhp = (int)q_max_f(ed->v.health_head,0);
-	hmaxhp = (int)ed->v.health_head_max;
+	hp = (int)q_max_f(cl.stats[STAT_INFO_HP],0);
+	maxhp = (int)cl.stats[STAT_INFO_HP_MAX];
+	hhp = (int)q_max_f(cl.stats[STAT_INFO_HEAD],0);
+	hmaxhp = (int)cl.stats[STAT_INFO_HEAD_MAX];
+	ent_type = (int)cl.stats[STAT_INFO_TYPE];
 	
 	if (hmaxhp == 0)
 		xpos = 30;
 	else
 		xpos = 0;
 
-// target name
+// target name, hardcoded for now, till i find out how to send strings from progs to client
 	Draw_Fill(0, 0, 160, 12, 0, 0.8); // name bg
-	Draw_StringEx(7, 2, 8, PR_GetString(ed->v.info_name)); // name string
-
+	switch (ent_type)
+	{
+		default:
+		case MONSTER_SOLDIER:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Military Police");
+			break;
+		case MONSTER_KNIGHT:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Infiltration Unit");
+			break;
+		case MONSTER_ENFORCER:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Oni Squad");
+			break;
+		case MONSTER_DOG:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Combat Drone Okami");
+			break;
+		case MONSTER_SCRAG:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Sendai Drone");
+			break;
+		case MONSTER_ZOMBIE:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Obsolete Bot");
+			break;
+		case MONSTER_OGRE:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Light Mech o.h.G.r.");
+			break;
+		case MONSTER_FIEND:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Megatech Fiend v4");
+			break;
+		case MONSTER_HELLKNIGHT:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Oni Elite Cyborg");
+			break;
+		case MONSTER_SHAMBLER:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "BERZERKER");
+			break;
+		case MONSTER_VORE:
+			Draw_StringExInfo(INFO_OFFSET_X, INFO_OFFSET_Y, INFO_SIZE, "Artillery Drone");
+			break;
+	}
+	
 // bars
 	if (hp > 0)
 	{
@@ -1251,8 +1287,6 @@ void SCR_DrawHealthInfo(void)
 		Draw_Fill(0, 16, 160, 12, 0, 0.8); // name bg
 		Draw_StringEx(38, 17, 8, "Terminated"); // name string
 	}
-
-	PR_SwitchQCVM(NULL);
 
 	//Sbar_DrawSmallNum(0, 20, hp, 3, 0);
 }

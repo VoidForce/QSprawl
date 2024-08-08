@@ -454,7 +454,7 @@ void() hknight_die =
 		else
 		{
 			for (float i = 0; i < 5; i++)
-			ThrowHeadGib ("progs/smallgib_synth.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
+				ThrowHeadGib ("progs/smallgib_synth.mdl", self.lasthit_direction * (100 + random()*50) + [crandom() * 100, crandom() * 100, random() * 200], 0);
 		}
 	}
 	else
@@ -500,7 +500,7 @@ void() monster_hell_knight =
 	//gnounc
 	self.noise = "hknight/sight1.wav";	//gnounc
 	self.netname = "Hell Knight";
-	self.info_name = " Oni Elite Cyborg";
+	//self.info_name = " Oni Elite Cyborg";
 	self.killstring = " was slashed to death by Heavy Cyborg\n";
 
 	setsize (self, '-16 -16 -24', '16 16 40'); //40

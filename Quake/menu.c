@@ -1149,14 +1149,14 @@ void M_ToggleMenu_f (void)
 /* MAIN MENU */
 
 int	m_main_cursor;
-int m_main_mods;
+//int m_main_mods;
 
 enum
 {
 	MAIN_SINGLEPLAYER,
-	MAIN_MULTIPLAYER,
+	//MAIN_MULTIPLAYER,
 	MAIN_OPTIONS,
-	MAIN_MODS,
+	//MAIN_MODS,
 	MAIN_HELP,
 	MAIN_QUIT,
 
@@ -1180,11 +1180,13 @@ void M_Menu_Main_f (void)
 	// to 'Options' to nudge the player toward the secondary location.
 	// TODO (maybe): inform the user about the missing option
 	// and its alternative location?
+	/*
 	if (!m_main_mods && m_main_cursor == MAIN_MODS)
 	{
 		m_main_cursor = MAIN_OPTIONS;
 		M_Options_SelectMods ();
 	}
+	*/
 }
 
 
@@ -1198,6 +1200,7 @@ void M_Main_Draw (void)
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	p = Draw_CachePic ("gfx/mainmenu.lmp");
+	/* qSprawl_MODS
 	if (m_main_mods)
 	{
 		int split = 60;
@@ -1208,12 +1211,13 @@ void M_Main_Draw (void)
 			M_PrintEx (74, 32 + split + 1, 16, "MODS");
 		M_DrawSubpic (72, 32 + split + 20, p, 0, split, p->width, p->height - split);
 	}
-	else
+	else*/
 		M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mainmenu.lmp"));
 
 	cursor = m_main_cursor;
+	/*
 	if (!m_main_mods && cursor > MAIN_MODS)
-		--cursor;
+		--cursor;*/
 	M_DrawQuakeCursor (54, 32 + cursor * 20);
 }
 
@@ -1240,16 +1244,20 @@ void M_Main_Key (int key)
 		M_ThrottledSound ("misc/menu1.wav");
 		if (++m_main_cursor >= MAIN_ITEMS)
 			m_main_cursor = 0;
+		/* qSprawl_mods
 		else if (!m_main_mods && m_main_cursor == MAIN_MODS)
 			++m_main_cursor;
+		*/
 		break;
 
 	case K_UPARROW:
 		M_ThrottledSound ("misc/menu1.wav");
 		if (--m_main_cursor < 0)
 			m_main_cursor = MAIN_ITEMS - 1;
+		/* qSprawl_mods
 		else if (!m_main_mods && m_main_cursor == MAIN_MODS)
 			--m_main_cursor;
+		*/
 		break;
 
 	case K_ENTER:
@@ -1263,11 +1271,11 @@ void M_Main_Key (int key)
 		case MAIN_SINGLEPLAYER:
 			M_Menu_SinglePlayer_f ();
 			break;
-
+/* qSprawl_MODS
 		case MAIN_MULTIPLAYER:
 			M_Menu_MultiPlayer_f ();
 			break;
-
+*/
 		case MAIN_OPTIONS:
 			M_Menu_Options_f ();
 			break;
@@ -1275,11 +1283,11 @@ void M_Main_Key (int key)
 		case MAIN_HELP:
 			M_Menu_Help_f ();
 			break;
-
+/*			qSprawl_MODS
 		case MAIN_MODS:
 			M_Menu_Mods_f ();
 			break;
-
+*/
 		case MAIN_QUIT:
 			M_Menu_Quit_f ();
 			break;
@@ -1290,9 +1298,12 @@ void M_Main_Key (int key)
 void M_Main_Mousemove (int cx, int cy)
 {
 	int prev = m_main_cursor;
-	M_UpdateCursor (cy, 32, 20, MAIN_ITEMS - !m_main_mods, &m_main_cursor);
+	M_UpdateCursor(cy, 32, 20, MAIN_ITEMS, &m_main_cursor);
+	//M_UpdateCursor (cy, 32, 20, MAIN_ITEMS - !m_main_mods, &m_main_cursor);
+	/* qSrpawl_mods
 	if (m_main_cursor >= MAIN_MODS && !m_main_mods)
 		++m_main_cursor;
+	*/
 	if (m_main_cursor != prev)
 		M_MouseSound ("misc/menu1.wav");
 }
@@ -6974,10 +6985,10 @@ void M_CheckMods (void)
 		sp_hashes[] = {0x86a6f086},
 		sgl_hashes[] = {0x7bba813d}
 	;
-
+/* qSprawl_MODS
 	m_main_mods = M_CheckCustomGfx ("gfx/menumods.lmp",
 		"gfx/mainmenu.lmp", 26888, main_hashes, countof (main_hashes));
-
+*/
 	m_singleplayer_showlevels = M_CheckCustomGfx ("gfx/sp_maps.lmp",
 		"gfx/sp_menu.lmp", 14856, sp_hashes, countof (sp_hashes));
 

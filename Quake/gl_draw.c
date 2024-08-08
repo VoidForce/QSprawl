@@ -757,6 +757,26 @@ void Draw_StringEx (float x, float y, float dim, const char *str)
 		x += dim;
 	}
 }
+// Draw_StringEx aligned to center
+void Draw_StringExInfo(float x, float y, float dim, const char* str)
+{
+	int length;
+	if (y <= glcanvas.top - dim)
+		return;			// totally off screen
+
+	Draw_SetTexture(char_texture);
+	
+	length = Q_strlen(str) * dim;
+	length = (int)length / 2;
+	x -= length;
+	while (*str)
+	{
+		if ((*str & 0x7f) != 32) //don't waste verts on spaces
+			Draw_CharacterQuadEx(x, y, dim, dim, *str);
+		x += dim;
+		str++;
+	}
+}
 
 /*
 ================

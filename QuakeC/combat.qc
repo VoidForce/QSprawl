@@ -227,13 +227,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	//gnounc -- shub kill crash fix.
 	if (targ.classname == "monster_oldone" && damage < 9999)
 		return;
-	
-	if (attacker.flags & FL_CLIENT && targ.flags & FL_MONSTER && !attacker.info_ent)
-	{
-		attacker.info_ent = targ;
-		attacker.engineflags |= ENF_HUDINFO;
-		attacker.info_stay_time = time + 1.5;
-	}
+
 	if (attacker.entity_type == TYPE_PLAYER && attacker != targ && !(targ.monsterflags & MFL_SHIELD))
 	{
 		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
@@ -405,6 +399,8 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (dflags & DF_NEVERGIB)
 		targ.lasthit_damage = 1; // prevent gib death
+	else if (dflags & DF_ALWAYSGIB)
+		targ.monsterflags |= MFL_GIB_ME;
 	else
 		targ.lasthit_damage = take;
 	// do the damage
@@ -416,7 +412,13 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	}
 	else
 		targ.health -= take;
-
+	
+// HUD INFO SET if none was currently set by trace
+	if (attacker.flags & FL_CLIENT && targ.flags & FL_MONSTER && !(attacker.engineflags & ENF_HUDINFO))
+		setInfo(attacker, targ);
+	if (attacker.info_ent == targ)
+		updateInfo(attacker);	
+	
 	if (targ.health <= 0)
 	{
 	// actually will not drop the head, but will not apply velocity to the body when killed with katana
@@ -444,6 +446,8 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			{
 				targ.health = 0;
 				targ.lasthit_damage = 0;
+				if (attacker.info_ent == targ) // update once more
+					updateInfo(attacker);	
 			}
 			Killed (targ, attacker);
 			return;
@@ -488,7 +492,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	{
 		self.th_pain (attacker, take);
 		// nightmare mode monsters don't go into pain frames often
-		if (skill == 3)
+		if (skill == 3 && self.flags & FL_MONSTER)
 			self.pain_finished = time + 5;		
 	}
 
@@ -548,7 +552,7 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 	{
 	//reset
 		dflags = DF_EXPLOSION;
-		if ((head != ignore) && (head != attacker) && head.takedamage)
+		if ((head != ignore) &&  head.takedamage)
 		{
 			org = head.origin + (head.mins + head.maxs)*0.5;
 			distancetotarget = vlen (inflictor.origin - org);
@@ -572,6 +576,10 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 
 			if (CanDamage (head, inflictor))
 			{
+				if (head == attacker && head.flags & FL_CLIENT)
+					points *= 0.25;
+				else if (head.flags & FL_MONSTER && attacker.flags & FL_MONSTER)
+					points *= 3;
 				T_Damage (head, inflictor, attacker, points, dflags);
 				if (pushaway) // divide by zero check here
 					T_Push (head, inflictor, lerp(200/pushaway, 500/pushaway, points/damage), 100);
@@ -623,9 +631,8 @@ void(entity attacker, float damage) T_BeamDamage =
 void(vector epicenter, float radius, vector amount) shakeViewRadius =
 {
 	entity	head;
-	entity oldself;
+
 	head = findradius(epicenter, radius);
-	
 	while (head)
 	{
 		if (!(head.flags & FL_CLIENT))
@@ -634,12 +641,9 @@ void(vector epicenter, float radius, vector amount) shakeViewRadius =
 			continue;
 		}
 
-		oldself = self;
-		self = head;
-		addShake(amount_x, amount_y, amount_z);
+		addShakeToClient(amount_x, amount_y, amount_z, head);
 		amount *= 0.2;
-		addPunchVelocity(amount_x, amount_y, amount_z);
-		self = oldself;
+		addPunchVelocityToClient(amount_x, amount_y, amount_z, head);
 		head = head.chain;
 	}
 };

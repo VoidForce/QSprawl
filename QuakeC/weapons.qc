@@ -485,7 +485,8 @@ void(float shotcount, vector dir, vector spread, float damage) FireBullets =
 
 #define FBA_ISMULTIDAMAGE 1
 #define FBA_GRENADE 2
-#define FBA_IMPACT 4
+#define FBA_IMPACT 8
+//  DF_ALWAYSGIB 4
 
 void(vector dir, float offset_x, float offset_y, float damage, float penetration, float lflags) FireBulletAim =
 {
@@ -519,6 +520,8 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 		// something that takes damage
 		// check if it was a headshot
 			dflags = 0;
+			if (lflags & DF_ALWAYSGIB)
+				dflags |= DF_ALWAYSGIB;
 			if (trace_ent.flags & FL_MONSTER)
 			{
 				if (trace_ent.monsterflags & MFL_HASHEAD)
@@ -583,50 +586,70 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 void() W_SwingKatana =
 {
 	vector source, direction, org, head_origin;
+	entity previous;
+	float i;
 
 	makevectors	(self.v_angle + self.punchangle);
 	source = self.origin + '0 0 16';
 	direction = v_forward;
-	traceline (source + v_right * (-32), source + direction * 96 + v_right * 16, FALSE, self); // trace from the left side of the player into front, immitating swing
-	if (trace_fraction == 1.0)
-		return;
-	
-	org = trace_endpos - v_forward*4;
-
-	if (trace_ent.takedamage)
+		
+	for (i = 0; i < 3; i++)
 	{
-		trace_ent.axhitme = 1;
-		if (trace_ent.flags & FL_MONSTER)
+		switch (i)
 		{
-			trace_ent.lasthit_direction = direction; // set this before T_Damage, otherwise it's too late
-			head_origin = findHeadPosition(trace_ent);
-
-			if (distancetoray(source, direction, head_origin) < trace_ent.head_size)
-				T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_HEADSHOT | DF_KATANA);
+			case 2:
+				traceline (source + v_right * (-32), source + direction * 96 + v_right * 16, FALSE, self); // trace from the left side of the player into front, immitating swing
+				break;
+			case 1:
+				traceline (source, source + direction * 96 + v_right * -16, FALSE, self);
+				break;
+			case 0:
+				traceline (source, source + direction * 96, FALSE, self);
+				break;
+		}
+		if (trace_fraction == 1.0)
+			continue;
+		if (trace_ent == previous)
+			continue;
+		
+		org = trace_endpos - v_forward*4;
+	
+		if (trace_ent.takedamage)
+		{
+			trace_ent.axhitme = 1;
+			if (trace_ent.flags & FL_MONSTER)
+			{
+				trace_ent.lasthit_direction = direction; // set this before T_Damage, otherwise it's too late
+				head_origin = findHeadPosition(trace_ent);
+	
+				if (distancetoray(source, direction, head_origin) < trace_ent.head_size)
+					T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_HEADSHOT | DF_KATANA);
+				else
+					T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_KATANA);
+				
+				if (trace_ent.monsterflags & MFL_SHIELD)
+					sendMessageImpact(trace_endpos, trace_ent.origin, IMPACT_SHIELD, VEC_ORIGIN); 
+				else if (trace_ent.monsterflags & MFL_ROBOT)
+					sendMessageImpact(trace_endpos, -direction, IMPACT_ROBOT, VEC_ORIGIN); 
+				else
+					sendMessageImpact(trace_endpos, -direction, IMPACT_FLESH, VEC_ORIGIN); 
+			}
 			else
-				T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_KATANA);
-			
-			if (trace_ent.monsterflags & MFL_SHIELD)
-				sendMessageImpact(trace_endpos, trace_ent.origin, IMPACT_SHIELD, VEC_ORIGIN); 
-			else if (trace_ent.monsterflags & MFL_ROBOT)
+			{
 				sendMessageImpact(trace_endpos, -direction, IMPACT_ROBOT, VEC_ORIGIN); 
-			else
-				sendMessageImpact(trace_endpos, -direction, IMPACT_FLESH, VEC_ORIGIN); 
+				T_Damage (trace_ent, self, self, KATANA_DAMAGE, 0);
+			}
+			previous = trace_ent;
 		}
+	
 		else
-		{
-			sendMessageImpact(trace_endpos, -direction, IMPACT_ROBOT, VEC_ORIGIN); 
-			T_Damage (trace_ent, self, self, KATANA_DAMAGE, 0);
-		}
-	}
-
-	else
-	{	// hit wall
-		if (self.katanasound_finished < time)
-		{
-			sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
-			sendMessageImpact(trace_endpos, trace_plane_normal, IMPACT_WALL, VEC_ORIGIN); 
-			self.katanasound_finished = time + 0.4;
+		{	// hit wall
+			if (self.katanasound_finished < time)
+			{
+				sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
+				sendMessageImpact(trace_endpos, trace_plane_normal, IMPACT_WALL, VEC_ORIGIN); 
+				self.katanasound_finished = time + 0.4;
+			}
 		}
 	}
 };
@@ -688,8 +711,8 @@ void() W_FireSuperShotgun =
 	
 	//sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE);
 	checkGrenadeCollision(dir, 16);
-	makePunch([8,2,1],[1+random()*2,-3*random()*3,3],[crandom()*3,0,0]);
-	addShake(-60, 0, 0);
+	makePunch([20,2,1],[1+random()*2,-3*random()*3,3],[crandom()*3,0,0]);
+	addShake(-80, 0, 0);
 };
 
 void(float leftgun) W_FireSMG =
@@ -734,11 +757,12 @@ void(float leftgun) W_FireSMG =
 	checkGrenadeCollision(dir, 8);
 
 	//punch_relaxtime
-	makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]);
-	addPunchVelocity(-6,crandom()*4,0);
+	makePunch([0+random()*2, 0.5, 2], [crandom(), 0, 0], [0, 0, 0]);
+	//addPunchVelocity(-6,crandom()*4,0);
 };
 
 // sendMessageImpact is: impact coordinates, shooter coordinates, type flag, impact plane normal vector
+// prepare for the ride -_-
 void() W_FireGauss =
 {
 	float power, penetration_depth;
@@ -840,9 +864,19 @@ void() W_FireGauss =
 	// first of all, save current trace data, so we can use it for entrance hole effects later
 		impact = trace_endpos;
 		wall_normal = trace_plane_normal;
-	// fuck it i don't know other way to check this
-		if (trace_ent.classname == "worldspawn")
+	// check doors/buttons
+		if (trace_ent.sprawlflags & SFL_MOVINGSOLID)
 			isworld = 1;
+		else
+		{
+			if (pointcontents(trace_endpos + direction * 4) == CONTENT_SKY) // this is not working i have no idea why, returns solid(-2)
+			{
+				isworld = 1;
+				goto final;
+			}
+			else
+				isworld = 0;
+		}
 	
 	// already run out of gas, finish
 		if (power < 1)
@@ -870,10 +904,14 @@ void() W_FireGauss =
 		{
 		// we punch through the wall and there is air here, trace back to find the exit hole
 			traceline (impact + direction * penetration_depth, impact, IGNOREMONSTERS, world);
-			sendMessageImpact(impact, start, IMPACT_GAUSS_ENTRANCE, wall_normal); // entrance hole particle effect
+
 		// exit hole particle effect
 		// in case of we hit non-solid object, we will recieve all zeroes normal, which is not good for on engine calculations
-			sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_EXIT, trace_plane_normal); 
+			if (!(trace_ent.sprawlflags & SFL_MOVINGSOLID))
+				sendMessageImpact(trace_endpos, start, IMPACT_GAUSS_EXIT, trace_plane_normal); 
+		// don't forget about entrance hole, use old info
+			if (!isworld)
+				sendMessageImpact(impact, start, IMPACT_GAUSS_ENTRANCE, wall_normal); // entrance hole particle effect
 			
 			power -= 1;//(penetration_depth / 128) * 0.5;
 			startposition_loop = trace_endpos + direction * 4;
@@ -882,7 +920,8 @@ void() W_FireGauss =
 		{
 		// end of line, send final impact and trail messages, 
 		final:
-			sendMessageImpact(impact, start, IMPACT_GAUSS_FINAL, wall_normal); 
+			if (!isworld)
+				sendMessageImpact(impact, start, IMPACT_GAUSS_FINAL, wall_normal); 
 			sendMessageVecVec(offsetWeapon(16,6,-8), impact, TE_GAUSSTRACE); // trail
 			return;
 		}
@@ -900,9 +939,9 @@ void() W_FireChaingun =
 	
 	makevectors(self.v_angle + self.punchangle);
 	dir = aim (self, 100000);
-	FireBulletAim (dir, crandom()*0.02, crandom()*0.02, CHAINGUN_DAMAGE, CHAINGUN_PENETRATION, FBA_IMPACT);
+	FireBulletAim (dir, crandom()*0.02, crandom()*0.02, CHAINGUN_DAMAGE, CHAINGUN_PENETRATION, FBA_IMPACT | DF_ALWAYSGIB);
 	float r = random();
-	if (r > 0.66 && !(trace_ent.monsterflags & MFL_SHIELD))
+	if (trace_ent.flags & FL_MONSTER && r > 0.66 && !(trace_ent.monsterflags & MFL_SHIELD))
 		SpawnMeatSpray(trace_ent.origin + [crandom() * 16, crandom() * 16, crandom() * 16], crandom() * 150 * v_right, trace_ent);
 	
 	launchCasing(self.origin, v_forward * 12 + v_right * 16 + v_up * (self.view_ofs_z - 8), 2);
@@ -933,6 +972,13 @@ void() GrenadeExplode =
 
 void() GrenadeTouch =
 {
+	if (pointcontents(self.origin) == CONTENT_SKY)
+	{
+		removeFromList(self);
+		remove(self);
+		return;
+	}
+	
 	if (other == self.owner)
 		return;		// don't explode on owner
 	
@@ -1179,7 +1225,7 @@ void() W_FireLightning =
 	makevectors(self.v_angle);
 	if (self.t_width < time)
 	{
-		sound (self, CHAN_WEAPON, "weapons/f_shock.wav", 1, ATTN_NORM);
+		sound (self, CHAN_WEAPON, "weapons/f_shock_loop.wav", 1, ATTN_NORM);
 		self.t_width = time + 0.6;
 	}
 
@@ -1497,10 +1543,11 @@ void() W_Attack =
 			
 		case IT_SHOCK:
 			self.weaponframe = 1;
-			player_light1();
+			//player_light1();
+			animateShock();
 			self.show_hostile = time + 1;	// wake monsters up	
 			self.attack_finished = time + 0.1;
-			sound (self, CHAN_AUTO, "weapons/f_shock_loop.wav", 1, ATTN_NORM);
+			sound (self, CHAN_AUTO, "weapons/f_shock_start.wav", 1, ATTN_NORM);
 			break;
 	}
 };
@@ -1841,17 +1888,14 @@ void() ImpulseCommands =
 
 void() W_WeaponFrame =
 {
+// HUD info trace, 4 times / second
 	if (self.info_trace_time < time)
 	{
 		makevectors(self.v_angle + self.punchangle);
 		traceline ([self.origin_x, self.origin_y, self.origin_z + self.view_ofs_z], [self.origin_x, self.origin_y, self.origin_z + self.view_ofs_z] + v_forward * 2048, FALSE, self);
 
 		if (trace_ent && trace_ent.flags & FL_MONSTER)
-		{
-			self.info_ent = trace_ent;
-			self.engineflags |= ENF_HUDINFO;
-			self.info_stay_time = time + 1.5;
-		}
+			setInfo(self, trace_ent);
 
 		self.info_trace_time = time + 0.25;
 	}
@@ -1859,7 +1903,6 @@ void() W_WeaponFrame =
 	if (self.info_stay_time < time)
 	{
 		removeflag(self.engineflags, ENF_HUDINFO);
-
 		self.info_ent = world;
 		self.info_stay_time = 72000; // 20 hours
 	}

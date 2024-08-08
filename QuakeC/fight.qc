@@ -181,7 +181,7 @@ void() ai_charge_side =
 ai_melee
 
 =============*/
-void() ai_melee =
+void(float weak = 0) ai_melee =
 {
 	float 	ldmg;
 
@@ -191,12 +191,17 @@ void() ai_melee =
 	if (vlen(self.enemy.origin - self.origin) > 80)// exact world position to check for damage
 		return;
 		
-	ldmg = (random() + random() + random()) * 3;
+	ldmg = random() + random() + random();
+	if (weak)
+		ldmg *= 2;
+	else 
+		ldmg *= 4;
+	
 	T_Damage (self.enemy, self, self, ldmg, 0);
 };
 
 
-void() ai_melee_side =
+void(float weak = 0) ai_melee_side =
 {
 	float 	ldmg;
 
@@ -210,6 +215,12 @@ void() ai_melee_side =
 
 	if (!CanDamage (self.enemy, self))
 		return;
-	ldmg = (random() + random() + random()) * 3;
+	
+	ldmg = random() + random() + random();
+	if (weak)
+		ldmg *= 2;
+	else 
+		ldmg *= 4;
+	
 	T_Damage (self.enemy, self, self, ldmg, 0);
 };

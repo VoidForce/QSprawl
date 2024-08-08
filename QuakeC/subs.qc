@@ -360,7 +360,7 @@ string getNetname(float item_number) =
 		case IT_SHELLS:
 			return "Shotgun Shells";
 		case IT_NAILS:
-			return ".45 ACP Rounds";
+			return ".45 ACP AP Rounds";
 		case IT_ROCKETS:
 			return "Grenades";
 		case IT_CELLS:
@@ -605,7 +605,7 @@ void() endl =
 	
 void(vector a, vector b, float flag, vector c) sendMessageImpact =
 {
-	// don't send the impact hole message if normal is not specified
+	// don't send the impact hole message if normal is not specified // new function for that, to get rid of this long ass check?
 	if (flag && flag < 4 && c == VEC_ORIGIN)
 		return;
 		
@@ -936,4 +936,45 @@ vector (entity who, float lag) getPlayerPosition =
 		case 4:
 			return(who.trail4);
 	}
+};
+
+void(entity client_ent, entity linfo_ent) setInfo =
+{
+	if (client_ent.info_ent != linfo_ent)
+	{
+		client_ent.info_ent = linfo_ent;
+		client_ent.info_hp = linfo_ent.health;
+		client_ent.info_hp_max = linfo_ent.max_health;
+		client_ent.info_head = linfo_ent.health_head;
+		client_ent.info_head_max = linfo_ent.health_head_max;
+		client_ent.info_type = linfo_ent.monstertype;
+		client_ent.engineflags |= ENF_HUDINFO;
+		client_ent.info_stay_time = time + 1.5;
+	}
+	else
+	{
+		client_ent.info_hp = client_ent.info_ent.health;
+		client_ent.info_head = client_ent.info_ent.health_head;
+		client_ent.info_stay_time = time + 1.5;
+	}
+};
+
+void(entity who) updateInfo =
+{
+	who.info_hp = who.info_ent.health;
+	who.info_head = who.info_ent.health_head;
+};
+
+void(float x, float y, float z, entity who) addShakeToClient =
+{
+	who.shakevelocity_x += x;
+	who.shakevelocity_y += y;
+	who.shakevelocity_z += z;
+};
+
+void(float x, float y, float z, entity who) addPunchVelocityToClient =
+{
+	who.punchvelocity_x += x;
+	who.punchvelocity_y += y;
+	who.punchvelocity_z += z;
 };

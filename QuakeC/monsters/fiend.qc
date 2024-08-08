@@ -100,11 +100,11 @@ void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); ai_run(20); Thi
 	    sound (self, CHAN_VOICE, "demon/idle1.wav", 1, ATTN_IDLE);
 };
 
-void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_run(15); ai_charge_side(); Think(0.075); }; // 23
-void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(15); ai_charge_side(); Think(0.075); }; // 24 // run 36
-void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_run(20); ai_charge_side(); Think(0.075); }; // 25
-void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_run(15); ai_charge_side(); Think(0.075); }; // 26
-void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(15); ai_charge_side(); Think(0.075); }; // 27 // run 36
+void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_run(15); Think(0.075); }; // 23
+void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(15); Think(0.075); }; // 24 // run 36
+void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_run(20); Think(0.075); }; // 25
+void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_run(15); Think(0.075); }; // 26
+void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(15); Think(0.075); }; // 27 // run 36
 
 void()	demon1_jump1	=[	$leap1,		demon1_jump2	] 
 {
@@ -289,11 +289,11 @@ float()	CheckDemonJump =
 	if (self.fA > time) 
 		return FALSE;
 
-	if (self.origin_z + self.mins_z > pos_z + self.enemy.mins_z + 0.75 * self.enemy.size_z)
-		return FALSE;
+	//if (self.origin_z + self.mins_z > pos_z + self.enemy.mins_z + 0.75 * self.enemy.size_z)
+	//	return FALSE;
 		
-	if (self.origin_z + self.maxs_z < pos_z + self.enemy.mins_z + 0.25 * self.enemy.size_z)
-		return FALSE;
+	//if (self.origin_z + self.maxs_z < pos_z + self.enemy.mins_z + 0.25 * self.enemy.size_z)
+	//	return FALSE;
 		
 	dist = pos - self.origin;
 	dist_z = 0;
@@ -342,7 +342,7 @@ void(float side)	Demon_Melee =
 		
     sound (self, CHAN_WEAPON, "demon/dhit2.wav", 1, ATTN_NORM);
 	T_Damage (self.enemy, self, self, 5 + random() * 3, 0);	
-	T_Push (other, self, 600, 150);
+	T_Push (self.enemy, self, 600, 150);
 
 	makevectors2 (self.angles);
 	SpawnMeatSpray (self.origin + v_forward*16, side * v_right, self.enemy);
@@ -428,9 +428,9 @@ void() monster_demon1 =
 	self.killstring = " was eviscerated by a robot\n";
 
 	setsize (self, '-32 -32 -24', '32 32 50');
-	self.info_name = " Megatech Fiend v4";
+	//self.info_name = " Megatech Fiend v4";
 	self.head_offset = '19 3 6';
-	self.head_size = 8;
+	self.head_size = 12;
 	self.health = FIEND_HEALTH;
 	self.max_health = FIEND_HEALTH;
 	self.health_head = FIEND_HEAD;

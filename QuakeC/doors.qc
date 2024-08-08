@@ -530,6 +530,7 @@ void() func_door =
 	self.max_health = self.health;
 	self.solid = SOLID_BSP;
 	self.movetype = MOVETYPE_PUSH;
+	self.sprawlflags |= SFL_MOVINGSOLID;
 	setorigin (self, self.origin);	
 	setmodel (self, self.model);
 	self.classname = "door";

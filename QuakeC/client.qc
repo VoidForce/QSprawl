@@ -1078,17 +1078,17 @@ void() SetMovementParams_Standard =
 	self.phys_speed = 320 * self.speedmodifier;
 };
 
-void(float timer) StopAcceleration =
+void(float timer, entity who) StopAcceleration =
 {
-	if (self.noacceleration_timer > time)
+	if (who.noacceleration_timer > time)
 		return;
-	self.current_acceleration = self.phys_acceleration;
-	self.phys_acceleration = 0;
-	self.movementflags |= MF_NOACCELERATION;
+	who.current_acceleration = who.phys_acceleration;
+	who.phys_acceleration = 0;
+	who.movementflags |= MF_NOACCELERATION;
 	if (timer < 0)
-		self.noacceleration_timer = time + 7200; // 2 hours, wait to be manually reset
+		who.noacceleration_timer = time + 7200; // 2 hours, wait to be manually reset
 	else
-		self.noacceleration_timer = time + timer;
+		who.noacceleration_timer = time + timer;
 };
 
 void() StartAcceleration =
@@ -1101,17 +1101,17 @@ void() StartAcceleration =
 	self.movementflags -= self.movementflags & MF_NOACCELERATION;	
 };
 
-void(float timer) StopAirAcceleration =
+void(float timer, entity who) StopAirAcceleration =
 {
-	if (self.noairacceleration_timer > time)
+	if (who.noairacceleration_timer > time)
 		return;
-	self.current_airacceleration = self.phys_airacceleration;
-	self.phys_airacceleration = 0;
-	self.movementflags |= MF_NOAIRACCELERATION;
+	who.current_airacceleration = who.phys_airacceleration;
+	who.phys_airacceleration = 0;
+	who.movementflags |= MF_NOAIRACCELERATION;
 	if (timer < 0)
-		self.noairacceleration_timer = time + 7200; // 2 hours
+		who.noairacceleration_timer = time + 7200; // 2 hours
 	else
-		self.noairacceleration_timer = time + timer;
+		who.noairacceleration_timer = time + timer;
 };
 
 void() StartAirAcceleration =
@@ -1125,17 +1125,17 @@ void() StartAirAcceleration =
 	self.movementflags -= self.movementflags & MF_NOAIRACCELERATION;
 };
 
-void(float timer) ForceStartSlide =
+void(float timer, entity who) ForceStartSlide =
 {
-	if (self.forcedslide_timer > time) 
+	if (who.forcedslide_timer > time) 
 		return;
 	
-	self.phys_friction = 0;
-	self.movementflags |= MF_FORCEDSLIDE;
+	who.phys_friction = 0;
+	who.movementflags |= MF_FORCEDSLIDE;
 	if (timer < 0)
-		self.forcedslide_timer = time + 7200;
+		who.forcedslide_timer = time + 7200;
 	else
-		self.forcedslide_timer = time + timer;
+		who.forcedslide_timer = time + timer;
 };
 
 void() StopSlide =
@@ -1268,7 +1268,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		consumeAdrenaline(0, 0.2);
 		addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
 		self.jump_timer = time + 0.5;
-		StopAirAcceleration(0.4);
+		StopAirAcceleration(0.4, self);
 		//StopAcceleration(0.4);
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 		if (self.weapon == IT_KATANA)
@@ -1288,7 +1288,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 			addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
 			//addShake(100,rvel * 0.2, rvel * 0.1);
 			self.jump_timer = time + 0.5;
-			StopAirAcceleration(0.4);
+			StopAirAcceleration(0.4, self);
 			sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 			if (self.weapon == IT_KATANA)
 				self.speedmodifier = 2;
@@ -1459,7 +1459,42 @@ void() checkMovementInput =
 
 //------------------------------------------------------ DASH JUMPS -- END -----------------------------------
 
-void() kickFootsteps =
+void(float svolume) soundFootsteps =
+{
+	float r;
+	
+	svolume = clamp(0.25, svolume, 1);
+// don't repeat same sound twice in a row
+	while (self.laststep == r)
+		r = rint(random()*5);
+	
+	self.laststep = r;
+	
+	switch (r)
+	{
+		default:
+		case 0:
+			sound (self, CHAN_BODY, "player/step1.wav", svolume, ATTN_IDLE);
+			break;
+		case 1:
+			sound (self, CHAN_BODY, "player/step2.wav", svolume, ATTN_IDLE);
+			break;
+		case 2:
+			sound (self, CHAN_BODY, "player/step3.wav", svolume, ATTN_IDLE);
+			break;
+		case 3:
+			sound (self, CHAN_BODY, "player/step4.wav", svolume, ATTN_IDLE);
+			break;
+		case 4:
+			sound (self, CHAN_BODY, "player/step5.wav", svolume, ATTN_IDLE);
+			break;
+		case 5:
+			sound (self, CHAN_BODY, "player/step6.wav", svolume, ATTN_IDLE);
+			break;
+	}
+};
+
+void() sprintFootsteps =
 {
 	local float intensity;
 	
@@ -1468,13 +1503,27 @@ void() kickFootsteps =
 	
 	intensity = self.speedmodifier - 1.0;
 	
-	self.footstep_timer = time + 0.3;
+	self.footstep_timer = time + 0.4 - (0.15 * intensity);
 	
 	if (self.movementflags & MF_LEFTLEG)
 		addShake(-60*intensity,-30*intensity,-10*intensity);
 	else
 		addShake(-60*intensity,30*intensity,10*intensity);
+	
+	soundFootsteps(1); // full volume
 	self.movementflags ^= MF_LEFTLEG;
+};
+
+void() basicFootsteps =
+{
+	if (self.footstep_timer > time)
+		return;
+	
+	if (self.wallrun)
+		self.footstep_timer = time + 0.25;
+	else
+		self.footstep_timer = time + 0.4;
+	soundFootsteps(0.4); // full volume
 };
 
 // touch procedure
@@ -1486,8 +1535,7 @@ void() playerBump =
 	if (other.flags & FL_MONSTER && other.takedamage)
 	{
 		makevectors(self.v_angle);
-		direction = other.origin - self.origin;
-		direction = normalize(direction);
+		direction = normalize(other.origin - self.origin);
 		angle_difference = direction * v_forward;
 		if (angle_difference > 0.5)
 		{
@@ -1495,8 +1543,6 @@ void() playerBump =
 			self.touch = SUB_Null;
 		}
 	}
-	if (self.katana_finished < time)
-		self.touch = SUB_Null;
 };
 
 /*================
@@ -1612,6 +1658,7 @@ void() PlayerPreThink =
 		self.sprawlflags -= self.sprawlflags & SFL_NEEDTOSETSPEED;
 		SetMovementParams_Standard(); // not ok
 	}
+	
 //	Katana sprint
 	if (self.weapon == IT_KATANA && self.flags & FL_ONGROUND)
 	{
@@ -1623,7 +1670,7 @@ void() PlayerPreThink =
 			{
 				if (self.player_inputs == MOVE_FORWARD)
 				{
-					kickFootsteps();
+					sprintFootsteps();
 					self.speedmodifier += frametime; // +100% per second
 					consumeAdrenaline(0.2, 0);
 					if (self.speedmodifier > 2)
@@ -1643,6 +1690,12 @@ void() PlayerPreThink =
 			if (!(self.movementflags & MF_NOACCELERATION))
 				self.phys_acceleration = 1 - (self.speedmodifier - 1)*0.25;
 		}
+	}
+// step sounds are executed after sprint so it has higher priority
+	if (!self.b_slide)
+	{
+		if ((self.flags & FL_ONGROUND || self.wallrun) && self.current_speed > 150)
+			basicFootsteps();
 	}
 	
 	float i;
@@ -1702,6 +1755,7 @@ void() PlayerPreThink =
 		self.flags = self.flags | FL_JUMPRELEASED;
 
 	float interpolation;
+	float cshift_val;
 	// catch in and out
 	// player can release button during transition phase, so we need to know how deep into transition we was
 	// then start new transition back from that point
@@ -1748,9 +1802,15 @@ void() PlayerPreThink =
 			interpolation = lerp(SLOWMO_VALUE, 1.0, (slowmotion_time - time) * SLOWMO_FADE_HELPER*2); // helper is const of 1/SLOWMO_FADE_TIME to save calculation time
 		else 
 			interpolation = lerp(1.0, SLOWMO_VALUE, (slowmotion_time - time) * SLOWMO_FADE_HELPER);
-			
+		
+		cshift_val = 1 - interpolation;
 		interpolation = (ceil(interpolation * 10)) * 0.1; // round to 0.1
 		change_timescale(interpolation);
+
+		stuffcmd(self, "v_cshift 40 100 170");
+		stuffcmd(self, ftos(cshift_val * 50)); // [0 .. 30]
+		stuffcmd(self, "\n");
+		//175 90 55
 		
 		if (slowmotion_time < time)
 			slowmotion_time = 0;

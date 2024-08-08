@@ -259,10 +259,11 @@ void		end_sys_globals;		// flag for structure dumping
 .float		weapon_skin;
 .float		clip;
 .float 		noclip;
-.entity		info_ent;
-.float		health_head; // head has separate healthpool, it still can kill the monster or made him headless
-.float		health_head_max;
-.string		info_name;
+.float		info_type; //hardcoded names for now
+.float		info_hp;
+.float		info_head;
+.float		info_hp_max;
+.float		info_head_max;
 
 //================================================
 void		end_sys_fields;			// flag for structure dumping
@@ -674,6 +675,7 @@ const float MFL_SHIELD = 2048;
 const float MFL_PUSH_RESISTENT = 4096;
 const float MFL_FIENDTOUCH = 8192; // fiend only
 const float MFL_LOSTWEAPON = 8192; // ogre only
+const float MFL_SHAM_EXPLODE = 8192; // shambler only
 //const float MFL_HASDRONE = 8192; // vore only
 
 const float TYPE_GENERAL = 0;
@@ -694,6 +696,9 @@ const float SFL_VMOFFSET = 128;
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
 const float SFL_UNLIMITED_ADRENALINE = 1024;
+
+// world brush flags
+const float SFL_MOVINGSOLID = 1;
 // projectile
 const float SFLP_GRENADE_CHARGED = 1;
 const float SFLP_GRENADE_NOTOUCH = 2;
@@ -736,15 +741,15 @@ enum monstertypes:int {
 };
 
 #define KATANA_DAMAGE			30
-#define PISTOL_DAMAGE			50
-#define PISTOL_PENETRATION		-0.3
+#define PISTOL_DAMAGE			70
+#define PISTOL_PENETRATION		-0.4
 #define SMG_DAMAGE				12
 #define SMG_PENETRATION			0.5
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
 #define CHAINGUN_DAMAGE			120
 #define CHAINGUN_PENETRATION	-0.3
-#define GRENADE_EXPLOSION		150
+#define GRENADE_EXPLOSION		200
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
 #define GAUSS_DAMAGE			190
@@ -760,19 +765,19 @@ typedef struct {
 armor_t armorstats; // global used in T_DAMAGE
 // stats for monsters		  br bm			hr hm		er
 const armor_t A_NULL 		= {0, 0,		0, 0,		0};
-const armor_t A_SOLDIER		= {0, 0,		0, 0,		0};
+const armor_t A_SOLDIER		= {0.1, 0,		0, 0,		0};
 const armor_t A_KNIGHT		= {0.25, 0,		0, 0,		0};
-const armor_t A_ENFORCER	= {0.3, 0,		0, 5,		0};
-const armor_t A_DOG			= {0.3, 3,		0, 0,		0.2};
+const armor_t A_ENFORCER	= {0.4, 1,		0.15, 5,	0};
+const armor_t A_DOG			= {0.4, 1,		0, 0,		0.2};
 const armor_t A_SCRAG		= {0.0, 0,		0, 0,		0.2};
-const armor_t A_ZOMBIE		= {0.4, 2,		0.2, 1,		0.2};
-const armor_t A_OGRE		= {0.5, 5,		0.3, 2,		0.8};
+const armor_t A_ZOMBIE		= {0.3, 2,		0.2, 1,		0.2};
+const armor_t A_OGRE		= {0.5, 4,		0.3, 2,		0.8};
 const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
 const armor_t A_FIEND		= {0.7, 2,		0.8, 30,	0.8};
 const armor_t A_VORE		= {0.4, 5,		0, 0,		0.8};
 const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 
-#define SOLDIER_HEALTH 		85
+#define SOLDIER_HEALTH 		100
 #define SOLDIER_HEAD 		20
 #define KNIGHT_HEALTH		100
 #define KNIGHT_HEAD			20
@@ -784,8 +789,8 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 #define ZOMBIE_HEALTH		150
 #define ZOMBIE_HEADLESS		50
 #define ZOMBIE_HEAD			50
-#define OGRE_HEALTH			500		
-#define OGRE_HEALTH_FAST	250		
+#define OGRE_HEALTH			475		
+#define OGRE_HEALTH_FAST	350		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
 #define HELLKNIGHT_HEALTH	250
@@ -821,6 +826,7 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 .float		jumpreset_time;
 .float		spin_finished;
 .float		pushback_time; // vore shield
+.float		laststep;
 
 .float		chaingun_frame;
 .float 		jump_timer;
@@ -845,6 +851,7 @@ entity		grenade_handler; // global
 .float		hitmarker_time;
 .float		headmarker_time;
 .float		katana_charges;
+.float		shock_charge;
 
 .float		chaingun_frame;
 .float		chaingun_speed;
@@ -868,6 +875,11 @@ entity		grenade_handler; // global
 .float		saved_inputs; // use this to find out which inputs was changed since last frame
 
 // monsters stuff ----------------------------------------------------------------------------------------------------------
+.float		health_head; // move to progs
+.float		health_head_max; // move to progs
+.entity 	info_ent;
+.entity 	info_oldent;
+
 .float		monstertype;
 .float		state;
 // end

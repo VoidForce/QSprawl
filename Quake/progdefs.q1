@@ -174,10 +174,11 @@ typedef struct
 	float		weapon_skin;
 	float		clip;
 	float		noclip;
-	int			info_ent;
-	float		health_head;
-	float		health_head_max;
-	string_t	info_name;
+	float		info_type;
+	float		info_hp;
+	float		info_head;
+	float		info_hp_max;
+	float		info_head_max;
 } entvars_t;
 
-#define PROGHEADER_CRC 39637
+#define PROGHEADER_CRC 62274

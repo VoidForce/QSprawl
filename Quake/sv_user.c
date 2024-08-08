@@ -624,18 +624,7 @@ void SV_ClientThink (void)
 // show 1/3 the pitch angle and all the roll angle
 	cmd = host_client->cmd;
 	angles = sv_player->v.angles;
-	/*
-	sv_player->v.player_inputs = 0;
-	if (cmd.forwardmove > 0)
-		sv_player->v.player_inputs += 1;
-	else if (cmd.forwardmove < 0)
-		sv_player->v.player_inputs += 2;
 
-	if (cmd.sidemove > 0)
-		sv_player->v.player_inputs += 4;
-	else if (cmd.sidemove < 0)
-		sv_player->v.player_inputs += 8;
-	*/
 	VectorAdd (sv_player->v.v_angle, sv_player->v.punchangle, v_angle);
 	angles[ROLL] = V_CalcRoll (sv_player->v.angles, sv_player->v.velocity) * 4;
 
