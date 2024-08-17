@@ -2366,20 +2366,6 @@ void COM_AddGameDirectory (const char *dir)
 		q_strlcat(com_gamenames, ";", sizeof(com_gamenames));
 	q_strlcat(com_gamenames, dir, sizeof(com_gamenames));
 
-	// quakespasm enables mission pack flags automatically,
-	// so e.g. -game rogue works without breaking the hud
-	if (!q_strcasecmp(dir,"rogue")) {
-		rogue = true;
-		standard_quake = false;
-	}
-	if (!q_strcasecmp(dir,"hipnotic") || !q_strcasecmp(dir,"quoth")) {
-		hipnotic = true;
-		standard_quake = false;
-	}
-	if (!q_strcasecmp(dir,"q64")) {
-		quake64 = true;
-	}
-
 	// assign a path_id to this game directory
 	if (com_searchpaths)
 		path_id = com_searchpaths->path_id << 1;
@@ -3237,6 +3223,7 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 	{
 		// start up with GAMENAME by default (id1)
 		COM_AddGameDirectory (GAMENAME);
+		COM_AddGameDirectory ("sprawl");
 	}
 
 	/* this is the end of our base searchpath:
@@ -3247,14 +3234,6 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 	COM_ResetGameDirectories("");
 
 	Modlist_Init ();
-
-	// add mission pack requests (only one should be specified)
-	if (COM_CheckParm ("-rogue"))
-		COM_AddGameDirectory ("rogue");
-	if (COM_CheckParm ("-hipnotic"))
-		COM_AddGameDirectory ("hipnotic");
-	if (COM_CheckParm ("-quoth"))
-		COM_AddGameDirectory ("quoth");
 
 	for(i = 0;;)
 	{

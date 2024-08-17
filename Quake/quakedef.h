@@ -56,8 +56,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	QUAKESPASM_VER_STRING	QS_STRINGIFY(QUAKESPASM_VERSION) "." QS_STRINGIFY(QUAKESPASM_VER_PATCH) QUAKESPASM_VER_SUFFIX
 #define	IRONWAIL_VER_STRING		QS_STRINGIFY(IRONWAIL_VER_MAJOR) "." QS_STRINGIFY(IRONWAIL_VER_MINOR) "." QS_STRINGIFY(IRONWAIL_VER_PATCH) IRONWAIL_VER_SUFFIX
 
-#define CONSOLE_TITLE_STRING	"qSprawl Ironwail " IRONWAIL_VER_STRING
-#define WINDOW_TITLE_STRING		"qSprawl/Ironwail " IRONWAIL_VER_STRING
+#define CONSOLE_TITLE_STRING	"Sprawl96 Ironwail " IRONWAIL_VER_STRING
+#define WINDOW_TITLE_STRING		"Sprawl96/Ironwail " IRONWAIL_VER_STRING
 #define CONFIG_NAME				"ironwail.cfg"
 #define SCREENSHOT_PREFIX		"ironwail"
 #define ENGINE_PAK				"ironwail.pak"
@@ -144,6 +144,7 @@ typedef enum
 	STAT_INFO_HEAD		= 20,
 	STAT_INFO_HEAD_MAX	= 21,
 	STAT_INFO_TYPE		= 22,
+	STAT_WALLJUMPS		= 23,
 } stat_t;
 
 // stock defines
@@ -163,9 +164,9 @@ typedef enum
 	IT_ROCKETS			= (1<<10),
 	IT_CELLS			= (1<<11),
 	IT_AXE				= (1<<12),
-	IT_ARMOR1			= (1<<13),
-	IT_ARMOR2			= (1<<14),
-	IT_ARMOR3			= (1<<15),
+	IT_ARMOR			= (1<<13), 
+	//14 
+	//15
 	IT_SUPERHEALTH		= (1<<16),
 	IT_KEY1				= (1<<17),
 	IT_KEY2				= (1<<18),

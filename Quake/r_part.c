@@ -72,6 +72,7 @@ static int	robotspark[16] = { 0xf4, 0xf5, 0xf6, 0xfc, 0xef, 0xee, 0xed, 0xec, 0x
 #define IMPACT_WALL 10
 #define IMPACT_LASER 11
 #define IMPACT_SHIELD 12
+#define IMPACT_SHOCK 13
 
 particle_t	*particles;
 int			r_numparticles, r_numactiveparticles;
@@ -705,9 +706,9 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 	if (type == MF_SMG)
 		amount = 3;
 	else if (type == MF_CHAINGUN)
-		amount = 20;
+		amount = 8;
 	else if (type == MF_SHOTGUN)
-		amount = 4;
+		amount = 6;
 	else
 		amount = 5;
 	// muzzle sparks
@@ -728,9 +729,9 @@ void R_BulletTrail(vec3_t start, vec3_t end, int type)
 		}
 		else
 		{
-			dir[0] = vec[0] * 400 + (rand() % 200) - 100; // 
-			dir[1] = vec[1] * 400 + (rand() % 200) - 100; // 
-			dir[2] = vec[2] * 400 + (rand() % 200) - 100; // 
+			dir[0] = vec[0] * 1400 + (rand() % 600) - 300; // 
+			dir[1] = vec[1] * 1400 + (rand() % 600) - 300; // 
+			dir[2] = vec[2] * 1400 + (rand() % 600) - 300; // 
 		}
 		VectorCopy(dir, p->vel);
 		VectorCopy(start, p->org);
@@ -839,6 +840,7 @@ shooter - trace start coordinates
 void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 {
 	particle_t* p;
+	dlight_t* dl;
 	vec3_t direction, inversed_direction, offset, offset2;
 	vec3_t side, up;
 	//vec3_t offset;
@@ -846,6 +848,18 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 
 	float degree;
 	vec3_t reflect;
+
+	// dynamic light effect
+	dl = CL_AllocDlight(0);
+	VectorCopy(impact, dl->origin);
+	dl->radius = 100;
+	dl->die = cl.time + 0.6;
+	dl->decay = 180;
+	dl->color[0] = 1.4; //orange-ish
+	dl->color[1] = 1.16;
+	dl->color[2] = 0.81;
+	dl->flag = 1;
+
 // find direction vector from the impact point towards player
 	VectorSubtract(shooter, impact, direction);
 	VectorNormalize(direction);
@@ -1061,8 +1075,19 @@ void R_ImpactSparks(vec3_t org, vec3_t dir, int color, int color_rand, int count
 void R_ImpactShield(vec3_t impact, vec3_t host_org)
 {
 	particle_t* p;
+	dlight_t* dl;
 	vec3_t normal, side, up;
-	int i, j, k;
+	int j, k;
+	float angle;
+	
+	dl = CL_AllocDlight(0);
+	VectorCopy(impact, dl->origin);
+	dl->radius = 200;
+	dl->die = cl.time + 0.2;
+	dl->decay = 250;
+	dl->color[0] = 0.48; //blue-ish
+	dl->color[1] = 1.26;
+	dl->color[2] = 1.96;
 
 	// find direction vector from the impact point towards player
 	VectorSubtract(host_org, impact, normal);
@@ -1075,28 +1100,26 @@ void R_ImpactShield(vec3_t impact, vec3_t host_org)
 	CrossProduct(side, normal, up); //second vector orthogonal to normal
 	VectorNormalize(up);
 
-	for (i = 1; i < 3; i++)
+	for (j = 0; j < 60; j++)
 	{
-		for (j = 0; j < 36; j++)
+		if (!(p = R_AllocParticle()))
+			return;
+
+		p->die = cl.time + 0.35;
+		p->type = pt_static;
+		p->ramp = 0;
+		p->color = 0xf4;
+		angle = DEG2RAD(j * 6);// radiants?
+
+		for (k = 0; k < 3; k++)
 		{
-			if (!(p = R_AllocParticle()))
-				return;
-
-			p->die = cl.time + 0.2;
-			p->type = pt_static;
-			p->ramp = 0;
-			p->color = 0xf4;
-
-			for (k = 0; k < 3; k++)
-			{
-				p->org[k] = impact[k] + up[k] * circley[j] * i * 2
-					+ side[k] * circlex[j] * i * 2
-					+ normal[k];
-			}
-			p->vel[0] = (impact[0] - p->org[0])*60;
-			p->vel[1] = (impact[1] - p->org[1])*60;
-			p->vel[2] = (impact[2] - p->org[2])*60;
+			p->org[k] = impact[k] + up[k] * cos(angle) * 1
+				+ side[k] * sin(angle) * 1
+				+ normal[k];
 		}
+		p->vel[0] = (impact[0] - p->org[0])*70;
+		p->vel[1] = (impact[1] - p->org[1])*70;
+		p->vel[2] = (impact[2] - p->org[2])*70;
 	}
 	R_ImpactSparks(impact, normal, 0xf4, 0, 20, 10, 800);
 }
@@ -1165,6 +1188,11 @@ void R_Impact(vec3_t org, vec3_t dir, int type)
 
 		case IMPACT_SHIELD:
 			R_ImpactShield(org, dir);
+			break;
+
+		case IMPACT_SHOCK:
+			R_ImpactSparks(org, dir, 0xf5, 1, 20, 5, 200);
+			R_ImpactSparks(org, dir, 0xeb, 4, 4, 0, 600);
 			break;
 	}
 }

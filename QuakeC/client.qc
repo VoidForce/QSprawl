@@ -75,8 +75,7 @@ void() SetChangeParms =
 	parm6 = self.ammo_rockets;
 	parm7 = self.ammo_cells;
 	parm8 = self.weapon;
-	parm9 = self.armortype * 100;
-	parm10 = self.ammo_bullets;
+	parm9 = self.ammo_bullets;
 };
 
 void() SetNewParms =
@@ -90,7 +89,6 @@ void() SetNewParms =
 	parm7 = 0;
 	parm8 = 1;
 	parm9 = 0;
-	parm10 = 0;
 };
 
 void() DecodeLevelParms =
@@ -109,8 +107,7 @@ void() DecodeLevelParms =
 	self.ammo_rockets = parm6;
 	self.ammo_cells = parm7;
 	self.weapon = parm8;
-	self.armortype = parm9 * 0.01;
-	self.ammo_bullets = parm10;
+	self.ammo_bullets = parm9;
 };
 
 /*============
@@ -1248,10 +1245,10 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 	self.wall_jumps++;
 	
 // shift trail further into the past, so monsters looks confused
-	if (skill == 2)
+	if (skill > 1)
 	{
 		self.trail++; 
-		self.trail_time = time + 1;
+		self.trail_time = time + (1 - 0.5 * (skill - 2)); // 0.5 on skill 3, 1 second on skill 2
 	}
 	else if (skill < 2)
 	{
@@ -1308,7 +1305,7 @@ void() checkPressCombo =
 	// no more actions to read, cancel
 		if (!action)
 			return;
-		
+	// forward and backwards jumps allowed only on lower skills
 	if (skill < 2)
 	{
 	// front jump, combo1
@@ -1449,7 +1446,8 @@ void() catchComboInput =
 
 void() checkMovementInput =
 {
-	if (self.weapon != IT_KATANA && skill < 3)
+// allow dodges with katana on any skill, and with any weapon on hard and nightmare
+	if (self.weapon != IT_KATANA && skill < 2)
 		return;
 	catchComboInput();
 // Important! must be set after all the input/combo checks
@@ -1461,6 +1459,8 @@ void() checkMovementInput =
 
 void(float svolume) soundFootsteps =
 {
+	if (self.flags & FL_INWATER)
+		return;
 	float r;
 	
 	svolume = clamp(0.25, svolume, 1);
@@ -1826,11 +1826,12 @@ void() PlayerPreThink =
 		if (self.flags & FL_ONGROUND)
 		{
 			// we not yet in the slide state, so dicide what to do
-			if (!(self.movementflags & MF_INSLIDE)) 
+			if (!(self.movementflags & MF_INSLIDE) && self.slide_time < time) 
 			{
 				// set slide movement params first
 				self.movementflags |= MF_INSLIDE;
 				self.crouch_timer = time + 0.2;
+				self.slide_time = time + 0.3;
 				SetMovementParams_Slide();
 				//StopAcceleration(-1);
 				

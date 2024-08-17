@@ -87,7 +87,7 @@
     <OutDir>..\..\..\..</OutDir>
     <IntDir>Build-$(ProjectName)\$(PlatformShortName)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>qSprawl</TargetName>
+    <TargetName>Sprawl96</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

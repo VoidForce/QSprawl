@@ -1038,6 +1038,50 @@ static void PF_findradius (void)
 	RETURN_EDICT(chain);
 }
 
+static void PF_findradius_takedamage(void)
+{
+	edict_t* ent, * chain;
+	float	rad;
+	float* org;
+	int		i;
+
+	chain = (edict_t*)qcvm->edicts;
+
+	org = G_VECTOR(OFS_PARM0);
+	rad = G_FLOAT(OFS_PARM1);
+	rad *= rad;
+
+	ent = NEXT_EDICT(qcvm->edicts);
+	for (i = 1; i < qcvm->num_edicts; i++, ent = NEXT_EDICT(ent))
+	{
+		float d, lensq;
+		if (ent->free)
+			continue;
+		if (ent->v.solid == SOLID_NOT)
+			continue;
+		if (!(ent->v.takedamage))
+			continue;
+
+		d = org[0] - (ent->v.origin[0] + (ent->v.mins[0] + ent->v.maxs[0]) * 0.5);
+		lensq = d * d;
+		if (lensq > rad)
+			continue;
+		d = org[1] - (ent->v.origin[1] + (ent->v.mins[1] + ent->v.maxs[1]) * 0.5);
+		lensq += d * d;
+		if (lensq > rad)
+			continue;
+		d = org[2] - (ent->v.origin[2] + (ent->v.mins[2] + ent->v.maxs[2]) * 0.5);
+		lensq += d * d;
+		if (lensq > rad)
+			continue;
+
+		ent->v.chain = EDICT_TO_PROG(chain);
+		chain = ent;
+	}
+
+	RETURN_EDICT(chain);
+}
+
 /*
 =================
 PF_DistanceToRay
@@ -1325,6 +1369,10 @@ static void PF_walkmove (void)
 	vec3_t	move;
 	dfunction_t	*oldf;
 	int	oldself;
+	//qboolean movedone;
+
+	//vec3_t move_dir;
+	//float step, distance;
 
 	ent = PROG_TO_EDICT(pr_global_struct->self);
 	yaw = G_FLOAT(OFS_PARM0);
@@ -1341,14 +1389,25 @@ static void PF_walkmove (void)
 	move[0] = cos(yaw) * dist;
 	move[1] = sin(yaw) * dist;
 	move[2] = 0;
+	//distance = 0;
+	//movedone = 1;
 
-// save program state, because SV_movestep may call other progs
+	// save program state, because SV_movestep may call other progs
 	oldf = qcvm->xfunction;
 	oldself = pr_global_struct->self;
-
-	G_FLOAT(OFS_RETURN) = SV_movestep(ent, move, true);
-
-
+	/*
+	while (distance < dist && movedone)
+	{
+		distance += 4;
+		if (distance < dist)
+			step = 4;
+		else
+			step = distance - dist;
+		move[0] = move_dir[0] * step;
+		move[1] = move_dir[1] * step;
+		movedone = SV_movestep(ent, move, true);
+	}*/
+	G_FLOAT(OFS_RETURN) = SV_movestep(ent, move, true);  //movedone;
 // restore program state
 	qcvm->xfunction = oldf;
 	pr_global_struct->self = oldself;
@@ -3668,9 +3727,9 @@ builtindef_t pr_builtindefs[] =
 	{"WriteString",				PF_SSQC(PF_WriteString),		58},
 	{"WriteEntity",				PF_SSQC(PF_WriteEntity),		59},
 
-	{"sin",						PF_BOTH(PF_Sin),				60,		DP_QC_SINCOSSQRTPOW},	// float(float angle)
-	{"cos",						PF_BOTH(PF_Cos),				61,		DP_QC_SINCOSSQRTPOW},	// float(float angle)
-	{"sqrt",					PF_BOTH(PF_Sqrt),				62,		DP_QC_SINCOSSQRTPOW},	// float(float value)
+	{"sin",						PF_BOTH(PF_Sin),				60}, // float(float angle)
+	{"cos",						PF_BOTH(PF_Cos),				61}, // float(float angle)
+	{"sqrt",					PF_BOTH(PF_Sqrt),				62}, // float(float value)
 
 	{"etos",					PF_BOTH(PF_etos),				65,		DP_QC_ETOS},			// string(entity ent)
 
@@ -3678,15 +3737,15 @@ builtindef_t pr_builtindefs[] =
 	{"precache_file",			PF_SSQC(PF_precache_file), 68},
 	{ "makestatic",				PF_SSQC(PF_makestatic),			69 },
 
-	{ "changelevel",				PF_SSQC(PF_changelevel),		70 },
+	{ "changelevel",			PF_SSQC(PF_changelevel),		70 },
 
 	{ "cvar_set",				PF_BOTH(PF_cvar_set),			72 },
-	{ "centerprint",				PF_SSQC(PF_centerprint),		73 },
+	{ "centerprint",			PF_SSQC(PF_centerprint),		73 },
 
 	{ "ambientsound",			PF_SSQC(PF_ambientsound),		74 },
 
-	{ "precache_model2",			PF_SSQC(PF_precache_model),		75 },
-	{ "precache_sound2",			PF_SSQC(PF_precache_sound),		76 },	// precache_sound2 is different only for qcc
+	{ "precache_model2",		PF_SSQC(PF_precache_model),		75 },
+	{ "precache_sound2",		PF_SSQC(PF_precache_sound),		76 },	// precache_sound2 is different only for qcc
 	{ "precache_file2",			PF_SSQC(PF_precache_file),		77 },
 
 	{ "setspawnparms",			PF_SSQC(PF_setspawnparms),		78 },
@@ -3706,11 +3765,11 @@ builtindef_t pr_builtindefs[] =
 	{ "ex_walkpathtogoal",		PF_SSQC(PF_walkpathtogoal) },			// float(float movedist, vector goal)
 	{ "ex_localsound",			PF_SSQC(PF_localsound) },				// void(entity client, string sample)
 
-	{ "min",						PF_BOTH(PF_min),				94,		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
-	{ "max",						PF_BOTH(PF_max),				95,		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
-	{ "bound",					PF_BOTH(PF_bound),				96,		DP_QC_MINMAXBOUND },	// float(float minimum, float val, float maximum)
+	{ "min",						PF_BOTH(PF_min),				94},//		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "max",						PF_BOTH(PF_max),				95},// 		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "clamp",					PF_BOTH(PF_bound),				96 },// DP_QC_MINMAXBOUND },	// float(float minimum, float val, float maximum)
 
-	{ "pow",						PF_BOTH(PF_pow),				97,		DP_QC_SINCOSSQRTPOW },	// float(float value, float exp)
+	{ "pow",						PF_BOTH(PF_pow),				97},// 		DP_QC_SINCOSSQRTPOW },	// float(float value, float exp)
 
 	{ "checkextension",			PF_BOTH(PF_checkextension),		99 },	// float(string extname)
 
@@ -3756,18 +3815,18 @@ builtindef_t pr_builtindefs[] =
 
 	{ "registercommand",			PF_CSQC(PF_cl_registercommand),	352 },	// void(string cmdname)
 
-	{ "vectorvectors",			PF_BOTH(PF_vectorvectors),		432,	DP_QC_VECTORVECTORS },	// void(vector dir)
+	{ "vectorvectors",			PF_BOTH(PF_vectorvectors),		432 },// DP_QC_VECTORVECTORS },	// void(vector dir)
 
 	{ "clientcommand",			PF_SSQC(PF_clientcommand),		440,	KRIMZON_SV_PARSECLIENTCOMMAND },	// void(entity e, string s)
 	{ "tokenize",				PF_BOTH(PF_Tokenize),			441,	KRIMZON_SV_PARSECLIENTCOMMAND },	// float(string s)
 	{ "argv",					PF_BOTH(PF_ArgV),				442,	KRIMZON_SV_PARSECLIENTCOMMAND },	// string(float n)
 	{ "argc",					PF_BOTH(PF_ArgC) },						// float()
 
-	{ "asin",					PF_BOTH(PF_asin),				471,	DP_QC_ASINACOSATANATAN2TAN },	// float(float s)
-	{ "acos",					PF_BOTH(PF_acos),				472,	DP_QC_ASINACOSATANATAN2TAN },	// float(float c)
-	{ "atan",					PF_BOTH(PF_atan),				473,	DP_QC_ASINACOSATANATAN2TAN },	// float(float t)
-	{ "atan2",					PF_BOTH(PF_atan2),				474,	DP_QC_ASINACOSATANATAN2TAN },	// float(float c, float s)
-	{ "tan",					PF_BOTH(PF_tan),				475,	DP_QC_ASINACOSATANATAN2TAN },	// float(float a)
+	{ "asin",					PF_BOTH(PF_asin),				471},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float s)
+	{ "acos",					PF_BOTH(PF_acos),				472},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c)
+	{ "atan",					PF_BOTH(PF_atan),				473},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float t)
+	{ "atan2",					PF_BOTH(PF_atan2),				474},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c, float s)
+	{ "tan",					PF_BOTH(PF_tan),				475},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float a)
 
 	{ "tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE },		// float(string str)
 
@@ -3779,6 +3838,9 @@ builtindef_t pr_builtindefs[] =
 	{ "project_onto_plane",		PF_BOTH(PF_ProjectOnPlane),		704 },
 	{ "reflectVector",			PF_BOTH(PF_Reflect),			705 },
 	{ "vlen2",					PF_BOTH(PF_vlen2),				706 },	// float(vector v) vlen2			= #706
+	{ "findradius_damage",		PF_SSQC(PF_findradius_takedamage),	707 },
+	{ "bitshift",				PF_BOTH(PF_bitshift), 708 },	
+		
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

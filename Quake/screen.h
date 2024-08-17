@@ -60,6 +60,7 @@ typedef enum {
 	CANVAS_SBAR,
 	CANVAS_SBAR_QW_INV,
 	CANVAS_SBAR2,
+	CANVAS_SBAR2GUNS,
 	CANVAS_CROSSHAIR,
 	CANVAS_BOTTOMLEFT,
 	CANVAS_BOTTOMRIGHT,
@@ -92,14 +93,14 @@ extern	cvar_t		scr_sbarscale;
 extern	cvar_t		scr_conwidth;
 extern	cvar_t		scr_conscale;
 extern	cvar_t		scr_scale;
-extern	cvar_t		scr_crosshairscale;
+
 //johnfitz
 
 typedef enum hudstyle_t
 {
 	HUD_CLASSIC,
 	HUD_MODERN_CENTERAMMO,		// Modern 1
-	HUD_MODERN_SIDEAMMO,		// Modern 2
+	//HUD_MODERN_SIDEAMMO,		// Modern 2
 	HUD_QUAKEWORLD,
 
 	HUD_COUNT,

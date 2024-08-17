@@ -31,7 +31,18 @@ cvar_t ui_mouse_sound = {"ui_mouse_sound", "0", CVAR_ARCHIVE};
 cvar_t ui_sound_throttle = {"ui_sound_throttle", "0.1", CVAR_ARCHIVE};
 cvar_t ui_search_timeout = {"ui_search_timeout", "1", CVAR_ARCHIVE};
 
+static int crosshair_color_ramp[11] = { 0, 6, 13, 254, 144, 192, 208, 234, 242, 244, 251};
+
 extern cvar_t crosshair;
+extern cvar_t crosshair_type;
+extern cvar_t crosshair_width ;
+extern cvar_t crosshair_length;
+extern cvar_t crosshair_gap;
+extern cvar_t crosshair_color;
+extern cvar_t crosshair_alpha;
+extern cvar_t crosshair_dot;
+extern cvar_t crosshair_dot_color;
+extern cvar_t crosshair_dot_alpha;
 extern cvar_t scr_fov;
 extern cvar_t cl_gun_fovscale;
 //extern cvar_t v_gunkick;
@@ -74,6 +85,8 @@ extern cvar_t gyro_pitchsensitivity;
 extern cvar_t gyro_yawsensitivity;
 extern cvar_t gyro_noise_thresh;
 
+extern cvar_t game_pickups;
+
 extern char crosshair_char;
 
 extern qboolean quake64;
@@ -104,6 +117,7 @@ void M_Menu_Main_f (void);
 		void M_Menu_Keys_f (void);
 		void M_Menu_Video_f (void);
 		void M_Menu_Gamepad_f (void);
+		void M_Menu_Crosshair_f (void);
 	void M_Menu_Mods_f (void);
 		void M_Menu_ModInfo_f (const filelist_item_t *item);
 	void M_Menu_Help_f (void);
@@ -3181,6 +3195,19 @@ void M_Calibration_Key (int key)
 #define MIN_GYRO_NOISE_THRESH	0.f
 #define MAX_GYRO_NOISE_THRESH	5.f
 
+//=============================================================================
+/* CROSSHAIR MENU */
+#define MIN_CROSSHAIR_WIDTH			1
+#define MAX_CROSSHAIR_WIDTH			100
+#define MIN_CROSSHAIR_LENGTH		1
+#define MAX_CROSSHAIR_LENGTH		100
+#define MIN_CROSSHAIR_GAP			1
+#define MAX_CROSSHAIR_GAP			100
+#define MIN_CROSSHAIR_ALPHA			0.f
+#define MAX_CROSSHAIR_ALPHA			1.f
+#define MIN_CROSSHAIR_DOT_ALPHA		0.f
+#define MAX_CROSSHAIR_DOT_ALPHA		1.f
+
 /*
 ================
 M_Menu_Gamepad_f
@@ -3189,6 +3216,14 @@ M_Menu_Gamepad_f
 void M_Menu_Gamepad_f (void)
 {
 	M_Options_Init (m_gamepad);
+}
+
+/*
+* 
+*/
+void M_Menu_Crosshair_f(void)
+{
+	M_Options_Init (m_crosshair);
 }
 
 //=============================================================================
@@ -3204,18 +3239,19 @@ void M_Menu_Gamepad_f (void)
 	def (OPT_DEFAULTS,		"Reset Config")			\
 													\
 	def (OPT_SPACE1,		"")						\
+	def (OPT_PICKUPS,		"Drop Pickups")			\
+	def (OPT_SPACE2,		"")						\
 													\
 	def (OPT_GAMMA,			"Brightness")			\
 	def (OPT_CONTRAST,		"Contrast")				\
 	def (OPT_SCALE,			"UI Scale")				\
-	def (OPT_PIXELASPECT,	"UI Pixels")			\
 	def (OPT_UIMOUSE,		"UI Mouse")				\
 	def (OPT_HUDSTYLE,		"HUD")					\
 	def (OPT_SBALPHA,		"HUD Alpha")			\
 	def (OPT_HUDLEVEL,		"HUD Detail")			\
 	def (OPT_CROSSHAIR,		"Crosshair")			\
 													\
-	def (OPT_SPACE2,		"")						\
+	def (OPT_SPACE3,		"")						\
 													\
 	def (OPT_MOUSESPEED,	"Mouse Speed")			\
 	def (OPT_INVMOUSE,		"Invert Mouse")			\
@@ -3225,7 +3261,7 @@ void M_Menu_Gamepad_f (void)
 	def (OPT_VIEWBOB,		"View Bob")				\
 	def (OPT_ALWAYRUN,		"Always Run")			\
 													\
-	def (OPT_SPACE3,		"")						\
+	def (OPT_SPACE4,		"")						\
 													\
 	def (OPT_SNDVOL,		"Sound Volume")			\
 	def (OPT_MUSICVOL,		"Music Volume")			\
@@ -3288,13 +3324,33 @@ void M_Menu_Gamepad_f (void)
 	def(GPAD_OPT_GYRONOISE,		"Gyro Noise Thresh")\
 	def(GPAD_OPT_CALIBRATE,		"Calibrate")		\
 ////////////////////////////////////////////////////
+#define CROSSHAIR_OPTIONS_LIST(def)					\
+	def(CROSSHAIR_STATE,		"Crosshair")		\
+													\
+	def(CROSSHAIR_SPACE1,		"")					\
+													\
+	def(CROSSHAIR_TYPE,			"Type")				\
+	def(CROSSHAIR_WIDTH,		"Width")			\
+	def(CROSSHAIR_LENGTH,		"Length")			\
+	def(CROSSHAIR_GAP,			"Center Gap")		\
+	def(CROSSHAIR_COLOR,		"Color")			\
+	def(CROSSHAIR_ALPHA,		"Transparency")		\
+													\
+	def(CROSSHAIR_SPACE2,		"")					\
+													\
+	def(CROSSHAIR_DOT,			"Center Dot")		\
+	def(CROSSHAIR_DOT_COLOR,	"Color")			\
+	def(CROSSHAIR_DOT_ALPHA,	"Transparency")		\
+////////////////////////////////////////////////////
 
+// 	def (OPT_PIXELASPECT,	"UI Pixels")
 enum
 {
 	#define ADD_OPTION_ENUM(id, name) id,
 	OPTIONS_LIST (ADD_OPTION_ENUM)
 	VIDEO_OPTIONS_LIST(ADD_OPTION_ENUM)
 	GPAD_OPTIONS_LIST(ADD_OPTION_ENUM)
+	CROSSHAIR_OPTIONS_LIST(ADD_OPTION_ENUM)
 	#undef ADD_OPTION_ENUM
 
 	#define COUNT_OPTION(id, name) +1
@@ -3304,6 +3360,8 @@ enum
 	VIDEO_OPTIONS_ITEMS		= VIDEO_OPTIONS_LIST (COUNT_OPTION),
 	GPAD_OPTIONS_FIRST		= OPTIONS_ITEMS + VIDEO_OPTIONS_ITEMS,
 	GPAD_OPTIONS_ITEMS		= GPAD_OPTIONS_LIST (COUNT_OPTION),
+	CROSSHAIR_OPTIONS_FIRST = GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS,
+	CROSSHAIR_OPTIONS_ITEMS = CROSSHAIR_OPTIONS_LIST(COUNT_OPTION),
 	#undef COUNT_OPTION
 
 	GYRO_OPTIONS_FIRST		= GPAD_OPT_GYROENABLE,
@@ -3321,6 +3379,7 @@ static const char *const options_names[] =
 	OPTIONS_LIST (ADD_OPTION_NAME)
 	VIDEO_OPTIONS_LIST(ADD_OPTION_NAME)
 	GPAD_OPTIONS_LIST(ADD_OPTION_NAME)
+	CROSSHAIR_OPTIONS_LIST(ADD_OPTION_NAME)
 	#undef ADD_OPTION_NAME
 };
 
@@ -3350,6 +3409,7 @@ struct
 	int				options_cursor;
 	int				video_cursor;
 	int				gamepad_cursor;
+	int				crosshair_cursor;
 	int				*last_cursor;
 } optionsmenu;
 
@@ -3473,6 +3533,13 @@ void M_Options_Init (enum m_state_e state)
 		optionsmenu.last_cursor = &optionsmenu.gamepad_cursor;
 		optionsmenu.subtitle = "Gamepad Options";
 	}
+	else if (state == m_crosshair)
+	{
+		optionsmenu.first_item = CROSSHAIR_OPTIONS_FIRST;
+		optionsmenu.list.numitems = CROSSHAIR_OPTIONS_ITEMS;
+		optionsmenu.last_cursor = &optionsmenu.crosshair_cursor;
+		optionsmenu.subtitle = "Crosshair Options";
+	}
 	else
 	{
 		Sys_Error ("M_Options_Init: invalid state %d", state);
@@ -3536,6 +3603,7 @@ void M_AdjustSliders (int dir)
 {
 	int	curr_alwaysrun, target_alwaysrun;
 	float	f, l;
+	int type, index;
 
 	M_ThrottledSound ("misc/menu3.wav");
 	M_List_ClearSearch (&optionsmenu.list);
@@ -3550,7 +3618,6 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValue ("scr_conscale", f);
 		Cvar_SetValue ("scr_menuscale", f);
 		Cvar_SetValue ("scr_sbarscale", f);
-		Cvar_SetValue ("scr_crosshairscale", f);
 		break;
 	case OPT_HUDLEVEL:	// hud detail
 		f = scr_viewsize.value - dir * 10;
@@ -3558,11 +3625,14 @@ void M_AdjustSliders (int dir)
 		else if(f < 100)	f = 100;
 		Cvar_SetValue ("viewsize", f);
 		break;
+	/*
 	case OPT_PIXELASPECT:	// 2D pixel aspect ratio
 		Cvar_Set ("scr_pixelaspect", vid.guipixelaspect == 1.f ? "5:6" : "1");
 		break;
+	*/
 	case OPT_CROSSHAIR:		// crosshair
-		Cvar_SetValueQuick (&crosshair, ((int) q_max (crosshair.value, 0.f) + 3 + dir) % 3);
+		//Cvar_SetValueQuick (&crosshair, ((int) q_max (crosshair.value, 0.f) + 3 + dir) % 3);
+		//Cvar_SetValueQuick (&crosshair, !crosshair.value);
 		break;
 	case OPT_UIMOUSE:	// UI mouse support
 		M_Options_SetUIMouse ((M_Options_GetUIMouse () + UI_MOUSE_NUMSETTINGS + dir) % UI_MOUSE_NUMSETTINGS);
@@ -3798,6 +3868,85 @@ void M_AdjustSliders (int dir)
 		M_Menu_Calibration_f ();
 		break;
 
+	case CROSSHAIR_STATE:
+		Cvar_SetValueQuick (&crosshair, !crosshair.value);
+		break;
+	case CROSSHAIR_TYPE:
+		type = crosshair_type.value;
+		type++;
+		if (type > 4)
+			type = 0;
+		Cvar_SetValueQuick(&crosshair_type, type);
+		break;
+	case CROSSHAIR_WIDTH:
+		Cvar_SetValueQuick(&crosshair_width, CLAMP(MIN_CROSSHAIR_WIDTH, crosshair_width.value + dir * 1, MAX_CROSSHAIR_WIDTH));
+		break;
+	case CROSSHAIR_LENGTH:
+		Cvar_SetValueQuick(&crosshair_length, CLAMP(MIN_CROSSHAIR_LENGTH, crosshair_length.value + dir * 1, MAX_CROSSHAIR_LENGTH));
+		break;
+	case CROSSHAIR_GAP:
+		Cvar_SetValueQuick(&crosshair_gap, CLAMP(MIN_CROSSHAIR_GAP, crosshair_gap.value + dir * 1, MAX_CROSSHAIR_GAP));
+		break;
+	case CROSSHAIR_COLOR:
+		//static int crosshair_color_ramp[11] = { 0, 6, 13, 254, 144, 192, 208, 234, 242, 244, 251 };
+		type = (int)crosshair_color.value;
+		for (index = 0; index < 11; index++)
+		{
+			if (crosshair_color_ramp[index] == type)
+			{
+				index++;
+				if (index > 10)
+					index = 0;
+				break;
+			}
+			// custom color didn't match any of colors in the ramp, start from black then
+			if (index == 10)
+			{
+				index = 0;
+				break;
+			}
+		}
+		Cvar_SetValueQuick(&crosshair_color, crosshair_color_ramp[index]);
+		break;
+	case CROSSHAIR_ALPHA:
+		Cvar_SetValueQuick(&crosshair_alpha, CLAMP(MIN_CROSSHAIR_ALPHA, crosshair_alpha.value + dir * 0.1, MAX_CROSSHAIR_ALPHA));
+		break;
+	case CROSSHAIR_DOT:
+		type = crosshair_dot.value;
+		type++;
+		if (type > 3)
+			type = 0;
+		Cvar_SetValueQuick(&crosshair_dot, type);
+		break;
+	case CROSSHAIR_DOT_COLOR:
+		// well, copy/paste, who cares?
+		type = (int)crosshair_dot_color.value;
+		for (index = 0; index < 11; index++)
+		{
+			if (crosshair_color_ramp[index] == type)
+			{
+				index++;
+				if (index > 10)
+					index = 0;
+				break;
+			}
+			// custom color didn't match any of colors in the ramp, start from black then
+			if (index == 10)
+			{
+				index = 0;
+				break;
+			}
+		}
+		Cvar_SetValueQuick(&crosshair_dot_color, crosshair_color_ramp[index]);
+		break;
+	case CROSSHAIR_DOT_ALPHA:
+		Cvar_SetValueQuick(&crosshair_dot_alpha, CLAMP(MIN_CROSSHAIR_DOT_ALPHA, crosshair_dot_alpha.value + dir * 0.1, MAX_CROSSHAIR_DOT_ALPHA));
+		break;
+
+	case OPT_PICKUPS:	// enable external music vs cdaudio
+		Cvar_Set("game_pickups", game_pickups.value ? "0" : "1");
+		break;
+
 	default:
 		break;
 	}
@@ -3837,7 +3986,7 @@ qboolean M_SetSliderValue (int option, float f)
 		f = l > 0 ? f * l + 1 : 0;
 		Cvar_SetValue ("scr_conscale", f);
 		Cvar_SetValue ("scr_sbarscale", f);
-		Cvar_SetValue ("scr_crosshairscale", f);
+
 		// Delay the actual update until we release the mouse button
 		// to keep the UI layout stable while adjusting the scale
 		if (!slider_grab)
@@ -3925,6 +4074,34 @@ qboolean M_SetSliderValue (int option, float f)
 		f = LERP (MIN_GYRO_NOISE_THRESH, MAX_GYRO_NOISE_THRESH, f);
 		Cvar_SetValueQuick (&gyro_noise_thresh, f);
 		return true;
+
+	case CROSSHAIR_WIDTH:
+		f *= 100;
+		if (f < 1)
+			f = 1;
+		Cvar_SetValue("crosshair_width", f);
+		return true;
+	case CROSSHAIR_LENGTH:
+		f *= 100;
+		if (f < 1)
+			f = 1;
+		Cvar_SetValue("crosshair_length", f);
+		return true;
+	case CROSSHAIR_GAP:
+		f *= 100;
+		Cvar_SetValue("crosshair_gap", f);
+		return true;
+	case CROSSHAIR_ALPHA:
+		if (f < 0.1)
+			f = 0.1;
+		Cvar_SetValue("crosshair_alpha", f);
+		return true;
+	case CROSSHAIR_DOT_ALPHA:
+		if (f < 0.1)
+			f = 0.1;
+		Cvar_SetValue("crosshair_dot_alpha", f);
+		return true;
+
 	default:
 		return false;
 	}
@@ -3969,6 +4146,25 @@ qboolean M_SliderClick (int cx, int cy)
 	return true;
 }
 
+static void M_PrintColor(int x,int y,int r)
+{
+	switch (r)
+	{
+		case 0:		M_Print(x, y, "Black");			break;
+		case 6:		M_Print(x, y, "Grey");			break;
+		case 13:	M_Print(x, y, "Light Grey");	break;
+		case 254:	M_Print(x, y, "White");			break;
+		case 144:	M_Print(x, y, "Pink");			break;
+		case 192:	M_Print(x, y, "Yellow");		break;
+		case 208:	M_Print(x, y, "Blue");			break;
+		case 234:	M_Print(x, y, "Orange");		break;
+		case 242:	M_Print(x, y, "Lime Green");	break;
+		case 244:	M_Print(x, y, "Light Blue");	break;
+		case 251:	M_Print(x, y, "Red");			break;
+		default:	M_Print(x, y, "Custom");		break;
+	}
+}
+
 static void M_Options_DrawItem (int y, int item)
 {
 	char		buf[256];
@@ -3988,6 +4184,7 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_CUSTOMIZE:
 	case OPT_GAMEPAD:
 	case OPT_MODS:
+	case OPT_CROSSHAIR:
 	case GPAD_OPT_CALIBRATE:
 		M_Print (x - 4, y, "...");
 		break;
@@ -4005,18 +4202,11 @@ static void M_Options_DrawItem (int y, int item)
 		r = 1 - r;
 		M_DrawSlider (x, y, r);
 		break;
-
+	/*
 	case OPT_PIXELASPECT:
 		M_Print (x, y, vid.guipixelaspect == 1.f ? "Square" : "Stretched");
 		break;
-
-	case OPT_CROSSHAIR:
-		if (!crosshair.value)
-			M_Print (x, y, "Off");
-		else
-			M_PrintWhite (x, y, va ("%c", crosshair_char));
-		break;
-
+	*/
 	case OPT_UIMOUSE:
 		switch (M_Options_GetUIMouse ())
 		{
@@ -4051,8 +4241,8 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_HUDSTYLE:
 		switch (hudstyle)
 		{
-		case HUD_MODERN_CENTERAMMO:		M_Print (x, y, "Modern 1"); break;
-		case HUD_MODERN_SIDEAMMO:		M_Print (x, y, "Modern 2"); break;
+		case HUD_MODERN_CENTERAMMO:		M_Print (x, y, "Modern"); break;
+		//case HUD_MODERN_SIDEAMMO:		M_Print (x, y, "Modern 2"); break;
 		case HUD_QUAKEWORLD:			M_Print (x, y, "QuakeWorld"); break;
 		default:
 		case HUD_CLASSIC:				M_Print (x, y, "Classic"); break;
@@ -4256,6 +4446,65 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawSlider (x, y, r);
 		break;
 
+	case CROSSHAIR_STATE:
+		M_Print(x, y, crosshair.value == 1 ? "On" : "Off");
+		break;
+	case CROSSHAIR_TYPE:
+		switch ((int)crosshair_type.value)
+		{
+		default:
+		case 1:	M_Print(x, y, "+ Shape"); break;
+		case 2:	M_Print(x, y, "T Shape"); break;
+		case 3:	M_Print(x, y, "L Shape"); break;
+		case 4:	M_Print(x, y, "I Shape"); break;
+		case 0:	M_Print(x, y, "No Reticles"); break;
+		}
+		break;
+	case CROSSHAIR_WIDTH:
+		r = (crosshair_width.value - MIN_CROSSHAIR_WIDTH) / (MAX_CROSSHAIR_WIDTH - MIN_CROSSHAIR_WIDTH);
+		M_DrawSlider(x, y, r);
+		break;
+	case CROSSHAIR_LENGTH:
+		r = (crosshair_length.value - MIN_CROSSHAIR_LENGTH) / (MAX_CROSSHAIR_LENGTH - MIN_CROSSHAIR_LENGTH);
+		M_DrawSlider(x, y, r);
+		break;
+	case CROSSHAIR_GAP:
+		r = (crosshair_gap.value - MIN_CROSSHAIR_GAP) / (MAX_CROSSHAIR_GAP - MIN_CROSSHAIR_GAP);
+		M_DrawSlider(x, y, r);
+		break;
+	case CROSSHAIR_COLOR:
+		r = crosshair_color.value;
+		Draw_Fill(x - 8, y, 6, 8, (int)r, crosshair_alpha.value);
+		M_PrintColor(x, y, (int)r);
+		break;
+	case CROSSHAIR_ALPHA:
+		r = (crosshair_alpha.value - MIN_CROSSHAIR_ALPHA) / (MAX_CROSSHAIR_ALPHA - MIN_CROSSHAIR_ALPHA);
+		M_DrawSlider(x, y, r);
+		break;
+	case CROSSHAIR_DOT:
+		if (crosshair_dot.value == 1)
+			M_Print(x, y, "Size 1");
+		else if (crosshair_dot.value == 2)
+			M_Print(x, y, "Size 2");
+		else if (crosshair_dot.value == 3)
+			M_Print(x, y, "Size 3");
+		else
+			M_Print(x, y, "Off");
+		break;
+	case CROSSHAIR_DOT_COLOR:
+		r = crosshair_dot_color.value;
+		Draw_Fill(x - 8, y, 6, 8, (int)r, crosshair_dot_alpha.value);
+		M_PrintColor(x, y, (int)r);
+		break;
+	case CROSSHAIR_DOT_ALPHA:
+		r = (crosshair_dot_alpha.value - MIN_CROSSHAIR_DOT_ALPHA) / (MAX_CROSSHAIR_DOT_ALPHA - MIN_CROSSHAIR_DOT_ALPHA);
+		M_DrawSlider(x, y, r);
+		break;
+
+	case OPT_PICKUPS:
+		M_Print(x, y, game_pickups.value == 1 ? "On" : "Off");
+		break;
+
 	default:
 		break;
 	}
@@ -4390,6 +4639,10 @@ void M_Options_Key (int k)
 			M_Menu_Gamepad_f ();
 			break;
 
+		case OPT_CROSSHAIR:
+			M_Menu_Crosshair_f();
+			break;
+
 		case VID_OPT_TEST:
 			Cbuf_AddText ("vid_test\n");
 			break;
@@ -4466,9 +4719,9 @@ static const char* const bindnames[][2] =
 	{"+moveleft",		"Move left"},
 	{"+moveright",		"Move right"},
 	{"+jump",			"Jump / swim up"},
-	{"+moveup",			"Swim up"},
-	{"+movedown",		"Swim down"},
-	{"+speed",			"Run"},
+	//{"+moveup",			"Swim up"},
+	//{"+movedown",		"Swim down"},
+	//{"+speed",			"Run"},
 	{"+slide",			"Slide"},
 	{"",				""},
 	{"+attack",			"Attack"},
@@ -4477,9 +4730,10 @@ static const char* const bindnames[][2] =
 	//{"+kick",			"Kick"},
 	{"+adrenaline",		"Adrenaline"},
 	//{"+reload",			"Reload"},
-	{"+use",			"Use"},
+	//{"+use",			"Use"},
 	{"impulse 10",		"Next weapon"},
 	{"impulse 12",		"Previous weapon"},
+	{"",				""},
 	{"impulse 1",		"Katana"},
 	{"impulse 2",		"Revolver"},
 	{"impulse 3",		"Shotgun"},
@@ -6490,6 +6744,7 @@ void M_Init (void)
 	Cmd_AddCommand ("menu_options", M_Menu_Options_f);
 	Cmd_AddCommand ("menu_keys", M_Menu_Keys_f);
 	Cmd_AddCommand ("menu_video", M_Menu_Video_f);
+	Cmd_AddCommand ("menu_crosshair", M_Menu_Crosshair_f);
 	Cmd_AddCommand ("menu_gamepad", M_Menu_Gamepad_f);
 	Cmd_AddCommand ("help", M_Menu_Help_f);
 	Cmd_AddCommand ("menu_quit", M_Menu_Quit_f);
@@ -6600,6 +6855,7 @@ void M_Draw (void)
 	case m_options:
 	case m_video:
 	case m_gamepad:
+	case m_crosshair:
 		M_Options_Draw ();
 		break;
 
@@ -6723,6 +6979,7 @@ void M_Keydown (int key)
 	case m_options:
 	case m_video:
 	case m_gamepad:
+	case m_crosshair:
 		M_Options_Key (key);
 		return;
 
@@ -6832,6 +7089,7 @@ void M_Mousemove (int x, int y)
 	case m_options:
 	case m_video:
 	case m_gamepad:
+	case m_crosshair:
 		M_Options_Mousemove (x, y);
 		return;
 
@@ -6892,6 +7150,7 @@ void M_Charinput (int key)
 	case m_options:
 	case m_video:
 	case m_gamepad:
+	case m_crosshair:
 		M_Options_Char (key);
 		return;
 	case m_keys:
@@ -6920,6 +7179,7 @@ textmode_t M_TextEntry (void)
 	case m_options:
 	case m_video:
 	case m_gamepad:
+	case m_crosshair:
 		return M_Options_TextEntry ();
 	case m_keys:
 		return M_Keys_TextEntry ();

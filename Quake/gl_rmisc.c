@@ -46,6 +46,10 @@ extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
 extern cvar_t r_noshadow_list;
 extern cvar_t r_brightmodels_list;
+extern cvar_t r_ammomodels_list;
+extern cvar_t r_healthmodels_list;
+extern cvar_t r_armormodels_list;
+
 //johnfitz
 extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 extern cvar_t r_alphasort;
@@ -285,6 +289,12 @@ void R_Init (void)
 	Cvar_SetCallback (&r_noshadow_list, R_Model_ExtraFlags_List_f);
 	Cvar_RegisterVariable(&r_brightmodels_list);
 	Cvar_SetCallback(&r_brightmodels_list, R_Model_ExtraFlags_List_f);
+	Cvar_RegisterVariable(&r_ammomodels_list);
+	Cvar_SetCallback(&r_ammomodels_list, R_Model_ExtraFlags_List_f);
+	Cvar_RegisterVariable(&r_healthmodels_list);
+	Cvar_SetCallback(&r_healthmodels_list, R_Model_ExtraFlags_List_f);
+	Cvar_RegisterVariable(&r_armormodels_list);
+	Cvar_SetCallback(&r_armormodels_list, R_Model_ExtraFlags_List_f);
 	
 	//johnfitz
 

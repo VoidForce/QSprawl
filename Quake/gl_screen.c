@@ -85,7 +85,6 @@ cvar_t		scr_sbarscale = {"scr_sbarscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_sbaralpha = {"scr_sbaralpha", "0.75", CVAR_ARCHIVE};
 cvar_t		scr_conwidth = {"scr_conwidth", "0", CVAR_ARCHIVE};
 cvar_t		scr_conscale = {"scr_conscale", "1", CVAR_ARCHIVE};
-cvar_t		scr_crosshairscale = {"scr_crosshairscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_pixelaspect = {"scr_pixelaspect", "1", CVAR_ARCHIVE};
 cvar_t		scr_showfps = {"scr_showfps", "0", CVAR_ARCHIVE};
 cvar_t		scr_showspeed = {"scr_showspeed", "0", CVAR_ARCHIVE};
@@ -119,8 +118,10 @@ extern	cvar_t	crosshair_width;
 extern	cvar_t	crosshair_length;
 extern	cvar_t	crosshair_gap;
 extern	cvar_t	crosshair_color;
-extern	cvar_t	crosshair_dot;
 extern	cvar_t	crosshair_alpha;
+extern	cvar_t	crosshair_dot;
+extern	cvar_t	crosshair_dot_color;
+extern	cvar_t	crosshair_dot_alpha;
 
 extern	cvar_t	con_notifyfade;
 extern	cvar_t	con_notifyfadetime;
@@ -496,19 +497,19 @@ void SCR_AutoScale_f (void)
 	Cvar_SetValueQuick (&scr_conscale, scale);
 	Cvar_SetValueQuick (&scr_menuscale, scale);
 	Cvar_SetValueQuick (&scr_sbarscale, scale);
-	Cvar_SetValueQuick (&scr_crosshairscale, scale);
 }
 
 /*
 ==================
 SCR_PixelAspect_f
 ==================
-*/
+*//*
 void SCR_PixelAspect_f (cvar_t *cvar)
 {
 	vid.recalc_refdef = 1;
 	VID_RecalcInterfaceSize ();
 }
+*/
 
 /*
 ==================
@@ -554,7 +555,6 @@ void SCR_Init (void)
 	Cvar_SetCallback (&scr_conscale, &SCR_Conwidth_f);
 	Cvar_RegisterVariable (&scr_conwidth);
 	Cvar_RegisterVariable (&scr_conscale);
-	Cvar_RegisterVariable (&scr_crosshairscale);
 	Cvar_RegisterVariable (&scr_showfps);
 	Cvar_RegisterVariable (&scr_showspeed);
 	Cvar_RegisterVariable (&scr_clock);
@@ -784,7 +784,7 @@ void SCR_DrawDemoControls (void)
 	}
 
 	// Determine for how long the demo playback info should be displayed
-	if (cls.demospeed != prevspeed || cls.basedemospeed != prevbasespeed ||			// speed/base speed changed
+	if (cls.demospeed != prevspeed || cls.basedemospeed != prevbasespeed ||			// speedase speed changed
 		fabs (cls.demospeed) > cls.basedemospeed ||									// fast forward/rewind
 		!scr_demobar_timeout.value)													// controls always shown
 	{
@@ -1051,7 +1051,7 @@ SCR_DrawCrosshair -- johnfitz
 */
 void SCR_DrawCrosshair (void)
 {
-	int screen_width;
+	int screen_width; // offset 
 	int screen_height;
 	
 	int cr_half_width;
@@ -1060,6 +1060,8 @@ void SCR_DrawCrosshair (void)
 	int cr_gap;
 	int cr_color;
 	float cr_alpha;
+	int cr_dot_color;
+	float cr_dot_alpha;
 
 	int marker_color;
 	int marker_gap;
@@ -1072,8 +1074,10 @@ void SCR_DrawCrosshair (void)
 	cr_gap = (int)crosshair_gap.value;
 	cr_color = (int)crosshair_color.value;
 	cr_alpha = crosshair_alpha.value;
+	cr_dot_color = (int)crosshair_dot_color.value;
+	cr_dot_alpha = crosshair_dot_alpha.value;
 
-	screen_width = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
+	screen_width  = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
 	screen_height = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
 
 	cr_half_width = (int)cr_width / 2;
@@ -1081,19 +1085,20 @@ void SCR_DrawCrosshair (void)
 		cr_half_width = 1;
 
 	GL_SetCanvas(CANVAS_DEFAULT);
+	//Draw_Fill(screen_center_w + 10, screen_center_h, -4, -6, 0, 0.3);
 	if (crosshair_dot.value > 0)
 	{
 		switch ((int)crosshair_dot.value)
 		{
 		default:
 		case 1:
-			Draw_Fill(screen_width - 1, screen_height - 1, 2, 2, cr_color, cr_alpha);
+			Draw_Fill(screen_width - 1, screen_height - 1, 2, 2, cr_dot_color, cr_dot_alpha);
 			break;
 		case 3:
-			Draw_Fill(screen_width - 3, screen_height - 1, 6, 2, cr_color, cr_alpha); // 2 rectangles to form circle
-			Draw_Fill(screen_width - 1, screen_height - 3, 2, 6, cr_color, cr_alpha); 
+			Draw_Fill(screen_width - 3, screen_height - 1, 6, 2, cr_dot_color, cr_dot_alpha); // 2 rectangles to form circle
+			Draw_Fill(screen_width - 1, screen_height - 3, 2, 6, cr_dot_color, cr_dot_alpha);
 		case 2:
-			Draw_Fill(screen_width - 2, screen_height - 2, 4, 4, cr_color, cr_alpha); // square
+			Draw_Fill(screen_width - 2, screen_height - 2, 4, 4, cr_dot_color, cr_dot_alpha); // square
 			break;
 		case 4:
 

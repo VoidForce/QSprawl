@@ -4,10 +4,12 @@ float signedDistanceCircles(vector c1Center, float c1Radius, vector c2Center, fl
   return vlen(c1Center - c2Center) - (c1Radius + c2Radius);
 }
 
+/*
 float clamp(float flr, float v, float cl) 
 {
   return min(max(v, flr), cl);
 }
+*/
 
 float clamp01(float v) 
 {
@@ -59,8 +61,8 @@ vector(vector a, vector b, vector c, float mix) lerp3PointCurve =
 	return (e * mix + d * ( 1 - mix ));
 }
 
-float(float a, float b) min = { if (a <= b) return a; return b; }
-float(float a, float b) max = { if (a >= b) return a; return b; }
+//float(float a, float b) min = { if (a <= b) return a; return b; }
+//float(float a, float b) max = { if (a >= b) return a; return b; }
 
 vector(vector a, vector b) CrossProduct =
 {
@@ -85,7 +87,7 @@ float() randomsign =
 	else 
 		return -1;
 };
-
+/*
 float(float x, float y) pow =
 {
 	if (y < 0)
@@ -99,5 +101,6 @@ float(float x, float y) pow =
 	}
 	return c;
 };
+*/
 
 // zi = (xi – min(x)) / (max(x) – min(x)) normalize to 0..1

@@ -74,6 +74,7 @@ cvar_t	teamplay = {"teamplay","0",CVAR_NOTIFY|CVAR_SERVERINFO};
 cvar_t	samelevel = {"samelevel","0",CVAR_NONE};
 cvar_t	noexit = {"noexit","0",CVAR_NOTIFY|CVAR_SERVERINFO};
 cvar_t	skill = {"skill","1",CVAR_NONE};			// 0 - 3
+cvar_t	game_pickups = { "game_pickups", "0", CVAR_NOTIFY|CVAR_ARCHIVE };
 cvar_t	deathmatch = {"deathmatch","0",CVAR_NONE};	// 0, 1, or 2
 cvar_t	coop = {"coop","0",CVAR_NONE};			// 0 or 1
 
@@ -364,6 +365,7 @@ void Host_InitLocal (void)
 	Cvar_RegisterVariable (&noexit);
 	Cvar_SetCallback (&noexit, Host_Callback_Notify);
 	Cvar_RegisterVariable (&skill);
+	Cvar_RegisterVariable(&game_pickups);
 	Cvar_RegisterVariable (&developer);
 	Cvar_RegisterVariable (&coop);
 	Cvar_RegisterVariable (&deathmatch);
@@ -890,7 +892,7 @@ static void Host_CheckAutosave (void)
 	// Base value is the fraction of the autosave interval already passed
 	score = elapsed / sv_autosave_interval.value;
 	// Scale down the score if health + armor is below 100 (save less often with lower health)
-	score *= q_min (100.f, (sv_player->v.health + sv_player->v.armortype * sv_player->v.armorvalue)) / 100.f;
+	score *= q_min (100.f, (sv_player->v.health + sv_player->v.armorvalue)) / 100.f;
 	// Boost the score right after picking up health
 	score += q_max (0.f, health_change) / 100.f;
 	// Lower score a bit based on speed (favor standing still/slowing down)

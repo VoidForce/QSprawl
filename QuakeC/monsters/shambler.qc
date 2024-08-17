@@ -104,13 +104,13 @@ void() sham_walk12 =[ $walk12, sham_walk1 ] {setHead('17 1 36');                
 };
 
 
-void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41');ai_run(25); sham_step();}; // 30 + 
-void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_run(25);}; // 31
-void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39');ai_run(25);}; // 32
-void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43');ai_run(25); sham_step();}; // 33+
-void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40');ai_run(25);}; // 34
-void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  // 35
-	ai_run(25);
+void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41'); ai_charge_side();ai_run(25); sham_step();}; // 30 + 
+void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_charge_side();ai_run(25);}; // 31
+void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39'); ai_charge_side();ai_run(25);}; // 32
+void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43'); ai_charge_side();ai_run(25); sham_step();}; // 33+
+void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40'); ai_charge_side();ai_run(25);}; // 34
+void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  ai_charge_side();ai_run(25);  // 35
+	
 	self.nextthink = time + 0.05;
 	if (random() > 0.8)
 		sound (self, CHAN_VOICE, "shambler/sidle.wav", 1, ATTN_IDLE);
@@ -119,17 +119,17 @@ void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  // 35
 void() sham_smash1     =[      $smash1,       sham_smash2    ] {setHead('19 2 39');  // 36
 	sound (self, CHAN_VOICE, "shambler/melee1.wav", 1, ATTN_NORM);
 	self.pain_finished = time + 3;	
-	ai_charge(2);
+	ai_charge_noface(2);
 };
 
-void() sham_smash2     =[      $smash2,       sham_smash3    ] {Think(0.2);setHead('11 2 48');ai_charge(6);}; // 37
-void() sham_smash3     =[      $smash3,       sham_smash4    ] {Think(0.15);setHead('3 1 48');ai_charge(6);}; // 38
-void() sham_smash4     =[      $smash4,       sham_smash5    ] {Think(0.15);setHead('-2 1 48');ai_charge(5);}; // 39
-void() sham_smash5     =[      $smash5,       sham_smash6    ] {Think(0.09);setHead('2 1 48');ai_charge(4);}; // 40
-void() sham_smash6     =[      $smash6,       sham_smash7    ] {Think(0.08);setHead('8 1 47');ai_charge(1);}; // 41
-void() sham_smash7     =[      $smash7,       sham_smash8    ] {Think(0.07);setHead('16 1 42');ai_charge(0);}; // 42
-void() sham_smash8     =[      $smash8,       sham_smash9    ] {Think(0.06);setHead('19 2 39');ai_charge(0);}; // 43
-void() sham_smash9     =[      $smash9,       sham_smash10   ] {Think(0.05);setHead('24 2 36');ai_charge(0);}; // 44
+void() sham_smash2     =[      $smash2,       sham_smash3    ] {Think(0.2);setHead('11 2 48'); ai_charge_noface(6);}; // 37
+void() sham_smash3     =[      $smash3,       sham_smash4    ] {Think(0.15);setHead('3 1 48'); ai_charge_noface(6);}; // 38
+void() sham_smash4     =[      $smash4,       sham_smash5    ] {Think(0.15);setHead('-2 1 48');ai_charge_noface(5);}; // 39
+void() sham_smash5     =[      $smash5,       sham_smash6    ] {Think(0.09);setHead('2 1 48'); ai_charge_noface(4);}; // 40
+void() sham_smash6     =[      $smash6,       sham_smash7    ] {Think(0.08);setHead('8 1 47'); ai_charge_noface(1);}; // 41
+void() sham_smash7     =[      $smash7,       sham_smash8    ] {Think(0.07);setHead('16 1 42');ai_charge_noface(0);}; // 42
+void() sham_smash8     =[      $smash8,       sham_smash9    ] {Think(0.06);setHead('19 2 39');ai_charge_noface(0);}; // 43
+void() sham_smash9     =[      $smash9,       sham_smash10   ] {Think(0.05);setHead('24 2 36');ai_charge_noface(0);}; // 44
 void() sham_smash10    =[      $smash10,      sham_smash11   ] {Think(0.05);setHead('31 1 26');                // 45
 	float delta;
 	float ldmg;
@@ -138,7 +138,7 @@ void() sham_smash10    =[      $smash10,      sham_smash11   ] {Think(0.05);setH
 	if (!self.enemy)
 		return;
 
-	ai_charge(0);
+	ai_charge_noface(0);
 	delta = vlen(self.enemy.origin - self.origin);
 	
 	amplitude = lerp(350, 100, delta/768);
@@ -182,7 +182,7 @@ void(float side) ShamClaw =
 
 	ForceStartSlide(0.2, self.enemy); // change_client
 	StopAcceleration(0.2, self.enemy); // change_client
-	addShakeToClient(random() * side, random() * side, random() * side, self.enemy);
+	addShakeEnt(random() * side, random() * side, random() * side, self.enemy);
 
 	ldmg = (random() + random() + random()) * 20;
 	T_Damage (self.enemy, self, self, ldmg, 0);
@@ -247,7 +247,7 @@ void() sham_suck =
 	
 	StopAcceleration(0.4, self.enemy); // change_client
 	StopAirAcceleration(0.4, self.enemy); // change_client
-	addShakeToClient(100 + random() * 50,0,0, self.enemy);
+	addShakeEnt(100 + random() * 50,0,0, self.enemy);
 
 	self.enemy.velocity = VEC_ORIGIN;
 	distance = vlen(self.enemy.origin - self.origin);
@@ -256,7 +256,7 @@ void() sham_suck =
 		distance = 1990;
 	T_Push(self.enemy, self, -distance, 270, -32);
 	
-	sendMessageVecFlag(self.origin + '0 0 -20', 600, TE_SHOCKWAVE);
+	sendMessageVecFlag(self.origin + '0 0 -20', -200, TE_SHOCKWAVE);
 };
 /*
 // this is not bad, but smash attack is too powerful to be used casually
@@ -314,7 +314,10 @@ void(entity attacker, float damage)	sham_pain =
 void() sham_death1      =[      $death1,       sham_death2     ] 
 {	
 	if (self.monsterflags & MFL_SHAM_EXPLODE)
+	{
 		sound (self, CHAN_AUTO, "shambler/buildup.wav", 1, ATTN_NORM);
+		self.effects |= EF_QEX_PENTALIGHT;
+	}
 };
 void() sham_death2      =[      $death2,       sham_death3     ] {};
 void() sham_death3      =[      $death3,       sham_death4     ] {};
@@ -369,9 +372,16 @@ void() sham_die =
 
 void() sham_explode =
 {
-	T_RadiusDamagePlayer(self, self, 60, world, 512, 128, 0.25);
-	explodeShrapnel([self.origin_x, self.origin_y, self.origin_z + 16], self, skill + rint(random() * 6));
-	addShakeToClient(random() * 300, crandom() * 400, crandom() * 300, self.enemy);
+	self.effects -= self.effects & EF_QEX_PENTALIGHT;
+	float extradamage;
+	if (skill == 3)
+		extradamage = 100;
+	else
+		extradamage = 0;
+	
+	T_RadiusDamagePlayer(self, self, 60+extradamage, self, 512, 128, 0.4);
+	//explodeShrapnel([self.origin_x, self.origin_y, self.origin_z + 16], self, skill + rint(random() * 6));
+	addShakeEnt(random() * 300, crandom() * 400, crandom() * 300, self.enemy);
 	
 	sound (self, CHAN_AUTO, "shambler/explosion.wav", 1, ATTN_NORM); // shambler specific sound
 	sendMessageVecFlag(self.origin + '0 0 8', 1200, TE_SHOCKWAVE);

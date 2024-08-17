@@ -428,7 +428,11 @@ typedef enum {mod_brush, mod_alias, mod_sprite, mod_numtypes} modtype_t;
 #define	MOD_NOLERP		256		//don't lerp when animating
 #define	MOD_NOSHADOW	512		//don't cast a shadow
 #define	MOD_FBRIGHTHACK	1024	//when fullbrights are disabled, use a hack to render this model brighter
-#define	MOD_PICKUPS		2048	//when fullbrights are disabled, use a hack to render this model brighter
+//#define	MOD_PICKUPS		2048
+
+#define LIGHT_BRIGHT 1
+#define LIGHT_PICKUPS 2
+
 //johnfitz
 
 //
@@ -459,6 +463,7 @@ typedef struct qmodel_s
 	synctype_t	synctype;
 
 	int			flags;
+	int			lightflags;
 	uint32_t	sortkey;
 
 //

@@ -105,9 +105,10 @@ void() enforcer_fire =
 	pos = getPlayerPosition(self.enemy, 0);
 	
 	ai_face();
-	
+	self.effects |= EF_MUZZLEFLASH;
 	sound (self, CHAN_WEAPON, "soldier/sattck1.wav", 1, ATTN_NORM);	
-	makevectors2(vectoangles([pos_x, pos_y, pos_z + self.enemy.view_ofs_z] - [self.origin_x,self.origin_y,self.origin_z + 16]));
+	//makevectors2(vectoangles
+	vectorvectors([pos_x, pos_y, pos_z + self.enemy.view_ofs_z] - [self.origin_x,self.origin_y,self.origin_z + 16]);
 	for (i = 0; i < 10; i++)
 	{
 		ri = rint(random() * 15);

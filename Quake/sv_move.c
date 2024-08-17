@@ -244,18 +244,19 @@ qboolean SV_StepDirection (edict_t *ent, float yaw, float dist)
 	move[0] = cos(yaw)*dist;
 	move[1] = sin(yaw)*dist;
 	move[2] = 0;
-
-	VectorCopy (ent->v.origin, oldorigin);
-	if (SV_movestep (ent, move, false))
+	
+	VectorCopy(ent->v.origin, oldorigin);
+	if (SV_movestep(ent, move, false))
 	{
 		delta = ent->v.angles[YAW] - ent->v.ideal_yaw;
 		if (delta > 45 && delta < 315)
 		{		// not turned far enough, so don't take the step
-			VectorCopy (oldorigin, ent->v.origin);
+			VectorCopy(oldorigin, ent->v.origin);
 		}
-		SV_LinkEdict (ent, true);
+		SV_LinkEdict(ent, true);
 		return true;
 	}
+
 	SV_LinkEdict (ent, true);
 
 	return false;
@@ -283,85 +284,83 @@ SV_NewChaseDir
 #define	DI_NODIR	-1
 void SV_NewChaseDir (edict_t *actor, edict_t *enemy, float dist)
 {
-	float		deltax,deltay;
-	float			d[3];
-	float		tdir, olddir, turnaround;
+	float deltax,deltay;
+	float d[3];
+	float tdir, olddir, turnaround;
 
-	olddir = anglemod( (int)(actor->v.ideal_yaw/45)*45 );
-	turnaround = anglemod(olddir - 180);
+	olddir = anglemod( (int)(actor->v.ideal_yaw / 45) * 45 ); // round angle a bit
+	turnaround = anglemod(olddir - 180); // opposite direction obviously
 
 	deltax = enemy->v.origin[0] - actor->v.origin[0];
 	deltay = enemy->v.origin[1] - actor->v.origin[1];
-	if (deltax>10)
+
+	if (deltax > 10)
 		d[1]= 0;
-	else if (deltax<-10)
+	else if (deltax < -10)
 		d[1]= 180;
 	else
 		d[1]= DI_NODIR;
-	if (deltay<-10)
+
+	if (deltay < -10)
 		d[2]= 270;
-	else if (deltay>10)
+	else if (deltay > 10)
 		d[2]= 90;
 	else
 		d[2]= DI_NODIR;
 
 // try direct route
-	if (d[1] != DI_NODIR && d[2] != DI_NODIR)
+	if ( d[1] != DI_NODIR && d[2] != DI_NODIR )
 	{
 		if (d[1] == 0)
 			tdir = d[2] == 90 ? 45 : 315;
 		else
 			tdir = d[2] == 90 ? 135 : 215;
 
-		if (tdir != turnaround && SV_StepDirection(actor, tdir, dist))
+		if ( tdir != turnaround && SV_StepDirection(actor, tdir, dist) )
 			return;
 	}
 
 // try other directions
-	if ( ((rand()&3) & 1) ||  abs((int)deltay)>abs((int)deltax)) // ericw -- explicit int cast to suppress clang suggestion to use fabsf
+	if ( ((rand() & 3) & 1) || abs((int) deltay) > abs((int) deltax) )
 	{
-		tdir=d[1];
-		d[1]=d[2];
-		d[2]=tdir;
+		tdir = d[1];
+		d[1] = d[2];
+		d[2] = tdir;
 	}
 
-	if (d[1]!=DI_NODIR && d[1]!=turnaround
-	&& SV_StepDirection(actor, d[1], dist))
-			return;
+	if (d[1] != DI_NODIR && d[1] != turnaround && SV_StepDirection(actor, d[1], dist))
+		return;
 
-	if (d[2]!=DI_NODIR && d[2]!=turnaround
-	&& SV_StepDirection(actor, d[2], dist))
-			return;
+	if (d[2] != DI_NODIR && d[2] != turnaround && SV_StepDirection(actor, d[2], dist))
+		return;
 
-/* there is no direct path to the player, so pick another direction */
+// there is no direct path to the player, so pick another direction
+	if (olddir != DI_NODIR && SV_StepDirection(actor, olddir, dist))
+		return;
 
-	if (olddir!=DI_NODIR && SV_StepDirection(actor, olddir, dist))
-			return;
-
-	if (rand()&1) 	/*randomly determine direction of search*/
+	if (rand() & 1) 	///randomly determine direction of search
 	{
-		for (tdir=0 ; tdir<=315 ; tdir += 45)
-			if (tdir!=turnaround && SV_StepDirection(actor, tdir, dist) )
-					return;
+		for ( tdir = 0; tdir <= 315; tdir += 45 )
+			if (tdir != turnaround && SV_StepDirection(actor, tdir, dist) )
+				return;
 	}
 	else
 	{
-		for (tdir=315 ; tdir >=0 ; tdir -= 45)
-			if (tdir!=turnaround && SV_StepDirection(actor, tdir, dist) )
-					return;
+		for ( tdir = 315; tdir >= 0; tdir -= 45 )
+			if (tdir != turnaround && SV_StepDirection(actor, tdir, dist) )
+				return;
 	}
 
 	if (turnaround != DI_NODIR && SV_StepDirection(actor, turnaround, dist) )
-			return;
+		return;
 
-	actor->v.ideal_yaw = olddir;		// can't move
+	actor->v.ideal_yaw = olddir; // can't move
 
 // if a bridge was pulled out from underneath a monster, it may not have
 // a valid standing position at all
 
 	if (!SV_CheckBottom (actor))
 		SV_FixCheckBottom (actor);
-
 }
 
 /*
@@ -406,12 +405,11 @@ void SV_MoveToGoal (void)
 	}
 
 // if the next step hits the enemy, return immediately
-	if ( PROG_TO_EDICT(ent->v.enemy) != qcvm->edicts &&  SV_CloseEnough (ent, goal, dist) )
+	if ( PROG_TO_EDICT(ent->v.enemy) != qcvm->edicts && SV_CloseEnough (ent, goal, dist) )
 		return;
 
 // bump around...
-	if ( (rand()&3)==1 ||
-	!SV_StepDirection (ent, ent->v.ideal_yaw, dist))
+	if ( (rand()&3)==1 || !SV_StepDirection (ent, ent->v.ideal_yaw, dist))
 	{
 		SV_NewChaseDir (ent, goal, dist);
 	}

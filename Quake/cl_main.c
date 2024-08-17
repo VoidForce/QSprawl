@@ -367,7 +367,7 @@ dlight_t *CL_AllocDlight (int key)
 	dl = cl_dlights;
 	for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
 	{
-		if (dl->die < cl.time || dl->spawn < cl.time)
+		if (dl->die < cl.time)// || dl->spawn < cl.time) // so, demo replay makes this broken
 		{
 			memset (dl, 0, sizeof(*dl));
 			dl->key = key;
@@ -397,6 +397,7 @@ void CL_DecayLights (void)
 	int			i;
 	dlight_t	*dl;
 	float		time;
+	float		progress;
 
 	time = cl.time - cl.oldtime;
 
@@ -409,6 +410,15 @@ void CL_DecayLights (void)
 		dl->radius -= time*dl->decay;
 		if (dl->radius < 0)
 			dl->radius = 0;
+
+		// need to make const for this, hardcoded color decay of gauss impact dyn lights
+		if (dl->flag == 1)
+		{
+			progress = dl->radius / 100;
+			dl->color[0] = LERP( 2.0, 1.04, progress );
+			dl->color[1] = LERP( 0.0, 1.34, progress );
+			dl->color[2] = LERP( 0.0, 1.5, progress );
+		}
 	}
 }
 
@@ -614,7 +624,10 @@ void CL_RelinkEntities (void)
 			VectorMA (dl->origin, 128, fv, dl->origin); // 18
 			dl->radius = 200 + (rand()&31);
 			dl->minlight = 32;
-			dl->die = cl.time + 0.1;
+			dl->die = cl.time + 0.05;
+			dl->color[0] = 1.0; //yellow
+			dl->color[1] = 0.93;
+			dl->color[2] = 0.8;
 		}
 		if (ent->effects & EF_NOLERP)
 		{
@@ -653,6 +666,9 @@ void CL_RelinkEntities (void)
 			VectorCopy (ent->origin,  dl->origin);
 			dl->radius = 200 + (rand()&31);
 			dl->die = cl.time + 0.001;
+			dl->color[0] = 1.0f;
+			dl->color[1] = 0.25f;
+			dl->color[2] = 0.25f;
 		}
 		if (ent->effects & EF_QEX_QUADLIGHT)
 		{
@@ -668,11 +684,11 @@ void CL_RelinkEntities (void)
 		{
 			dl = CL_AllocDlight (i);
 			VectorCopy (ent->origin,  dl->origin);
-			dl->radius = 200 + (rand()&31);
+			dl->radius = 150 +(rand() & 20);
 			dl->die = cl.time + 0.001;
-			dl->color[0] = 1.0f;
-			dl->color[1] = 0.25f;
-			dl->color[2] = 0.25f;
+			dl->color[0] = 2.0f;
+			dl->color[1] = 0.0f;
+			dl->color[2] = 0.0f;
 		}
 
 		if (ent->model->flags & EF_GIB)
@@ -690,6 +706,9 @@ void CL_RelinkEntities (void)
 			VectorCopy (ent->origin, dl->origin);
 			dl->radius = 200;
 			dl->die = cl.time + 0.01;
+			dl->color[0] = 0.9; //orange-ish
+			dl->color[1] = 0.66;
+			dl->color[2] = 0.31;
 		}
 		else if (ent->model->flags & EF_GRENADE)
 			CL_RocketTrail (ent, 1);

@@ -97,30 +97,7 @@ void() StartItem =
 HEALTH BOX
 
 =========================================================================*/
-//
-// T_Heal: add health to an entity, limiting health to max_health
-// "ignore" will ignore max_health limit
-//
-float (entity e, float healamount, float ignore) T_Heal =
-{
-	if (e.health <= 0)
-		return 0;
 
-	if ((!ignore) && (e.health >= e.max_health))
-		return 0;
-
-	healamount = ceil(healamount);
-
-	e.health = e.health + healamount;
-
-	if ((!ignore) && (e.health >= e.max_health))
-		e.health = e.max_health;
-		
-	if (e.health > 250)
-		e.health = 250;
-
-	return 1;
-};
 
 /*QUAKED item_health (.3 .3 1) (0 0 0) (32 32 32) rotten megahealth
 Health box. Normally gives 25 points.
@@ -132,14 +109,10 @@ one point per second.
 
 float	H_ROTTEN = 1;
 float	H_MEGA = 2;
-.float	healamount, healtype;
-void() health_touch;
-void() item_megahealth_rot;
+.float	healamount, heallimit;
 
 void() item_health =
 {	
-	self.touch = health_touch;
-
 	if (self.spawnflags & H_ROTTEN)
 	{
 		precache_model("progs/health_s.mdl");
@@ -147,8 +120,10 @@ void() item_health =
 		precache_sound("items/r_item1.wav");
 		setmodel(self, "progs/health_s.mdl");
 		self.noise = "items/r_item1.wav";
-		self.healamount = 15;
-		self.healtype = 0;
+		self.healamount = 40; // change string in regenhealth_touch
+		self.heallimit = 100;
+		self.sprawlflags |= SFLI_REGEN; 
+		self.touch = regenhealth_touch;
 	}
 
 	else if (self.spawnflags & H_MEGA)
@@ -157,8 +132,10 @@ void() item_health =
 		precache_sound("items/r_item2.wav");
 		setmodel(self, "progs/health_m.mdl");
 		self.noise = "items/r_item2.wav";
-		self.healamount = 100;
-		self.healtype = 2;
+		self.healamount = 100; // change string in megahealth_touch
+		self.heallimit = 250;
+		self.sprawlflags |= SFLI_MEGA;
+		self.touch = megahealth_touch;
 	}
 
 	else
@@ -167,70 +144,150 @@ void() item_health =
 		precache_sound("items/health1.wav");
 		setmodel(self, "progs/health_b.mdl");
 		self.noise = "items/health1.wav";
-		self.healamount = 25;
-		self.healtype = 1;
+		self.healamount = 30;
+		self.heallimit = 100;
+		self.touch = health_touch;
 	}
 
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
+//
+// T_Heal: add health to an entity, limiting health to max_health
+// "ignore" will ignore max_health limit
+//
+void (entity e, float healamount, float limit) T_Heal =
+{
+	//extra check
+	if (e.health < 1)
+		return;
+	
+	healamount = ceil(healamount);
+	e.health = min (limit, e.health + healamount);
+};
+
+void() megahealth_touch =
+{
+	if (other.classname != "player")
+		return;
+	if (other.health < 1)
+		return;
+	if (other.health >= self.heallimit)
+		return;
+	
+	other.health = ceil(min (self.heallimit, other.health + self.healamount));
+	
+	sprint(other, "You receive \b100\b health\n");
+	
+	// health touch sound
+	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
+	stuffcmd (other, "bfh\n");
+	self.model = string_null;
+	self.solid = SOLID_NOT;
+
+	other.items = other.items | IT_SUPERHEALTH;
+	self.nextthink = time + 5;
+	self.think = item_megahealth_rot;
+	self.owner = other;
+
+	activator = other;
+	SUB_UseTargets(); // fire all targets / killtargets
+};
+
+void() regenhealth_touch =
+{
+	if (other.classname != "player")
+		return;
+	if (other.health < 1)
+		return;
+	if (other.health >= self.heallimit) // Megahealth?  Ignore max_health...
+		return;
+
+	self.think = item_slowheal;
+	self.nextthink = time + 0.5;
+	self.owner = other;
+
+	sprint(other, "You receive \b40\b health \bregen\b\n");
+	
+	// health touch sound
+	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
+	stuffcmd (other, "bfh\n");
+	self.model = string_null;
+	self.solid = SOLID_NOT;
+
+	if (deathmatch)
+	{
+		self.nextthink = time + 20;
+		self.think = SUB_regen;
+	}
+	
+	activator = other;
+	SUB_UseTargets(); // fire all targets / killtargets
+};
 
 void() health_touch =
 {
-	local	string	s;
+	float spent;
+	float deficit;
 	
 	if (other.classname != "player")
 		return;
+	if (other.health < 1)
+		return;
+	if (other.health >= self.heallimit)
+		return;
 	
-	if (self.healtype == 2) // Megahealth?  Ignore max_health...
+	if (other.health + self.healamount <= self.heallimit)
 	{
-		if (other.health >= 250)
-			return;
-		if (!T_Heal(other, self.healamount, 1))
-			return;
+		other.health += self.healamount;
+		deficit = self.healamount;
+		self.healamount = 0; 
 	}
-
 	else
 	{
-		if (!T_Heal(other, self.healamount, 0))
-			return;
+		deficit = self.heallimit - other.health;
+		
+		spent = ceil(deficit/5) * 5; // step of 5hp minimum gonna be used to heal anything from 1 to 5 of deficit
+		other.health = self.heallimit;
+		self.healamount -= spent;
+		self.healamount = floor(self.healamount);
+		
+		self.touch = SUB_Null;
+		self.nextthink = time + 1;
+		self.think = restoreTouch_health;
 	}
-	
+		
 	sprint(other, "You receive ");
-	s = ftos(self.healamount);
-	sprint(other, s);
+	printgoldnum(other, deficit);
 	sprint(other, " health\n");
 	
 	// health touch sound
 	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
-
 	stuffcmd (other, "bfh\n");
-	
-	self.model = string_null;
-	self.solid = SOLID_NOT;
-
-	// Megahealth = rot down the player's super health
-	if (self.healtype == 2)
+	if (self.healamount < 1)
 	{
-		other.items = other.items | IT_SUPERHEALTH;
-		self.nextthink = time + 5;
-		self.think = item_megahealth_rot;
-		self.owner = other;
+		self.model = string_null;
+		self.solid = SOLID_NOT;
 	}
 
-	else
+	if (deathmatch)
 	{
-		if (deathmatch != 2)		// deathmatch 2 is the silly old rules
-		{
-			if (deathmatch)
-				self.nextthink = time + 20;
-			self.think = SUB_regen;
-		}
+		self.nextthink = time + 20;
+		self.think = SUB_regen;
 	}
 	
-	activator = other;
-	SUB_UseTargets();				// fire all targets / killtargets
+	if (!(self.sprawlflags & SFLI_TARGETSFIRED))
+	{
+		self.sprawlflags |= SFLI_TARGETSFIRED;
+		activator = other;
+		SUB_UseTargets(); // fire all targets / killtargets
+	}
 };	
+
+void() restoreTouch_health =
+{
+	self.touch = health_touch;
+};
 
 void() item_megahealth_rot =
 {
@@ -239,7 +296,7 @@ void() item_megahealth_rot =
 	if (other.health > other.max_health)
 	{
 		other.health = other.health - 1;
-		self.nextthink = time + 1;
+		self.nextthink = time + 1.5;
 
 		return;
 	}
@@ -255,6 +312,19 @@ void() item_megahealth_rot =
 	}
 };
 
+void() item_slowheal =
+{
+	if (self.healamount < 1)
+		return;
+	
+	if (self.owner.health < self.owner.max_health)
+		self.owner.health++;
+
+	self.healamount--;
+	self.nextthink = time + 0.5;
+	self.think = item_slowheal;
+};
+
 /*===============================================================================
 
 ARMOR
@@ -263,12 +333,11 @@ ARMOR
 
 void() armor_touch =
 {
-	local	float	type, value, bit;
+	local	float	type, value;
 	local string str;
 
 	type = 1;
 	value = 100;
-	bit = IT_ARMOR1;
 	
 	if (other.health <= 0)
 		return;
@@ -280,7 +349,6 @@ void() armor_touch =
 	{
 		type = 1;
 		value = 50;
-		bit = IT_ARMOR1;
 		str = "You got the light armor\n";
 	}
 
@@ -288,7 +356,6 @@ void() armor_touch =
 	{
 		type = 2;
 		value = 100;
-		bit = IT_ARMOR2;
 		str = "You got the combat armor\n";
 	}
 
@@ -296,7 +363,6 @@ void() armor_touch =
 	{
 		type = 3;
 		value = 200;
-		bit = IT_ARMOR3;
 		str = "You got the assault armor\n";
 	}
 
@@ -311,14 +377,13 @@ void() armor_touch =
 			return;
 	}
 
-	other.armortype = 1;
 	if (type == 1)
 	{
 		other.armorvalue += value;
 		other.armorvalue = min(100, other.armorvalue);
 	}
 	else other.armorvalue = value;
-	other.items = other.items - (other.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) + bit;
+	other.items |= IT_ARMOR;
 
 	self.solid = SOLID_NOT;
 	self.model = string_null;
@@ -676,6 +741,66 @@ AMMO
 
 ===============================================================================
 */
+// this is lame, need to find how exactly i can drew gold/red characters the other way
+void (entity who, float number)printgoldnum =
+{
+	float num_print;
+	float current_digit;
+	float digits;
+	
+	if (number < 0 || number > 999)
+		return;
+	
+	if (number > 99)
+		digits = 2;
+	else if (number > 9)
+		digits = 1;
+
+	do
+	{
+		current_digit = pow(10,digits);
+		num_print = floor(number / current_digit);
+		number -= num_print * current_digit;
+		switch (num_print)
+		{
+		case 0:
+			sprint (who, "\0");
+			break;
+		case 1:
+			sprint (who, "\1");
+			break;
+		case 2:
+			sprint (who, "\2");
+			break;
+		case 3:
+			sprint (who, "\3");
+			break;
+		case 4:
+			sprint (who, "\4");
+			break;
+		case 5:
+			sprint (who, "\5");
+			break;
+		case 6:
+			sprint (who, "\6");
+			break;
+		case 7:
+			sprint (who, "\7");
+			break;
+		case 8:
+			sprint (who, "\8");
+			break;
+		case 9:
+			sprint (who, "\9");
+			break;
+		default:
+			sprint (who, " ");
+			break;
+		}
+		digits--;
+	} while(digits > -1);
+	
+};
 
 void() ammo_touch =
 {
@@ -799,7 +924,7 @@ void() ammo_touch =
 	bound_other_ammo ();
 	
 	sprint (other, "You got: ");
-	sprint (other, ftos(deficit));
+	printgoldnum(other, deficit);
 	sprint (other, " ");
 	sprint (other, self.netname);
 	sprint (other, "\n");
@@ -923,7 +1048,7 @@ void() item_spikes =
 	}
 
 	self.weapon = 2;
-	self.netname = ".45 ACP-AP rounds";
+	self.netname = "pistol rounds";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -949,7 +1074,7 @@ void() item_rockets =
 	}
 
 	self.weapon = 3;
-	self.netname = "40mm grenades";
+	self.netname = "grenades";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -995,7 +1120,7 @@ void() item_bullets =
 		self.aflag = 20;
 
 	self.weapon = 5;
-	self.netname = ".50 BMG rounds";
+	self.netname = "high-caiber rounds";
 	setsize (self, '0 0 0', '32 32 56');
 	StartItem ();
 };
@@ -1591,6 +1716,9 @@ void(vector pos, float type, float easy, float normal, float hard, float nightma
 	entity item;
 	float amount;
 	
+	if (!cvar("game_pickups"))
+		return;
+	
 	switch (skill)
 	{
 		case 0:
@@ -1651,7 +1779,6 @@ void(vector pos, float type, float easy, float normal, float hard, float nightma
 	}
 };
 
-
 void() ammo_drop_touch =
 {
 	if (!(other.flags & FL_CLIENT))
@@ -1664,6 +1791,9 @@ void() ammo_drop_touch =
 				other.ammo_shells += self.ammo_shells;
 			else 
 				return;
+			sprint(other, "You pick up ");
+			sprint(other, ftos( self.ammo_shells));
+			sprint(other, " shells\n");
 			other.ammo_shells = min(other.ammo_shells, MAX_SHELLS);
 			break;
 		case DROP_NAILS:
@@ -1671,6 +1801,9 @@ void() ammo_drop_touch =
 				other.ammo_nails += self.ammo_nails;
 			else 
 				return;
+			sprint(other, "You pick up ");
+			sprint(other, ftos( self.ammo_nails));
+			sprint(other, " pistol rounds\n");
 			other.ammo_nails = min(other.ammo_nails, MAX_NAILS);
 			break;
 		case DROP_ROCKETS:
@@ -1678,6 +1811,9 @@ void() ammo_drop_touch =
 				other.ammo_rockets += self.ammo_rockets;
 			else 
 				return;
+			sprint(other, "You pick up ");
+			sprint(other, ftos( self.ammo_rockets));
+			sprint(other, " grenades\n");
 			other.ammo_rockets = min(other.ammo_rockets, MAX_ROCKETS);
 			break;
 		case DROP_CELLS:
@@ -1685,6 +1821,9 @@ void() ammo_drop_touch =
 				other.ammo_cells += self.ammo_cells;
 			else 
 				return;
+			sprint(other, "You pick up ");
+			sprint(other, ftos( self.ammo_cells));
+			sprint(other, " energy cells\n");
 			other.ammo_cells = min(other.ammo_cells, MAX_CELLS);
 			break;
 		case DROP_BULLETS:
@@ -1692,6 +1831,9 @@ void() ammo_drop_touch =
 				other.ammo_bullets += self.ammo_bullets;
 			else 
 				return;
+			sprint(other, "You pick up ");
+			sprint(other, ftos( self.ammo_bullets));
+			sprint(other, " high-caliber rounds\n");
 			other.ammo_bullets = min(other.ammo_bullets, MAX_BULLETS);
 			break;
 	}
@@ -1714,6 +1856,9 @@ void(vector pos, float type, float easy, float normal, float hard, float nightma
 {
 	entity item;
 	float i, hp, lscale, overheal, amount;
+	
+	if (!cvar("game_pickups"))
+		return;
 	
 	switch (skill)
 	{
@@ -1798,6 +1943,14 @@ void() health_drop_touch =
 		if (other.health > 100)
 			other.health = 100;
 	}
+	else if (other.health > 250)
+		other.health = 250;
+	
+	sprint(other, "You receive ");
+	sprint(other, ftos(self.health));
+	sprint(other, " health\n");
+	
+	stuffcmd (other, "bfh\n");
 
 	sound (other, CHAN_ITEM, "items/health2.wav", 1, ATTN_NORM);
 	stuffcmd (other, "bfh\n");
@@ -1813,32 +1966,23 @@ void() armor_drop_touch =
 		return;
 	
 	other.armorvalue += self.health;
-	other.armortype = 1;
 	if (!self.fA)
 	{
 		if (other.armorvalue > 100)
 			other.armorvalue = 100;
 	}
+		else if (other.armorvalue > 250)
+		other.armorvalue = 250;
 	
-	removeflag(other.items, IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3);
+	sprint(other, "You receive ");
+	sprint(other, ftos(self.health));
+	sprint(other, " armor\n");
 
-	if (other.armorvalue < 50)
-		other.items |= IT_ARMOR1;
-	else if (other.armorvalue > 100)
-		other.items |= IT_ARMOR3;
-	else
-		other.items |= IT_ARMOR2;
+	if (other.armorvalue > 0)
+		other.items |= IT_ARMOR;
 
 	//other.items = other.items - (other.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) + bit;
-	if (self.health == 1)
-		sound (other, CHAN_ITEM, "items/armor1.wav", 1, ATTN_NORM);
-	else 
-	{
-		if (random() > 0.5)
-			sound (other, CHAN_ITEM, "items/armor2.wav", 1, ATTN_NORM);
-		else
-			sound (other, CHAN_ITEM, "items/armor3.wav", 1, ATTN_NORM);
-	}
+	sound (other, CHAN_ITEM, "items/armor1.wav", 1, ATTN_NORM);
 	stuffcmd (other, "bfar\n");
 	SUB_Remove();
 };

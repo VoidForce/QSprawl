@@ -107,7 +107,10 @@ cvar_t	r_lerpmodels = {"r_lerpmodels", "1", CVAR_ARCHIVE};
 cvar_t	r_lerpmove = {"r_lerpmove", "1", CVAR_ARCHIVE};
 cvar_t	r_nolerp_list = {"r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE};
 cvar_t	r_noshadow_list = {"r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE};
-cvar_t	r_brightmodels_list = { "r_brightmodels_list", "progs/ammo/shells.mdl,progs/ammo/cells.mdl,progs/ammo/bullets.mdl,progs/ammo/nails.mdl,progs/ammo/nails_big.mdl,progs/ammo/rockets.mdl,progs/health_s.mdl,progs/health_b.mdl,progs/health_m.mdl,progs/armor.mdl", CVAR_NONE };
+cvar_t	r_brightmodels_list = { "r_brightmodels_list", "v_chaingun.mdl,v_gauss.mdl,v_grenade.mdl,v_katana.mdl,v_pistol.mdl,v_shock.mdl,v_shotgun.mdl,v_smgs.mdl", CVAR_NONE };
+cvar_t	r_ammomodels_list = { "r_ammomodels_list", "progs/ammo/shells.mdl,progs/ammo/cells.mdl,progs/ammo/bullets.mdl,progs/ammo/nails.mdl,progs/ammo/nails_big.mdl,progs/ammo/rockets.mdl", CVAR_NONE };
+cvar_t	r_healthmodels_list = { "r_healthmodels_list", "progs/health_s.mdl,progs/health_b.mdl,progs/health_m.mdl,progs/drops/syringe.mdl", CVAR_NONE };
+cvar_t	r_armormodels_list = { "r_armormodels_list", "progs/armor.mdl,progs/drops/plate.mdl", CVAR_NONE };
 
 extern cvar_t	r_vfog;
 extern cvar_t	vid_fsaa;

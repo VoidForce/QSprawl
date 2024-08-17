@@ -135,7 +135,6 @@ typedef struct
 	float	team;
 	float	max_health;
 	float	teleport_time;
-	float	armortype;
 	float	armorvalue;
 	float	waterlevel;
 	float	watertype;
@@ -181,4 +180,4 @@ typedef struct
 	float		info_head_max;
 } entvars_t;
 
-#define PROGHEADER_CRC 62274
+#define PROGHEADER_CRC 18013

@@ -84,7 +84,7 @@ void() ShalGrenadeExplode =
 	self.solid = SOLID_NOT;
 	self.touch = SUB_Null;
 	setmodel (self, "progs/p_explode.spr");
-	p_explode ();
+	s_explode1();
 };
 
 void() ShalGrenadeTouch =

@@ -31,7 +31,7 @@ entity		other;
 entity		world;
 float		time;
 float		frametime;
-float		timescale;
+nosave float		timescale;
 
 float		force_retouch;		// force all entities to touch triggers
 								// next frame.  this is needed because
@@ -209,7 +209,7 @@ void		end_sys_globals;		// flag for structure dumping
 
 .float		teleport_time;	// don't back up
 
-.float		armortype;		// save this fraction of incoming damage
+//.float		armortype;		// save this fraction of incoming damage
 .float		armorvalue;
 
 .float		waterlevel;		// 0 = not in, 1 = feet, 2 = waist, 3 = eyes
@@ -377,9 +377,9 @@ const float	IT_SHELLS				= 256;
 const float	IT_NAILS				= 512;
 const float	IT_ROCKETS				= 1024;
 const float	IT_CELLS				= 2048;
-const float	IT_ARMOR1				= 8192;
-const float	IT_ARMOR2				= 16384;
-const float	IT_ARMOR3				= 32768;
+const float	IT_ARMOR				= 8192;
+//			= 16384;
+//			= 32768;
 const float	IT_SUPERHEALTH			= 65536;
 const float	IT_KEY1					= 131072;
 const float	IT_KEY2					= 262144;
@@ -478,9 +478,11 @@ const float	EF_BRIGHTFIELD	= 1;
 const float	EF_MUZZLEFLASH 	= 2;
 const float	EF_BRIGHTLIGHT 	= 4;
 const float	EF_DIMLIGHT 	= 8;
+const float EF_QEX_QUADLIGHT	= 16;	// 2021 rerelease
+const float EF_QEX_PENTALIGHT	= 32;	// 2021 rerelease
+const float EF_QEX_CANDLELIGHT	= 64;	// 2021 rerelease
 const float	EF_NOLERP 		= 128; // new for the muzzleflash nolerp effect // 1 frame
 const float	EF_NOLERP2 		= 256; // old behaviour 2 frames
-
 
 // messages
 const float	MSG_BROADCAST	= 0;		// unreliable to all
@@ -610,7 +612,7 @@ const float	AS_MISSILE		= 4;
 #define MAX_NAILS 250
 #define MAX_ROCKETS 6
 #define MAX_CELLS 16
-#define MAX_BULLETS 45
+#define MAX_BULLETS 50
 						//1		2		3		4		5		6		7		8		9		10		11		12		13		14
 const float SSGX[14] = {0.3200, 0.0000,-0.3200, 0.4000, 0.2400, 0.0800,-0.0800,-0.2400,-0.4000, 0.3200, 0.1600, 0.0000,-0.1600,-0.3200}; //rearranged for easier fx messages checks
 const float SSGY[14] = {0.0000, 0.0000, 0.0000, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500,-0.0500,-0.0500,-0.0500,-0.0500,-0.0500};
@@ -639,6 +641,7 @@ const float ENF_HUDINFO = 32;
 #define IMPACT_WALL 10
 #define IMPACT_LASER 11
 #define IMPACT_SHIELD 12
+#define IMPACT_SHOCK 13
 
 // movement flags
 const float MF_CROUCHINAIR = 1;
@@ -708,6 +711,8 @@ const float SFLP_OGRE = 8;
 // items
 const float SFLI_TARGETSFIRED = 1;
 const float SFLI_MODELSET = 2; // ammo nails change model only once when < 51
+const float SFLI_REGEN = 4;
+const float SFLI_MEGA = 8;
 
 // movement inputs
 const float MOVE_FORWARD = 1;
@@ -743,7 +748,7 @@ enum monstertypes:int {
 #define KATANA_DAMAGE			30
 #define PISTOL_DAMAGE			70
 #define PISTOL_PENETRATION		-0.4
-#define SMG_DAMAGE				12
+#define SMG_DAMAGE				15
 #define SMG_PENETRATION			0.5
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
@@ -753,6 +758,8 @@ enum monstertypes:int {
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
 #define GAUSS_DAMAGE			190
+#define SHOCK_DAMAGE_MIN		15
+#define SHOCK_DAMAGE_MAX		40
 
 typedef struct {
 	float body_resistance; // percent of damage to decline
@@ -767,13 +774,13 @@ armor_t armorstats; // global used in T_DAMAGE
 const armor_t A_NULL 		= {0, 0,		0, 0,		0};
 const armor_t A_SOLDIER		= {0.1, 0,		0, 0,		0};
 const armor_t A_KNIGHT		= {0.25, 0,		0, 0,		0};
-const armor_t A_ENFORCER	= {0.4, 1,		0.15, 5,	0};
+const armor_t A_ENFORCER	= {0.3, 1,		0.15, 3,	0};
 const armor_t A_DOG			= {0.4, 1,		0, 0,		0.2};
 const armor_t A_SCRAG		= {0.0, 0,		0, 0,		0.2};
 const armor_t A_ZOMBIE		= {0.3, 2,		0.2, 1,		0.2};
 const armor_t A_OGRE		= {0.5, 4,		0.3, 2,		0.8};
-const armor_t A_HELLKNIGHT	= {0.6, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
-const armor_t A_FIEND		= {0.7, 2,		0.8, 30,	0.8};
+const armor_t A_HELLKNIGHT	= {0.5, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
+const armor_t A_FIEND		= {0.6, 2,		0.8, 30,	0.8};
 const armor_t A_VORE		= {0.4, 5,		0, 0,		0.8};
 const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 
@@ -793,7 +800,7 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 #define OGRE_HEALTH_FAST	350		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
-#define HELLKNIGHT_HEALTH	250
+#define HELLKNIGHT_HEALTH	380
 #define HELLKNIGHT_HEAD		80
 #define FIEND_HEALTH		300
 #define FIEND_HEAD			50
@@ -825,7 +832,9 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 .float		stopmelee_finished;
 .float		jumpreset_time;
 .float		spin_finished;
+.float		spin_sound_loop;
 .float		pushback_time; // vore shield
+.float		slide_time;
 .float		laststep;
 
 .float		chaingun_frame;
@@ -850,8 +859,9 @@ entity		grenade_handler; // global
 .float		lastweapon;
 .float		hitmarker_time;
 .float		headmarker_time;
-.float		katana_charges;
+.float		katana_strikes;
 .float		shock_charge;
+.entity		shock_target;
 
 .float		chaingun_frame;
 .float		chaingun_speed;
@@ -1094,6 +1104,7 @@ void(float to, entity s) WriteEntity	= #59;
 // void(string s) bWriteString	= #65;
 // void(entity e) bWriteEntity = #66;
 
+
 void(float step) movetogoal				= #67;
 
 string(string s) precache_file		= #68;	// no effect except for -copy
@@ -1115,6 +1126,16 @@ string(string s) precache_file2		= #77;		// registered version only
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
+//--------------------------------------------------------------------												
+float(float angle) sin = #60; // new
+float(float angle) cos = #61; // new
+float(float value) sqrt = #62; // new
+float(float a, float b, ...) min = #94;
+float(float a, float b, ...) max = #95;
+float(float minimum, float val, float maximum) clamp = #96; // aka bound
+float(float value, float exp) pow = #97; 
+float(float a, float n)mod = #245;
+void(vector dir)vectorvectors = #432; // makevectors out of direction vector 
 entity(.float fld, float match) findfloat = #700; // returns chain of entities
 void (float newvalue) change_timescale = #701; // clamped from 0 to 10
 float(vector raypoint, vector direction, vector point) distancetoray = #702; //  // A to B
@@ -1122,4 +1143,5 @@ void(vector A, vector onto) project_onto_vector = #703; // { "project_vector",		
 void(vector A, vector onto) project_onto_plane = #704; // { "project_plane",			PF_SSQC(PF_ProjectOnPlane),		704 },
 void(vector A, vector onto, float multiplier) reflectVector = #705; //default multiplier for 1 to 1 reflection is 2
 float(vector v) vlen2 = #706;  // non sqrt distance / 10000, returns 0 if it's < 16 before division
-	
+entity(vector org, float rad) findradius_damage = #707;
+float(float bitmask, float shift) bithshift = #708;

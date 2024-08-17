@@ -863,7 +863,7 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg)
 		if (ent->baseline.frame != ent->v.frame)
 			bits |= U_FRAME;
 
-		if ((ent->baseline.effects ^ (int)ent->v.effects) & qcvm->effects_mask)
+		if ((ent->baseline.effects ^ (int)ent->v.effects)) // & qcvm->effects_mask
 			bits |= U_EFFECTS;
 
 		if (ent->baseline.modelindex != ent->v.modelindex)
@@ -876,7 +876,7 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg)
 			ent->alpha = ENTALPHA_ENCODE(val->_float);
 
 		//don't send invisible entities unless they have effects
-		if (ent->alpha == ENTALPHA_ZERO && !((int)ent->v.effects & qcvm->effects_mask))
+		if (ent->alpha == ENTALPHA_ZERO && !((int)ent->v.effects)) //  & qcvm->effects_mask
 			continue;
 		//johnfitz
 
@@ -935,7 +935,7 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg)
 		if (bits & U_SKIN)
 			MSG_WriteByte (msg, ent->v.skin);
 		if (bits & U_EFFECTS)
-			MSG_WriteByte (msg, (int)ent->v.effects & qcvm->effects_mask);
+			MSG_WriteByte (msg, (int)ent->v.effects); //& qcvm->effects_mask
 		if (bits & U_ORIGIN1)
 			MSG_WriteCoord (msg, ent->v.origin[0], sv.protocolflags);
 		if (bits & U_ANGLE1)
@@ -1189,6 +1189,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1 22
 	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1 23
 	MSG_WriteByte (msg, ent->v.adrenaline * 255); // byte 1 24 
+	MSG_WriteByte (msg, ent->v.wall_jumps);
 
 	if (standard_quake)
 	{

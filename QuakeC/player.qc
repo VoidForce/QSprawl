@@ -441,21 +441,21 @@ void() katanaSwingLoop =
 
 			self.velocity = [v_forward_x, v_forward_y, aimangle] * 800;
 	
-			self.katana_charges = 4;
+			self.katana_strikes = 4;
 		}
 		else
 		{
 			self.velocity = [v_forward_x, v_forward_y, 0] * clamp(self.current_speed, ( 100 + ( 700 * (self.speedmodifier - 1.0) ) ), 1000);
-			self.katana_charges = rint((self.speedmodifier - 1.0) * 4);
+			self.katana_strikes = rint((self.speedmodifier - 1.0) * 4);
 		}
 		self.sprawlflags -= self.sprawlflags & SFL_SPRINT;
 		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	}
 	
-	if (self.weaponframe > 4 && self.katana_charges > 0 && self.movementflags & MF_JUMPDISABLED)
+	if (self.weaponframe > 4 && self.katana_strikes > 0 && self.movementflags & MF_JUMPDISABLED)
 	{
 		W_SwingKatana();
-		self.katana_charges--;
+		self.katana_strikes--;
 	}
 	
 	if (self.weaponframe == 8 )
@@ -538,6 +538,8 @@ void() animateChaingun =
 {
 	//dprint("start: ");
 	//dprint2(ftos(self.weaponframe), " after: ");
+	sound (self, 5, "weapons/chaingun_wu.wav", 0.5, ATTN_NORM);
+	self.spin_sound_loop = time + 0.5;
 
 	self.attack_finished = time + 0.3;
 	self.sprawlflags |= SFL_HOLD;
@@ -562,6 +564,12 @@ void() spinChaingunLoop =
 {
 	//dprint("spin: ");
 	//dprint(ftos(self.weaponframe));endl();
+	if (self.spin_sound_loop < time)
+	{
+		sound (self, 5, "weapons/chaingun_loop.wav", 0.5, ATTN_NORM);
+		self.spin_sound_loop = time + 2.2;
+	}
+	
 	if (!self.button0)
 	{
 		self.attack_finished = time + 0.1;
@@ -570,6 +578,7 @@ void() spinChaingunLoop =
 		if (self.weaponframe > CG_LOOPFRAME)
 			self.weaponframe = CG_STARTFRAME;
 		weaponThink(spinDownLoop, self.chaingun_speed);
+		sound (self, 5, "weapons/chaingun_wd.wav", 0.5, ATTN_NORM);
 		return;
 	}
 
@@ -626,6 +635,11 @@ void() spinChaingunLoop =
 // --------------- FIRE -----------
 void() fireChaingunLoop =
 {
+	if (self.spin_sound_loop < time)
+	{
+		sound (self, 5, "weapons/chaingun_loop.wav", 0.5, ATTN_NORM);
+		self.spin_sound_loop = time + 2.263;
+	}
 	//dprint("fire: ");
 	//dprint(ftos(self.weaponframe));endl();
 	if (!self.button0)
@@ -636,6 +650,7 @@ void() fireChaingunLoop =
 		self.chaingun_speed = CG_FIRE_STEP;
 		self.chaingun_count = CG_INERTIA; // how many frames to spin with the same speed
 		weaponThink(spinDownLoop, self.chaingun_speed);
+		sound (self, 5, "weapons/chaingun_wd.wav", 0.5, ATTN_NORM);
 		return;
 	}
 	
@@ -678,7 +693,7 @@ void() spinDownLoop =
 {
 	//dprint("slow: ");
 	//dprint(ftos(self.weaponframe));endl();
-	
+
 // don't let weaponframe redirect us to animateChaingun, use this loop to catch the input instead
 // otherwise we will have non-lerped transition to the next frame, caused by thinktime interruption
 	self.attack_finished = time + 0.16; 
@@ -781,7 +796,24 @@ void() light_cool =
 
 void() animateShock =
 {
-	self.shock_charge;
+	self.weaponframe ++;
+	if (self.weaponframe < 70)
+	{
+		W_FireLightning();
+	}
+	if (self.weaponframe > 74)
+	{
+		self.sprawlflags -= self.sprawlflags & SFL_HOLD;
+		self.weaponframe = 0;
+		self.think = player_run;
+		self.nextthink = time + 0.05;
+	}
+	else
+	{
+		self.think = animateShock;
+		self.nextthink = time + 0.05;
+	}
+	//self.shock_charge;
 };
 
 //============================================================================

@@ -1603,8 +1603,8 @@ void	VID_Init (void)
 
 	Cvar_RegisterVariable (&r_softemu_metric);
 
-	Cvar_RegisterVariable (&scr_pixelaspect);
-	Cvar_SetCallback (&scr_pixelaspect, SCR_PixelAspect_f);
+	//Cvar_RegisterVariable (&scr_pixelaspect);
+	//Cvar_SetCallback (&scr_pixelaspect, SCR_PixelAspect_f);
 
 	Cmd_AddCommand ("vid_unlock", VID_Unlock); //johnfitz
 	Cmd_AddCommand ("vid_restart", VID_Restart); //johnfitz

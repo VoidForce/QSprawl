@@ -3318,29 +3318,10 @@ static void Host_Give_f (void)
 
 	//johnfitz -- give armour
 	case 'a':
-		if (v > 150)
+		if (v > 0)
 		{
-		    sv_player->v.armortype = 1;
-		    sv_player->v.armorvalue = v;
-		    sv_player->v.items = sv_player->v.items -
-					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
-					IT_ARMOR3;
-		}
-		else if (v > 100)
-		{
-		    sv_player->v.armortype = 1;
-		    sv_player->v.armorvalue = v;
-		    sv_player->v.items = sv_player->v.items -
-					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
-					IT_ARMOR2;
-		}
-		else if (v >= 0)
-		{
-		    sv_player->v.armortype = 1;
-		    sv_player->v.armorvalue = v;
-		    sv_player->v.items = sv_player->v.items -
-					((int)(sv_player->v.items) & (int)(IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3)) +
-					IT_ARMOR1;
+			sv_player->v.armorvalue = v;
+			(int)sv_player->v.items |= (int)IT_ARMOR;
 		}
 		break;
 		//johnfitz

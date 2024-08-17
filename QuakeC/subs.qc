@@ -356,21 +356,21 @@ string getNetname(float item_number) =
 		case IT_SHOCK:
 			return "Lightning Rod";
 		case IT_BULLETS:
-			return ".50 BMG Rounds";
+			return "High-Caliber Rounds";
 		case IT_SHELLS:
 			return "Shotgun Shells";
 		case IT_NAILS:
-			return ".45 ACP AP Rounds";
+			return "Pistol Rounds";
 		case IT_ROCKETS:
 			return "Grenades";
 		case IT_CELLS:
 			return "Energy Cells";
-		case IT_ARMOR1:
-			return "Light Armor";
-		case IT_ARMOR2:
-			return "Combat Armor";
-		case IT_ARMOR3:
-			return "Assault Armor";
+		case IT_ARMOR:
+			return "Armor";
+		//case IT_ARMOR2:
+		//	return "Combat Armor";
+		//case IT_ARMOR3:
+		//	return "Assault Armor";
 		case IT_SUPERHEALTH:
 			return "Mega Health";
 		case IT_KEY1:
@@ -506,7 +506,7 @@ float getAmmotypeByWeapon(float it_num)
 		case IT_SMGS:
 			return IT_NAILS;
 		case IT_CHAINGUN:
-			return IT_NAILS;
+			return IT_BULLETS;
 		case IT_GRENADE_LAUNCHER:
 			return IT_ROCKETS;
 		case IT_GAUSS:
@@ -546,12 +546,12 @@ string getModelByNum(float it_num)
 			return "maps/b_rock0.bsp";
 		case IT_CELLS:
 			return "maps/b_batt0.bsp";
-		case IT_ARMOR1:
+		case IT_ARMOR:
 			return "progs/armor.mdl";
-		case IT_ARMOR2:
-			return "progs/armor.mdl";
-		case IT_ARMOR3:
-			return "progs/armor.mdl";
+		//case IT_ARMOR2:
+		//	return "progs/armor.mdl";
+		//case IT_ARMOR3:
+		//	return "progs/armor.mdl";
 		case IT_SUPERHEALTH:
 			return "maps/b_bh100.bsp";
 		case IT_KEY1:
@@ -965,7 +965,7 @@ void(entity who) updateInfo =
 	who.info_head = who.info_ent.health_head;
 };
 
-void(float x, float y, float z, entity who) addShakeToClient =
+void(float x, float y, float z, entity who) addShakeEnt =
 {
 	who.shakevelocity_x += x;
 	who.shakevelocity_y += y;
@@ -978,3 +978,35 @@ void(float x, float y, float z, entity who) addPunchVelocityToClient =
 	who.punchvelocity_y += y;
 	who.punchvelocity_z += z;
 };
+
+void(float dist, float step = 4) movetogoal_step =
+{
+	float move;
+	while (dist > 0)
+	{
+		dist -= step;
+		if (dist > 0)
+			move = step;
+		else
+			move = step + dist;
+		movetogoal (move);
+	}
+};
+
+//walkmove (self.angles_y, dist);
+/* done in the engine
+void(float angle, float dist, float step = 4) walkmove_step =
+{
+	float move;
+	float success;
+	while (dist > 0 && success)
+	{
+		dist -= step;
+		if (dist > 0)
+			move = step;
+		else
+			move = step + dist;
+		success = walkmove(angle, move);
+	}
+}
+*/

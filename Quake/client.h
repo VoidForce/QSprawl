@@ -76,6 +76,7 @@ typedef struct
 	float	minlight;			// don't add when contributing less
 	int		key;
 	vec3_t	color;				//johnfitz -- lit support via lordhavoc
+	int		flag;
 } dlight_t;
 
 
@@ -266,6 +267,7 @@ typedef struct
 	int			player_inputs;
 	int			wall_jumps;
 	int			info_ent;
+	float		invul_anim_time;
 } client_state_t;
 
 

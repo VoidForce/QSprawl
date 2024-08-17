@@ -419,8 +419,8 @@ void(float dist) ai_walk =
 	// check for noticing a player
 	if (FindTarget ())
 		return;
-
-	movetogoal (dist);
+	
+	movetogoal(dist);
 };
 
 
@@ -610,7 +610,6 @@ The monster has an enemy it is trying to kill
 */
 void(float dist) ai_run =
 {
-	
 	movedist = dist;
 // see if the enemy is dead
 	if (self.enemy.health <= 0)

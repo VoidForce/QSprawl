@@ -63,8 +63,10 @@ cvar_t	crosshair_width = {"crosshair_width", "1", CVAR_ARCHIVE};
 cvar_t	crosshair_length = {"crosshair_length", "10", CVAR_ARCHIVE};
 cvar_t	crosshair_gap = { "crosshair_gap", "10", CVAR_ARCHIVE };
 cvar_t	crosshair_color = { "crosshair_color", "245", CVAR_ARCHIVE };
-cvar_t	crosshair_dot = { "crosshair_dot", "0", CVAR_ARCHIVE };
 cvar_t	crosshair_alpha = { "crosshair_alpha", "1.0", CVAR_ARCHIVE };
+cvar_t	crosshair_dot = { "crosshair_dot", "0", CVAR_ARCHIVE };
+cvar_t	crosshair_dot_color = { "crosshair_dot_color", "0", CVAR_ARCHIVE };
+cvar_t	crosshair_dot_alpha = { "crosshair_dot_alpha", "1.0", CVAR_ARCHIVE };
 char	crosshair_char = '\0';
 
 cvar_t	gl_cshiftpercent = {"gl_cshiftpercent", "100", CVAR_NONE};
@@ -1094,8 +1096,10 @@ void V_Init (void)
 	Cvar_RegisterVariable (&crosshair_length);
 	Cvar_RegisterVariable (&crosshair_gap);
 	Cvar_RegisterVariable (&crosshair_color);
-	Cvar_RegisterVariable (&crosshair_dot);
 	Cvar_RegisterVariable (&crosshair_alpha);
+	Cvar_RegisterVariable (&crosshair_dot);
+	Cvar_RegisterVariable (&crosshair_dot_color);
+	Cvar_RegisterVariable (&crosshair_dot_alpha);
 	Cvar_RegisterVariable (&gl_cshiftpercent);
 	Cvar_RegisterVariable (&gl_cshiftpercent_contents); // QuakeSpasm
 	Cvar_RegisterVariable (&gl_cshiftpercent_damage); // QuakeSpasm

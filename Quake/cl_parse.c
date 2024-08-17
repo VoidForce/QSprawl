@@ -882,16 +882,20 @@ void CL_ParseClientdata (void)
 	}
 
 	i = MSG_ReadByte(); //24
-	
 	if (cl.stats[STAT_ADRENALINE] != i)
 	{
 		cl.stats[STAT_ADRENALINE] = i;
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte (); //25
+	i = MSG_ReadByte(); //24.5
+	if (cl.stats[STAT_WALLJUMPS] != i)
+	{
+		cl.stats[STAT_WALLJUMPS] = i;
+		Sbar_Changed();
+	}
 
-	
+	i = MSG_ReadByte (); //25
 	if (standard_quake)
 	{
 		if (cl.stats[STAT_ACTIVEWEAPON] != i)

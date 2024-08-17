@@ -232,8 +232,6 @@ void() worldspawn =
 	precache_sound ("items/armorvest1.wav");		// armor up
 	precache_sound ("items/armorvest2.wav");
 	precache_sound ("items/armor1.wav");
-	precache_sound ("items/armor2.wav");
-	precache_sound ("items/armor3.wav");
 	precache_sound ("items/health1.wav");
 	precache_sound ("items/health2.wav");
 
@@ -331,7 +329,7 @@ void() worldspawn =
 	precache_model ("progs/case_pistol.mdl");
 	precache_model ("progs/ammo/ammo_drop.spr");
 	precache_model ("progs/health_drop.spr");
-	
+
 	precache_model ("progs/bolt.mdl");		// for lightning gun
 	precache_model ("progs/bolt2.mdl");		// for lightning gun
 	precache_model ("progs/bolt3.mdl");		// for boss shock

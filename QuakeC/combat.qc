@@ -152,7 +152,7 @@ void (entity targ, vector direction, float force) T_PushDirection =
 		return;
 	
 // direction must be normalized
-	if (targ.flags & FL_MONSTER)
+	if (targ.flags & FL_MONSTER )
 	{
 		if (targ.flags & FL_ONGROUND)
 		{
@@ -254,19 +254,36 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (targ.entity_type == TYPE_PLAYER)
 	{
+		float armortype;
+		armortype = 1;
 		resdmg = damage;
-		if (skill == 1)
-			resdmg *= 0.6;
-		else if (skill == 0)
-			resdmg *= 0.3;
+		switch (skill)
+		{
+			case 0:
+				resdmg *= 0.3;
+				break;
+			case 1:
+				resdmg *= 0.6;
+				break;
+			case 2:
+				armortype = 0.8;
+				break;
+			case 3:
+				armortype = 0.5;
+				break;
+		}
+		if (targ.armorvalue > 100)
+			resdmg *= 0.8;
+		else if (targ.armorvalue > 50)
+			resdmg *= 0.9;
+
 		// save damage based on the target's armor level
-		save = ceil(targ.armortype*resdmg);
+		save = ceil(armortype * resdmg);
 
 		if (save >= targ.armorvalue)
 		{
 			save = targ.armorvalue;
-			targ.armortype = 0;	// lost all armor
-			targ.items = targ.items - (targ.items & (IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3));
+			targ.items -= targ.items & IT_ARMOR;
 		}
 		
 		targ.armorvalue = targ.armorvalue - save;
@@ -416,8 +433,6 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 // HUD INFO SET if none was currently set by trace
 	if (attacker.flags & FL_CLIENT && targ.flags & FL_MONSTER && !(attacker.engineflags & ENF_HUDINFO))
 		setInfo(attacker, targ);
-	if (attacker.info_ent == targ)
-		updateInfo(attacker);	
 	
 	if (targ.health <= 0)
 	{
@@ -434,7 +449,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		targ.skinchange = 0;
 		targ.monsterflags |= MFL_LOST_HEAD;
 		targ.monsterflags -= targ.monsterflags & MFL_HASHEAD;
-		
+
 		if (dflags & DF_KATANA)
 			targ.monsterflags |= MFL_DROP_HEAD;
 		
@@ -446,8 +461,6 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			{
 				targ.health = 0;
 				targ.lasthit_damage = 0;
-				if (attacker.info_ent == targ) // update once more
-					updateInfo(attacker);	
 			}
 			Killed (targ, attacker);
 			return;
@@ -508,11 +521,11 @@ void(entity inflictor, entity attacker, float damage, entity ignore) T_RadiusDam
 	local	entity	head;
 	local	vector	org;
 
-	head = findradius(inflictor.origin, damage+40);
+	head = findradius_damage(inflictor.origin, damage+40);
 	
 	while (head)
 	{
-		if (head == ignore || !head.takedamage)
+		if (head == ignore)
 		{
 			head = head.chain;
 			continue;
@@ -545,44 +558,53 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 	vector	org;
 	float	distancetotarget, distoutepicenter,fall,fallfraction;
 	float	dflags;
+	float magnitude;
 
-	head = findradius(inflictor.origin, radius);
+	head = findradius_damage(inflictor.origin, radius);
 	
 	while (head)
 	{
+		if (head == ignore)
+		{
+			endl();
+			head = head.chain;
+			continue;
+		}
 	//reset
 		dflags = DF_EXPLOSION;
-		if ((head != ignore) &&  head.takedamage)
+		org = head.origin + (head.mins + head.maxs)*0.5;
+		distancetotarget = vlen (inflictor.origin - org);
+		
+		if ( distancetotarget <= epicenter && head != attacker) //break ogre weapons, but not when selfharm
 		{
-			org = head.origin + (head.mins + head.maxs)*0.5;
-			distancetotarget = vlen (inflictor.origin - org);
+			points = damage;
+			dflags |= DF_EPICENTER;
+		}
+		else
+		{
+			fall = radius - epicenter;
+			distoutepicenter = distancetotarget - epicenter;
+			fallfraction = 1 - ( distoutepicenter / fall);
 			
-			if ( distancetotarget <= epicenter ) 
-			{
-				points = damage;
-				dflags |= DF_EPICENTER;
-			}
-			else
-			{
-				fall = radius - epicenter;
-				distoutepicenter = distancetotarget - epicenter;
-				fallfraction = 1 - ( distoutepicenter / fall);
-				
-			// bug: fix for that stupid bug that heals monster for 1000 hp	
-				if (fallfraction < 0) 
-					fallfraction = 0; 
-				points = damage * fallfraction;
-			}
+		// bug: fix for that stupid bug that heals monster for 1000 hp	
+			if (fallfraction < 0) 
+				fallfraction = 0; 
+			points = damage * fallfraction;
+		}
 
-			if (CanDamage (head, inflictor))
+		if (CanDamage (head, inflictor))
+		{
+			if (head == attacker && head.flags & FL_CLIENT)
+				points *= 0.25;
+			else if (head.flags & FL_MONSTER && !(attacker.flags & FL_CLIENT))
+				points *= 3;
+			T_Damage (head, inflictor, attacker, points, dflags);
+
+			if (pushaway != 0 && head.flags & FL_CLIENT) // divide by zero check here
 			{
-				if (head == attacker && head.flags & FL_CLIENT)
-					points *= 0.25;
-				else if (head.flags & FL_MONSTER && attacker.flags & FL_MONSTER)
-					points *= 3;
-				T_Damage (head, inflictor, attacker, points, dflags);
-				if (pushaway) // divide by zero check here
-					T_Push (head, inflictor, lerp(200/pushaway, 500/pushaway, points/damage), 100);
+				magnitude = points/damage;
+				T_Push (head, inflictor, lerp(200/pushaway, 500/pushaway, magnitude), 100);
+				addShakeEnt(crandom() * skill * 40 * magnitude, crandom() * skill * 40 * magnitude, crandom() * skill * 40 * magnitude, head);
 			}
 		}
 		head = head.chain;
@@ -641,9 +663,9 @@ void(vector epicenter, float radius, vector amount) shakeViewRadius =
 			continue;
 		}
 
-		addShakeToClient(amount_x, amount_y, amount_z, head);
+		addShakeEnt(amount_x, amount_y, amount_z, head);
 		amount *= 0.2;
-		addPunchVelocityToClient(amount_x, amount_y, amount_z, head);
+		addPunchVelocityEnt(amount_x, amount_y, amount_z, head);
 		head = head.chain;
 	}
 };

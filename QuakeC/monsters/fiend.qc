@@ -95,16 +95,17 @@ void()	demon1_walk6	=[	$walk6,	demon1_walk7 ] {setHead('23 3 5'); ai_walk(6);  }
 void()	demon1_walk7	=[	$walk7,	demon1_walk8 ] {setHead('23 3 5'); ai_walk(10); }; // 20
 void()	demon1_walk8	=[	$walk8,	demon1_walk1 ] {setHead('23 3 5'); ai_walk(10); }; // 21
 
-void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); ai_run(20); Think(0.075); // 22
+void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); ai_charge_side();ai_run(20); Think(0.075); // 22
 	if (random() < 0.2)
 	    sound (self, CHAN_VOICE, "demon/idle1.wav", 1, ATTN_IDLE);
 };
 
-void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_run(15); Think(0.075); }; // 23
-void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(15); Think(0.075); }; // 24 // run 36
-void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_run(20); Think(0.075); }; // 25
-void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_run(15); Think(0.075); }; // 26
-void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(15); Think(0.075); }; // 27 // run 36
+void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_charge_side();ai_run(15); Think(0.075); }; // 23
+void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_charge_side();ai_run(15); Think(0.075); }; // 24 // run 36
+void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_charge_side();ai_run(20); Think(0.075); }; // 25
+void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_charge_side();ai_run(15); Think(0.075); }; // 26
+void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_charge_side();ai_run(15); Think(0.075); }; // 27 // run 36
+
 
 void()	demon1_jump1	=[	$leap1,		demon1_jump2	] 
 {
@@ -221,7 +222,10 @@ void() demon_die =
 		dropAmmo(self.origin, DROP_CELLS, 2, 1, 1, 1);
 		dropHealth(self.origin, DROP_ARMOR, 2, 1, 1, 1);
 		sound (self, CHAN_VOICE, "player/udeath.wav", 1, ATTN_NORM);
-		sendMessageVec(self.origin, TE_EXPLOSION);
+		if (self.health_head < 0)
+			sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
+		else
+			sendMessageVec(self.origin, TE_EXPLOSION);
 		ThrowHead ("progs/h_demon.mdl", self.health);
 		ThrowGib ("progs/m_gib_01.mdl", self.health);
 		ThrowGib ("progs/m_gib_02.mdl", self.health);
@@ -343,6 +347,7 @@ void(float side)	Demon_Melee =
     sound (self, CHAN_WEAPON, "demon/dhit2.wav", 1, ATTN_NORM);
 	T_Damage (self.enemy, self, self, 5 + random() * 3, 0);	
 	T_Push (self.enemy, self, 600, 150);
+	addShakeEnt(crandom() * skill * 60, side * (random() + 0.5), side * random(), self.enemy);
 
 	makevectors2 (self.angles);
 	SpawnMeatSpray (self.origin + v_forward*16, side * v_right, self.enemy);

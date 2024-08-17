@@ -152,6 +152,11 @@ float (entity targ) visible;
 float(entity targ) infront;
 float(entity targ) range;
 
+void(float d) ai_charge_noface =
+{
+	movetogoal (d);		// done in C code...
+};
+
 void(float d) ai_charge =
 {
 	ai_face ();	

@@ -281,12 +281,20 @@ void R_SetupAliasLighting (entity_t	*e)
 		lightcolor[1] = 256.0f;
 		lightcolor[2] = 256.0f;
 	}
-	if (e->model->flags & MOD_PICKUPS)
+
+	if (e->model->lightflags & LIGHT_BRIGHT)
 	{
-		lightcolor[0] += 50.0f;
-		lightcolor[1] += 30.0f;
-		lightcolor[2] += 0.0f;
+		lightcolor[0] = q_max_f(75.0f, lightcolor[0]);
+		lightcolor[1] = q_max_f(75.0f, lightcolor[1]);
+		lightcolor[2] = q_max_f(75.0f, lightcolor[2]);
 	}
+	if (e->model->lightflags & LIGHT_PICKUPS)
+	{
+		lightcolor[0] += 60.0f;
+		lightcolor[1] += 40.0f;
+		lightcolor[2] += 20.0f;
+	}
+
 	VectorScale (lightcolor, 1.0f / 200.0f, lightcolor);
 }
 

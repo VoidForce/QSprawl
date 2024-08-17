@@ -32,6 +32,10 @@ void() W_Precache =
 	
 	// sprawl special
 	precache_sound ("weapons/f_chaingun.wav");	// super spikes
+	precache_sound ("weapons/chaingun_loop.wav"); //spin motor sounds
+	precache_sound ("weapons/chaingun_wu.wav");
+	precache_sound ("weapons/chaingun_wd.wav");
+	precache_sound ("silence.wav");
 	precache_sound ("weapons/f_grenade.wav");	// grenade launcher
 	precache_sound ("weapons/f_grenade_far.wav");	// grenade launcher
 	//precache_sound ("weapons/f_shotgun.wav");	// super shotgun
@@ -42,6 +46,7 @@ void() W_Precache =
 	precache_sound ("weapons/f_vector2.wav");	// smg
 	precache_sound ("weapons/f_vector3.wav");	// smg
 	precache_sound ("weapons/f_vector4.wav");	// smg
+	precache_sound ("weapons/static.wav"); // shock static discharge
 	
 	precache_sound ("weapons/gauss_charge1.wav");
 	precache_sound ("weapons/gauss_charge2.wav");
@@ -105,11 +110,18 @@ void(float x, float y, float z) addPunchVelocity =
 	self.punchvelocity_z += z;
 };
 
-void(entity who, float x, float y, float z) addPunchVelocityEnt =
+void(float x, float y, float z, entity who) addPunchVelocityEnt =
 {
 	who.punchvelocity_x += x;
 	who.punchvelocity_y += y;
 	who.punchvelocity_z += z;
+};
+
+void(float x, float y, float z) setPunchVelocity =
+{
+	self.punchvelocity_x = x;
+	self.punchvelocity_y = y;
+	self.punchvelocity_z = z;
 };
 
 void(float x, float y, float z) addShake =
@@ -121,7 +133,7 @@ void(float x, float y, float z) addShake =
 
 vector(float fwd, float right, float vertical) offsetWeapon =
 {
-	local vector offset;
+	vector offset;
 	makevectors(self.v_angle + self.punchangle);
 	offset = self.origin + v_forward * fwd + v_right * right;
 	offset_z += self.view_ofs_z + vertical;
@@ -139,7 +151,10 @@ void(float gun) deployGun =
 {
 	self.lastweapon = self.weapon;
 	if (self.weapon == IT_CHAINGUN)
+	{
 		self.chaingun_speed = 0.1;
+		sound (self, 5, "silence.wav", 1, ATTN_NORM); // shutup spin leftover
+	}
 	self.deploy_time = time;
 	
 	self.viewmodeloffset_angles_x = -60;
@@ -486,6 +501,7 @@ void(float shotcount, vector dir, vector spread, float damage) FireBullets =
 #define FBA_ISMULTIDAMAGE 1
 #define FBA_GRENADE 2
 #define FBA_IMPACT 8
+#define FBA_NOSHIELD_IMPACT 16
 //  DF_ALWAYSGIB 4
 
 void(vector dir, float offset_x, float offset_y, float damage, float penetration, float lflags) FireBulletAim =
@@ -493,24 +509,30 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 	vector direction;
 	vector src, head_origin;
 	float dflags;
+	float head_size_factor;
+	float head_distance;
 	
-	makevectors	(self.v_angle + self.punchangle);
-	
-// offset of source point
-	src = self.origin;// + v_forward*10;
-	src_z = self.origin_z + self.view_ofs_z;
-// offset for shotgun
-	if (offset_x || offset_y)
-		direction = normalize(dir + offset_x*v_right + offset_y*v_up);
-	else
+	if (lflags == FBA_GRENADE) // this one traces from grenade, not from player
+	{
 		direction = dir;
-// random offset
-//	direction = dir + crandom()*spread_x*v_right + crandom()*spread_y*v_up;
-// trace
-	if (lflags == FBA_GRENADE)
-		traceline (src, src + direction*64, FALSE, self);
+		src = self.origin - dir * 8;
+		traceline (src, src + dir * 96, FALSE, self.owner);
+	}
 	else
+	{
+		makevectors	(self.v_angle + self.punchangle);
+		
+	// offset of source point
+		src = self.origin;
+		src_z = self.origin_z + self.view_ofs_z;
+	// offset for shotgun
+		if (offset_x || offset_y)
+			direction = normalize(dir + offset_x*v_right + offset_y*v_up);
+		else
+			direction = dir;
+	// trace
 		traceline (src, src + direction*2048, FALSE, self);
+	}
 	
 	if (trace_fraction != 1.0)
 	{
@@ -527,14 +549,22 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 				if (trace_ent.monsterflags & MFL_HASHEAD)
 				{
 				// calculate if it's a headshot or not
-					head_origin = findHeadPosition(trace_ent);		
-					if (distancetoray(src, direction, head_origin) < trace_ent.head_size)
+					head_origin = findHeadPosition(trace_ent);
+				// make head smaller the closer we are to the target, so it's not that easy to hit head in close combat
+					if (lflags == FBA_GRENADE)
+						head_size_factor = trace_ent.head_size * 1.25; // and a bit larger for the grenades
+					else
+					{
+						head_distance = vlen(src - head_origin);
+						head_size_factor = lerp(trace_ent.head_size/1.5, trace_ent.head_size, head_distance / 256);
+					}
+					if (distancetoray(src, direction, head_origin) < head_size_factor)
 						dflags |= DF_HEADSHOT;
 				}
 				
 				if (lflags & FBA_IMPACT)
 				{
-					if (trace_ent.monsterflags & MFL_SHIELD)
+					if (trace_ent.monsterflags & MFL_SHIELD && !(lflags & FBA_NOSHIELD_IMPACT))
 						sendMessageImpact(trace_endpos, trace_ent.origin, IMPACT_SHIELD, VEC_ORIGIN); 
 					else
 					{
@@ -588,7 +618,7 @@ void() W_SwingKatana =
 	vector source, direction, org, head_origin;
 	entity previous;
 	float i;
-
+	SuperDamageSound ();
 	makevectors	(self.v_angle + self.punchangle);
 	source = self.origin + '0 0 16';
 	direction = v_forward;
@@ -622,7 +652,7 @@ void() W_SwingKatana =
 				trace_ent.lasthit_direction = direction; // set this before T_Damage, otherwise it's too late
 				head_origin = findHeadPosition(trace_ent);
 	
-				if (distancetoray(source, direction, head_origin) < trace_ent.head_size)
+				if (distancetoray(source, direction, head_origin) < trace_ent.head_size*2) // bigger heads for katana
 					T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_HEADSHOT | DF_KATANA);
 				else
 					T_Damage (trace_ent, self, self, KATANA_DAMAGE, DF_KATANA);
@@ -656,8 +686,9 @@ void() W_SwingKatana =
 
 void() W_FirePistol =
 {
-	local vector dir;
-
+	vector dir;
+	
+	SuperDamageSound ();
 // play sound
 	sound (self, CHAN_WEAPON, "weapons/f_pistol.wav", 1, ATTN_NORM);	
 // ammo
@@ -687,7 +718,8 @@ void() W_FireSuperShotgun =
 	vector dir, start;
 	float i;
 	float lflag;
-		
+	
+	SuperDamageSound ();
 	sound (self, CHAN_WEAPON, "weapons/f_shotgun.wav", 1, ATTN_NORM);	// shot part
 	//sound (self, CHAN_ITEM, "weapons/f_shotgun2.wav", 1, ATTN_NORM); // reload part
 	
@@ -701,11 +733,15 @@ void() W_FireSuperShotgun =
 	{
 		lflag = FBA_ISMULTIDAMAGE; // means that we have to use ApplyMultiDamage after cycle
 		if (i > 2)
-			lflag |= FBA_IMPACT;
+			lflag |= FBA_IMPACT | FBA_NOSHIELD_IMPACT;
 
 		FireBulletAim (dir, SSGX[i]*0.2, SSGY[i]*0.2, SHOTGUN_DAMAGE, SHOTGUN_PENETRATION, lflag); 
 		if (i < 3)
-			sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE); // 3 messages in total
+		{
+			sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE); // 3 messages in total, have to be done after trace ofc
+			if (trace_ent.monsterflags & MFL_SHIELD)
+				sendMessageImpact(trace_endpos, trace_ent.origin, IMPACT_SHIELD, VEC_ORIGIN); 
+		}
 	}
 	ApplyMultiDamage ();
 	
@@ -717,9 +753,12 @@ void() W_FireSuperShotgun =
 
 void(float leftgun) W_FireSMG =
 {
-	local vector dir;
-	local vector start;
-	local float r;
+	vector dir;
+	vector start;
+	float r;
+	static float dirchange = 1;
+	
+	SuperDamageSound ();
 	
 	if (self.ammo_nails < 1)
 	{
@@ -757,8 +796,10 @@ void(float leftgun) W_FireSMG =
 	checkGrenadeCollision(dir, 8);
 
 	//punch_relaxtime
-	makePunch([0+random()*2, 0.5, 2], [crandom(), 0, 0], [0, 0, 0]);
-	//addPunchVelocity(-6,crandom()*4,0);
+	if (random() < 0.15)
+		dirchange *= -1;
+	makePunch([0.5 + random()*1.5, 0.5, 2], [random() * dirchange, 0, 0], [0, 0, 0]); // 
+	addPunchVelocity(0,crandom()*4,0);
 };
 
 // sendMessageImpact is: impact coordinates, shooter coordinates, type flag, impact plane normal vector
@@ -771,6 +812,7 @@ void() W_FireGauss =
 	float isworld;
 	
 // misc stuff
+	SuperDamageSound ();
 	sound (self, CHAN_AUTO, "weapons/f_gauss.wav", 1, ATTN_NORM);
 	self.show_hostile = time + 1;	// wake monsters up	
 	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
@@ -903,7 +945,7 @@ void() W_FireGauss =
 		if (penetration_depth < 128)
 		{
 		// we punch through the wall and there is air here, trace back to find the exit hole
-			traceline (impact + direction * penetration_depth, impact, IGNOREMONSTERS, world);
+			traceline (impact + direction * (penetration_depth + 4), impact, IGNOREMONSTERS, world);
 
 		// exit hole particle effect
 		// in case of we hit non-solid object, we will recieve all zeroes normal, which is not good for on engine calculations
@@ -914,7 +956,9 @@ void() W_FireGauss =
 				sendMessageImpact(impact, start, IMPACT_GAUSS_ENTRANCE, wall_normal); // entrance hole particle effect
 			
 			power -= 1;//(penetration_depth / 128) * 0.5;
-			startposition_loop = trace_endpos + direction * 4;
+			// trace from inside the wall to hit someone who touch the wall 
+			// usually monsters on platforms being ignored whet shot from underneath
+			startposition_loop = trace_endpos - direction * 4; 
 		}
 		else 
 		{
@@ -931,7 +975,8 @@ void() W_FireGauss =
 void() W_FireChaingun =
 {
 	vector dir;
-
+	
+	SuperDamageSound ();
 	self.show_hostile = time + 1;	// wake monsters up	
 	self.currentammo = self.ammo_bullets = self.ammo_bullets - 1;
 	
@@ -954,8 +999,8 @@ void() W_FireChaingun =
 		self.velocity += v_forward * (-75);
 	makePunch([0, 0, 2], [0, 0, 0], [0, 0, 0]);
 	//makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]); //crandom() * crandom() * 4
-	//addPunchVelocity(-6,crandom()*4,0);
-	//addShake(-10, crandom()*10, 0);
+	addPunchVelocity(crandom()*5,crandom()*5,0);
+	addShake(0,0,crandom()*50);
 };
 
 void() GrenadeExplode =
@@ -1044,6 +1089,7 @@ void() W_FireGrenade =
 	
 	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
 	
+	SuperDamageSound ();
 	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
 
 	missile = spawn ();
@@ -1086,27 +1132,12 @@ void() W_FireGrenade =
 	missile.nextthinkB = time + 0.1;
 };
 
-void()	s_explode1	=	[0,		s_explode2] {};
-void()	s_explode2	=	[1,		s_explode3] {};
-void()	s_explode3	=	[2,		s_explode4] {};
-void()	s_explode4	=	[3,		s_explode5] {};
-void()	s_explode5	=	[4,		s_explode6] {};
-void()	s_explode6	=	[5,		SUB_Remove] {};
-
-void()	p_explode	= 
-{
-	if (self.frame < 12)
-	{
-		self.frame++;
-		self.nextthink = time + 0.05;
-		self.think = p_explode;
-	}
-	else
-	{
-		self.nextthink = time + 0.05;
-		self.think = SUB_Remove;
-	}
-};
+void()	s_explode1	=	[0,		s_explode2] {self.nextthink = time + 0.05;};
+void()	s_explode2	=	[1,		s_explode3] {self.nextthink = time + 0.05;};
+void()	s_explode3	=	[2,		s_explode4] {self.nextthink = time + 0.05;};
+void()	s_explode4	=	[3,		s_explode5] {self.nextthink = time + 0.05;};
+void()	s_explode5	=	[4,		s_explode6] {self.nextthink = time + 0.05;};
+void()	s_explode6	=	[5,		SUB_Remove] {self.nextthink = time + 0.05;};
 
 void() BecomeExplosion =
 {
@@ -1202,40 +1233,26 @@ void(vector p1, vector p2, entity from, float damage) LightningDamage =
 
 void() W_FireLightning =
 {
-	local	vector		org;
-	local   float           cells;
-
-	if (self.ammo_cells < 1)
-	{
-		self.weapon = W_BestWeapon ();
-		W_SetCurrentAmmo ();
-		return;
-	}
+	vector	org, direction, head_origin;
+	float dflags, damage;
 	
+	SuperDamageSound ();
 	// explode if under water
 	if (self.waterlevel > 1)
 	{
-		cells = self.ammo_cells;
-		self.ammo_cells = 0;
-		W_SetCurrentAmmo ();
-		T_RadiusDamage (self, self, 35*cells, world);
+		T_Damage (self, self, self, 5, 0, 1);
 		return;
 	}
 	
-	makevectors(self.v_angle);
-	if (self.t_width < time)
-	{
-		sound (self, CHAN_WEAPON, "weapons/f_shock_loop.wav", 1, ATTN_NORM);
-		self.t_width = time + 0.6;
-	}
+	//makevectors(self.v_angle);
 
-	//self.currentammo = self.ammo_cells = self.ammo_cells - 1;
-	org = self.origin + v_forward*24 + v_right*8;
-	org_z += self.view_ofs_z - 6;
-	//org = [24, 8, self.view_ofs_z - 6]; // forward, right, verticall offset
+	sound (self, CHAN_AUTO, "weapons/static.wav", 1, ATTN_NORM);
+
+	org = offsetWeapon(24,8,-6); // CALL OF MAKEVECTORS with punchangle
+	direction = v_forward;
 	
-	traceline (org, org + v_forward*600, TRUE, self);
-
+	traceline (org, org + direction * 600, TRUE, self);
+	self.effects |= EF_MUZZLEFLASH;
 	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
 	WriteByte (MSG_BROADCAST, TE_LIGHTNING2);
 	WriteEntity (MSG_BROADCAST, self);
@@ -1245,12 +1262,55 @@ void() W_FireLightning =
 	WriteCoord (MSG_BROADCAST, trace_endpos_x);
 	WriteCoord (MSG_BROADCAST, trace_endpos_y);
 	WriteCoord (MSG_BROADCAST, trace_endpos_z);
-	WriteByte (MSG_BROADCAST, 1);
-	WriteCoord (MSG_BROADCAST, self.v_angle_x);
-	WriteCoord (MSG_BROADCAST, self.v_angle_y);
-	WriteCoord (MSG_BROADCAST, self.v_angle_z);
+	WriteByte (MSG_BROADCAST, 0);
+	//WriteCoord (MSG_BROADCAST, self.v_angle_x);
+	//WriteCoord (MSG_BROADCAST, self.v_angle_y);
+	//WriteCoord (MSG_BROADCAST, self.v_angle_z);
+	
+	// offset of source point
+	org = self.origin;
+	org_z = self.origin_z + self.view_ofs_z;
+	
+	// trace
+	traceline (org, org + direction * 640, FALSE, self);
+	if (trace_fraction != 1.0)
+	{
+		if (trace_ent.takedamage)
+		{
+			if (trace_ent.flags & FL_MONSTER)
+			{
+				if (trace_ent.monsterflags & MFL_HASHEAD)
+				{
+					head_origin = findHeadPosition(trace_ent);
+					if (distancetoray(org, direction, head_origin) < trace_ent.head_size)
+						dflags |= DF_HEADSHOT;
+				}
+				
+				if (trace_ent.monsterflags & MFL_SHIELD)
+					sendMessageImpact(trace_endpos, trace_ent.origin, IMPACT_SHIELD, VEC_ORIGIN); 
+				else 
+					sendMessageImpact(trace_endpos, -direction, IMPACT_SHOCK, VEC_ORIGIN); 
+			}
+			else
+				sendMessageImpact(trace_endpos, -direction, IMPACT_ROBOT, VEC_ORIGIN);  // hit shootable solid like a button
 
-	LightningDamage (self.origin, trace_endpos + v_forward*4, self, 30);
+			trace_ent.lasthit_direction = direction;
+			trace_fraction *= 640;
+			if (trace_fraction < 128)
+				damage = SHOCK_DAMAGE_MIN;
+			else if (trace_fraction > 512)
+				damage = SHOCK_DAMAGE_MAX;
+			else
+				damage = lerp(SHOCK_DAMAGE_MIN, SHOCK_DAMAGE_MAX, (trace_fraction - 128) / 384);
+			T_Damage (trace_ent, self, self, damage, dflags, 1);
+		}
+		else
+			sendMessageImpact(trace_endpos, trace_plane_normal, IMPACT_SHOCK, VEC_ORIGIN); 
+	}
+	float amplitude;
+	amplitude = 1 - (rint(self.current_speed / 10) / 100); // 1 - speed/1000, rounded to x.xx
+	amplitude = max(0.3, amplitude);
+	makePunch([random()*3 * amplitude, 0, 0], [randomsign() * random() * amplitude, randomsign() * 1.5 * amplitude, randomsign() * 3 * amplitude], [0, 0, 0]); // 
 };
 
 void(vector org, vector dir) launch_spike =
@@ -1357,7 +1417,7 @@ void() W_SetCurrentAmmo =
 		self.sprawlflags -= self.sprawlflags & SFL_RESETWEAPONFRAME;
 	}
 
-	self.items = self.items - ( self.items & (IT_SHELLS | IT_NAILS | IT_ROCKETS | IT_CELLS) );
+self.items = self.items - ( self.items & (IT_SHELLS | IT_NAILS | IT_ROCKETS | IT_CELLS | IT_BULLETS) );
 	
 	if (self.weapon == IT_KATANA)
 	{
@@ -1542,12 +1602,19 @@ void() W_Attack =
 			break;
 			
 		case IT_SHOCK:
-			self.weaponframe = 1;
-			//player_light1();
+			if (self.ammo_cells < 1)
+			{
+				self.weapon = W_BestWeapon ();
+				W_SetCurrentAmmo ();
+				return;
+			}
+			self.weaponframe = 59;
 			animateShock();
 			self.show_hostile = time + 1;	// wake monsters up	
-			self.attack_finished = time + 0.1;
-			sound (self, CHAN_AUTO, "weapons/f_shock_start.wav", 1, ATTN_NORM);
+			self.attack_finished = time + 1.0;
+			self.sprawlflags |= SFL_HOLD;
+			sound (self, CHAN_WEAPON, "weapons/f_shock_loop.wav", 1, ATTN_NORM);
+			self.currentammo = --self.ammo_cells;
 			break;
 	}
 };
@@ -1906,6 +1973,7 @@ void() W_WeaponFrame =
 		self.info_ent = world;
 		self.info_stay_time = 72000; // 20 hours
 	}
+	updateInfo(self);
 	
 	if (self.sprawlflags & SFL_INQUICKMELEE)
 	{
@@ -1931,7 +1999,10 @@ void() W_WeaponFrame =
 	if (self.sprawlflags & SFL_HOLD)
 	{
 		if (self.button0)
+		{
+			self.impulse = 0; // don't store impulse when it's not available, to prevent immediate gun swap after hold flag is stripped
 			return;
+		}
 		else
 			self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	}
@@ -1945,7 +2016,7 @@ void() W_WeaponFrame =
 	// check for attack
 	if (self.button0)
 	{
-		SuperDamageSound ();
+		//SuperDamageSound ();
 		W_Attack ();
 	}
 };
@@ -1956,9 +2027,8 @@ void() SuperDamageSound =
 	{
 		if (self.super_sound < time)
 		{
-			self.super_sound = time + 1;
-			sound (self, CHAN_BODY, "items/damage3.wav", 1, ATTN_NORM);
+			self.super_sound = time + 0.2;
+			sound (self, CHAN_AUTO, "items/damage3.wav", 1, ATTN_NORM);
 		}
 	}
-	return;
 };

@@ -181,6 +181,7 @@ void(vector st, float lflag) ZombieFireHead =
 	local	entity missile;
 	local	vector	org;
 	self.monsterflags -= self.monsterflags & MFL_HASHEAD;
+	self.health_head = 0;
 	self.skinchange = 0;
 	self.skin = 0;
 	setmodel (self, "progs/zombie_headless.mdl");
@@ -483,11 +484,11 @@ FIXME: don't use pain_finished because of nightmare hack
 */
 void(entity attacker, float take) zombie_pain =
 {
-	local float r;
-
-	if (take > 150)
+	float r;
+	if (self.lasthit_damage > 150)
 	{
-		self.health = -1;
+		self.health = 0;
+		self.pain_finished = 72000;
 		zombie_die();
 		return;
 	}
@@ -535,11 +536,6 @@ void(entity attacker, float take) zombie_pain =
 		zombie_painc1 ();
 	else
 		zombie_paind1 ();
-};
-
-void() zombie_loosehead =
-{
-
 };
 
 //============================================================================

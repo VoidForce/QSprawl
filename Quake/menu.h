@@ -39,6 +39,7 @@ enum m_state_e {
 	m_keys,
 	m_calibration,
 	m_gamepad,
+	m_crosshair,
 	m_mods,
 	m_modinfo,
 	m_help,

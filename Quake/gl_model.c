@@ -3065,6 +3065,9 @@ Mod_SetExtraFlags -- johnfitz -- set up extra flags that aren't in the mdl
 void Mod_SetExtraFlags (qmodel_t *mod)
 {
 	extern cvar_t r_nolerp_list, r_noshadow_list, r_brightmodels_list;
+	extern cvar_t r_ammomodels_list;
+	extern cvar_t r_healthmodels_list;
+	extern cvar_t r_armormodels_list;
 
 	if (!mod || mod->type != mod_alias)
 		return;
@@ -3086,11 +3089,15 @@ void Mod_SetExtraFlags (qmodel_t *mod)
 	{
 		mod->flags |= MOD_FBRIGHTHACK;
 	}
-	
+// ok this is so bad, how do we design this in a different way?
 	if (nameInList(r_brightmodels_list.string, mod->name))
-	{
-		mod->flags |= MOD_PICKUPS;
-	}
+		mod->lightflags = LIGHT_BRIGHT;
+	else if (nameInList(r_ammomodels_list.string, mod->name))
+		mod->lightflags = LIGHT_PICKUPS;
+	else if (nameInList(r_healthmodels_list.string, mod->name))
+		mod->lightflags = LIGHT_PICKUPS;
+	else if (nameInList(r_armormodels_list.string, mod->name))
+		mod->lightflags = LIGHT_BRIGHT;
 }
 
 /*

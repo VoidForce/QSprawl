@@ -1165,8 +1165,13 @@ void Draw_GetCanvasTransform (canvastype type, drawtransform_t *transform)
 		s = CLAMP (1.0f, scr_sbarscale.value, s);
 		Draw_Transform (vid.guiwidth/s, vid.guiheight/s, s, CANVAS_ALIGN_CENTERX, CANVAS_ALIGN_CENTERY, transform);
 		break;
+	case CANVAS_SBAR2GUNS:
+		s = q_min(vid.guiwidth / 400.0f, vid.guiheight / 225.0f);
+		s = CLAMP(1.0f, scr_sbarscale.value * 2, s);
+		Draw_Transform(vid.guiwidth / s, vid.guiheight / s, s, CANVAS_ALIGN_CENTERX, CANVAS_ALIGN_CENTERY, transform);
+		break;
 	case CANVAS_CROSSHAIR: //0,0 is center of viewport
-		s = CLAMP (1.0f, scr_crosshairscale.value, 10.0f);
+		s = CLAMP(1.0f, scr_sbarscale.value, 10.0f);
 		Draw_Transform (vid.guiwidth/s/2, vid.guiheight/s/2, s, CANVAS_ALIGN_LEFT, CANVAS_ALIGN_BOTTOM, transform);
 		transform->offset[0] += 1.f;
 		transform->offset[1] += 1.f - ((scr_vrect.y + scr_vrect.height / 2) * 2 / (float)glheight);

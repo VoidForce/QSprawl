@@ -86,7 +86,9 @@ void CL_ParseBeam (qmodel_t *m, float staytime)
 		offset[1] = MSG_ReadCoord(cl.protocolflags);
 		offset[2] = MSG_ReadCoord(cl.protocolflags);
 	}
-
+	else
+		VectorCopy(vec3_origin, offset);
+	
 // override any beam with the same entity
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
@@ -171,8 +173,11 @@ void CL_ParseTEnt (void)
 		dl = CL_AllocDlight (0);
 		VectorCopy (pos, dl->origin);
 		dl->radius = 350;
-		dl->die = cl.time + 0.5;
+		dl->die = cl.time + 0.85;
 		dl->decay = 300;
+		dl->color[0] = 0.9; //orange-ish
+		dl->color[1] = 0.66;
+		dl->color[2] = 0.31;
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
 		//S_StartSound(-1, 0, cl_sfx_r_exp3_far, pos, 1, 0);
 		break;
@@ -184,20 +189,23 @@ void CL_ParseTEnt (void)
 		dl = CL_AllocDlight(0);
 		VectorCopy(pos, dl->origin);
 		dl->radius = 200;
-		dl->die = cl.time + 0.5;
-		dl->decay = 300;
+		dl->die = cl.time + 1;
+		dl->decay = 150;
+		dl->color[0] = 0.24; //blue-ish
+		dl->color[1] = 0.63;
+		dl->color[2] = 0.98;
 		break;
 
 	case TE_LIGHTNING1:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true), 0.2);
+		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true), 0.1);
 		break;
 
 	case TE_LIGHTNING2:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt2.mdl", true), 0.2);
+		CL_ParseBeam (Mod_ForName("progs/bolt2.mdl", true), 0.1);
 		break;
 
 	case TE_LIGHTNING3:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true), 0.2);
+		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true), 0.1);
 		break;
 
 //qsprawl
@@ -294,9 +302,12 @@ void CL_ParseTEnt (void)
 
 		dl = CL_AllocDlight(0);
 		VectorCopy(pos, dl->origin);
-		dl->radius = 350;
-		dl->die = cl.time + 0.5;
-		dl->decay = 300;
+		dl->radius = 250;
+		dl->die = cl.time + 1;
+		dl->decay = 200;
+		dl->color[0] = 1.0; //orange-ish
+		dl->color[1] = 0.2;
+		dl->color[2] = 0.2;
 		S_StartSound(-1, 0, cl_sfx_r_exp3, pos, 1, 1);
 		//S_StartSound(-1, 0, cl_sfx_r_exp3_far, pos, 1, 0);
 		break;
@@ -308,6 +319,15 @@ void CL_ParseTEnt (void)
 		flag = MSG_ReadByte();
 		R_ParticleShockwave(pos, flag); // flag is magnitude
 		S_StartSound(-1, 0, cl_sfx_impact, pos, 1, 1);
+
+		dl = CL_AllocDlight(0);
+		VectorCopy(pos, dl->origin);
+		dl->radius = 200;
+		dl->die = cl.time + 0.2;
+		dl->decay = 100;
+		dl->color[0] = 0.52; //grey blue
+		dl->color[1] = 0.64; 
+		dl->color[2] = 0.68;
 		break;
 
 	/*
@@ -392,8 +412,8 @@ void CL_UpdateTEnts (void)
 				offset[j] += fwd[j] * 24 + right[j] * 8;
 			offset[2] += 16;
 			VectorCopy(offset, b->start);
-		}
-		*/
+		}*/
+		
 
 	// calculate pitch and yaw
 		VectorSubtract (b->end, b->start, dist);
@@ -427,6 +447,7 @@ void CL_UpdateTEnts (void)
 			if (!ent)
 				return;
 			VectorCopy (org, ent->origin);
+
 			ent->model = b->model;
 			ent->angles[0] = pitch;
 			ent->angles[1] = yaw;

@@ -87,7 +87,7 @@ void() OgreGrenadeExplode =
 		sound (self, CHAN_VOICE, "weapons/pl_explode.wav", 1, ATTN_NORM);
 		sendMessageVec(self.origin, TE_EXPLOSION_PLASMA);
 		setmodel (self, "progs/p_explode.spr");
-		p_explode ();
+		s_explode1 ();
 	}
 	else
 	{
@@ -337,7 +337,7 @@ void() ogre_push_strike =
 	T_Push(self.enemy, self, 400, 100);
 	
 	ForceStartSlide(0.2, self.enemy);
-	addShakeToClient(crandom() * 150, crandom() * 100, random() * 150, self.enemy);
+	addShakeEnt(crandom() * 150, crandom() * 100, random() * 150, self.enemy);
 };
 
 void(float side) chainsaw =
@@ -374,31 +374,31 @@ void() ogre_swing4	=[	$swing4,		ogre_swing5	] {ai_charge_side();setHead('7 1 44'
 void() ogre_swing5	=[	$swing5,		ogre_swing6	] {ai_charge_side();setHead('8 -2 42'); // 38
 	ai_charge(9); 
 	chainsaw(0);
-	self.angles_y = self.angles_y + random()*25;
+	self.angles_y = self.angles_y + random()*15;
 };
 void() ogre_swing6	=[	$swing6,		ogre_swing7	] {ai_charge_side();setHead('7 -4 40'); // 39
 	chainsaw(200);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing7	=[	$swing7,		ogre_swing8	] {ai_charge_side();setHead('4 -7 39');  // 40
 	chainsaw(0);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing8	=[	$swing8,		ogre_swing9	] {ai_charge_side();setHead('1 -11 38'); // 41
 	chainsaw(0);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing9	=[	$swing9,		ogre_swing10 ] {ai_charge_side();setHead('0 -12 39'); // 42
 	chainsaw(0);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing10	=[	$swing10,		ogre_swing11 ] {ai_charge_side();setHead('-2 -10 40'); // 43
 	chainsaw(-200);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing11	=[	$swing11,		ogre_swing12 ] {ai_charge_side();setHead('-2 -9 40'); // 44
 	chainsaw(0);
-	self.angles_y = self.angles_y + random()* 25;
+	self.angles_y = self.angles_y + random()* 15;
 };
 void() ogre_swing12	=[	$swing12,		ogre_swing13 ] {setHead('3 -7 41');ai_charge(3);}; // 45
 void() ogre_swing13	=[	$swing13,		ogre_swing14 ] {setHead('8 -3 40');ai_charge(8);}; // 46
