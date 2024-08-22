@@ -510,29 +510,20 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 	vector src, head_origin;
 	float dflags;
 	float head_size_factor;
-	float head_distance;
 	
-	if (lflags == FBA_GRENADE) // this one traces from grenade, not from player
-	{
-		direction = dir;
-		src = self.origin - dir * 8;
-		traceline (src, src + dir * 96, FALSE, self.owner);
-	}
+	makevectors	(self.v_angle + self.punchangle);
+	
+// offset of source point
+	src = self.origin;
+	src_z = self.origin_z + self.view_ofs_z;
+// offset for shotgun
+	if (offset_x || offset_y)
+		direction = normalize(dir + offset_x*v_right + offset_y*v_up);
 	else
-	{
-		makevectors	(self.v_angle + self.punchangle);
-		
-	// offset of source point
-		src = self.origin;
-		src_z = self.origin_z + self.view_ofs_z;
-	// offset for shotgun
-		if (offset_x || offset_y)
-			direction = normalize(dir + offset_x*v_right + offset_y*v_up);
-		else
-			direction = dir;
-	// trace
-		traceline (src, src + direction*2048, FALSE, self);
-	}
+		direction = dir;
+// trace
+	traceline (src, src + direction*2048, FALSE, self);
+
 	
 	if (trace_fraction != 1.0)
 	{
@@ -551,13 +542,8 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 				// calculate if it's a headshot or not
 					head_origin = findHeadPosition(trace_ent);
 				// make head smaller the closer we are to the target, so it's not that easy to hit head in close combat
-					if (lflags == FBA_GRENADE)
-						head_size_factor = trace_ent.head_size * 1.25; // and a bit larger for the grenades
-					else
-					{
-						head_distance = vlen(src - head_origin);
-						head_size_factor = lerp(trace_ent.head_size/1.5, trace_ent.head_size, head_distance / 256);
-					}
+					head_size_factor = trace_ent.head_size;
+					
 					if (distancetoray(src, direction, head_origin) < head_size_factor)
 						dflags |= DF_HEADSHOT;
 				}
@@ -1007,12 +993,28 @@ void() GrenadeExplode =
 {
 	removeFromList(self);
 	T_RadiusDamagePlayer(self, self.owner, GRENADE_EXPLOSION, world, 256, 64);
-	//T_RadiusDamage (self, self.owner, GRENADE_EXPLOSION, world);
-	makevectors2(self.angles);
-	FireBulletAim (v_forward, 0, 0, GRENADE_CUMULATIVE, GRENADE_PENETRATION, FBA_GRENADE);
 	sendMessageVec(self.origin, TE_EXPLOSION);
 	
 	BecomeExplosion ();
+};
+
+void (entity who) traceGrenade =
+{
+	float dflags;
+	
+	if (!(who.flags & FL_MONSTER))
+		return;
+	
+	dflags = 0;
+	if (who.monsterflags & MFL_HASHEAD)
+	{
+		makevectors2(self.angles);
+	// calculate if it's a headshot or not
+		if (distancetoray(self.origin, v_forward, findHeadPosition(who)) < who.head_size)
+			dflags |= DF_HEADSHOT;
+	}
+	
+	T_Damage (who, self, self.owner, GRENADE_CUMULATIVE, dflags, GRENADE_PENETRATION);
 };
 
 void() GrenadeTouch =
@@ -1030,6 +1032,9 @@ void() GrenadeTouch =
 	if ((self.sprawlflags & SFLP_GRENADE_CHARGED && !(self.sprawlflags & SFLP_GRENADE_NOTOUCH)) 
 		|| (self.sprawlflags & SFLP_GRENADE_CANTOUCHSOFT && other.takedamage == DAMAGE_AIM))
 	{
+		self.thinkA = SUB_Null;
+		self.nextthinkA = -1;
+		traceGrenade(other);
 		GrenadeExplode();
 		return;
 	}
@@ -1051,6 +1056,8 @@ void() GrenadeTouch =
 		else
 			T_Damage (other, self, self.owner, 1, 0);
 		self.velocity = 0.5 * vlen(self.velocity) * normalize(self.velocity); //slowdown by 50%
+		
+		self.sprawlflags -= self.sprawlflags & SFLP_GRENADE_CANTOUCHSOFT;
 	}
 	else
 		self.velocity = 0.8 * vlen(self.velocity) * normalize(self.velocity); //slowdown by 20%

@@ -86,6 +86,7 @@ extern cvar_t gyro_yawsensitivity;
 extern cvar_t gyro_noise_thresh;
 
 extern cvar_t game_pickups;
+extern cvar_t dodge_tap_speed;
 
 extern char crosshair_char;
 
@@ -3234,12 +3235,12 @@ void M_Menu_Crosshair_f(void)
 	def (OPT_VIDEO,			"Video Options")		\
 	def (OPT_CUSTOMIZE,		"Controls")				\
 	def (OPT_GAMEPAD,		"Gamepad")				\
-	def (OPT_MODS,			"Mods")					\
 	def (OPT_CONSOLE,		"Go To Console")		\
 	def (OPT_DEFAULTS,		"Reset Config")			\
 													\
 	def (OPT_SPACE1,		"")						\
 	def (OPT_PICKUPS,		"Drop Pickups")			\
+	def (OPT_DODGE,			"Dodge Tap Speed")		\
 	def (OPT_SPACE2,		"")						\
 													\
 	def (OPT_GAMMA,			"Brightness")			\
@@ -3259,7 +3260,6 @@ void M_Menu_Crosshair_f(void)
 	def (OPT_FOV,			"Field Of View")		\
 	def (OPT_FOVDISTORT,	"Gun Distortion")		\
 	def (OPT_VIEWBOB,		"View Bob")				\
-	def (OPT_ALWAYRUN,		"Always Run")			\
 													\
 	def (OPT_SPACE4,		"")						\
 													\
@@ -3343,6 +3343,8 @@ void M_Menu_Crosshair_f(void)
 	def(CROSSHAIR_DOT_ALPHA,	"Transparency")		\
 ////////////////////////////////////////////////////
 
+//def (OPT_MODS,			"Mods")					\
+//def (OPT_ALWAYRUN,		"Always Run")			\
 // 	def (OPT_PIXELASPECT,	"UI Pixels")
 enum
 {
@@ -3419,9 +3421,9 @@ float target_scale_frac;
 void M_Options_SelectMods (void)
 {
 	if (m_state == m_options)
-		optionsmenu.list.cursor = OPT_MODS;
+		optionsmenu.list.cursor = OPT_CONSOLE;
 	else
-		optionsmenu.options_cursor = OPT_MODS;
+		optionsmenu.options_cursor = OPT_CONSOLE;
 }
 
 static void M_Options_UpdateLayout (void)
@@ -3601,7 +3603,7 @@ static void M_Options_SetUIMouse (uimouse_t opt)
 
 void M_AdjustSliders (int dir)
 {
-	int	curr_alwaysrun, target_alwaysrun;
+	//int	curr_alwaysrun, target_alwaysrun;
 	float	f, l;
 	int type, index;
 
@@ -3625,14 +3627,7 @@ void M_AdjustSliders (int dir)
 		else if(f < 100)	f = 100;
 		Cvar_SetValue ("viewsize", f);
 		break;
-	/*
-	case OPT_PIXELASPECT:	// 2D pixel aspect ratio
-		Cvar_Set ("scr_pixelaspect", vid.guipixelaspect == 1.f ? "5:6" : "1");
-		break;
-	*/
 	case OPT_CROSSHAIR:		// crosshair
-		//Cvar_SetValueQuick (&crosshair, ((int) q_max (crosshair.value, 0.f) + 3 + dir) % 3);
-		//Cvar_SetValueQuick (&crosshair, !crosshair.value);
 		break;
 	case OPT_UIMOUSE:	// UI mouse support
 		M_Options_SetUIMouse ((M_Options_GetUIMouse () + UI_MOUSE_NUMSETTINGS + dir) % UI_MOUSE_NUMSETTINGS);
@@ -3681,36 +3676,6 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValueQuick (&scr_hudstyle, ((int) q_max (scr_hudstyle.value, 0.f) + (int) HUD_COUNT + dir) % (int) HUD_COUNT);
 		break;
 
-	case OPT_ALWAYRUN:	// always run
-		if (cl_alwaysrun.value)
-			curr_alwaysrun = ALWAYSRUN_QUAKESPASM;
-		else if (cl_forwardspeed.value > 200)
-			curr_alwaysrun = ALWAYSRUN_VANILLA;
-		else
-			curr_alwaysrun = ALWAYSRUN_OFF;
-			
-		target_alwaysrun = (ALWAYSRUN_ITEMS + curr_alwaysrun + dir) % ALWAYSRUN_ITEMS;
-			
-		if (target_alwaysrun == ALWAYSRUN_VANILLA)
-		{
-			Cvar_SetValue ("cl_alwaysrun", 0);
-			Cvar_SetValue ("cl_forwardspeed", 400);
-			Cvar_SetValue ("cl_backspeed", 400);
-		}
-		else if (target_alwaysrun == ALWAYSRUN_QUAKESPASM)
-		{
-			Cvar_SetValue ("cl_alwaysrun", 1);
-			Cvar_SetValue ("cl_forwardspeed", 200);
-			Cvar_SetValue ("cl_backspeed", 200);
-		}
-		else // ALWAYSRUN_OFF
-		{
-			Cvar_SetValue ("cl_alwaysrun", 0);
-			Cvar_SetValue ("cl_forwardspeed", 200);
-			Cvar_SetValue ("cl_backspeed", 200);
-		}
-		break;
-
 	case OPT_VIEWBOB:	// view bob+roll
 		if (cl_bob.value)
 		{
@@ -3723,10 +3688,6 @@ void M_AdjustSliders (int dir)
 			Cvar_SetQuick (&cl_rollangle, cl_rollangle.default_string);
 		}
 		break;
-
-	//case OPT_RECOIL:	// gun kick
-	//	Cvar_SetValueQuick (&v_gunkick, ((int) q_max (v_gunkick.value, 0.f) + 3 + dir) % 3);
-	//	break;
 
 	case OPT_FOV:	// field of view
 		Cvar_SetValueQuick (&scr_fov, CLAMP (FOV_MIN, scr_fov.value + dir * 5.f, FOV_MAX));
@@ -3943,8 +3904,12 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValueQuick(&crosshair_dot_alpha, CLAMP(MIN_CROSSHAIR_DOT_ALPHA, crosshair_dot_alpha.value + dir * 0.1, MAX_CROSSHAIR_DOT_ALPHA));
 		break;
 
-	case OPT_PICKUPS:	// enable external music vs cdaudio
+	case OPT_PICKUPS:
 		Cvar_Set("game_pickups", game_pickups.value ? "0" : "1");
+		break;
+
+	case OPT_DODGE:
+		Cvar_SetValueQuick(&dodge_tap_speed, CLAMP(0.0f, dodge_tap_speed.value + dir * 0.05f, 0.5f));
 		break;
 
 	default:
@@ -4101,6 +4066,10 @@ qboolean M_SetSliderValue (int option, float f)
 			f = 0.1;
 		Cvar_SetValue("crosshair_dot_alpha", f);
 		return true;
+	case OPT_DODGE:
+		f = LERP(0.0, 0.5, f);
+		Cvar_SetValue("dodge_tap_speed", f);
+		return true;
 
 	default:
 		return false;
@@ -4183,7 +4152,7 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_VIDEO:
 	case OPT_CUSTOMIZE:
 	case OPT_GAMEPAD:
-	case OPT_MODS:
+	//case OPT_MODS:
 	case OPT_CROSSHAIR:
 	case GPAD_OPT_CALIBRATE:
 		M_Print (x - 4, y, "...");
@@ -4262,7 +4231,7 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_MUSICEXT:
 		M_DrawCheckbox (x, y, bgm_extmusic.value);
 		break;
-
+/*
 	case OPT_ALWAYRUN:
 		if (cl_alwaysrun.value)
 			M_Print (x, y, "QuakeSpasm");
@@ -4271,7 +4240,7 @@ static void M_Options_DrawItem (int y, int item)
 		else
 			M_Print (x, y, "Off");
 		break;
-
+*/
 	case OPT_VIEWBOB:
 		M_Print (x, y, cl_bob.value ? "On" : "Off");
 		break;
@@ -4504,6 +4473,11 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_PICKUPS:
 		M_Print(x, y, game_pickups.value == 1 ? "On" : "Off");
 		break;
+	case OPT_DODGE:
+		//r = LERP(0.0, 1.0, dodge_tap_speed.value * 2);
+		r = dodge_tap_speed.value * 2.0f;
+		M_DrawSlider(x, y, r);
+		break;
 
 	default:
 		break;
@@ -4629,9 +4603,11 @@ void M_Options_Key (int k)
 				Cbuf_AddText ("exec default.cfg\n");
 			}
 			break;
+			/*
 		case OPT_MODS:
 			M_Menu_Mods_f ();
 			break;
+			*/
 		case OPT_VIDEO:
 			M_Menu_Video_f ();
 			break;
@@ -4735,13 +4711,13 @@ static const char* const bindnames[][2] =
 	{"impulse 12",		"Previous weapon"},
 	{"",				""},
 	{"impulse 1",		"Katana"},
-	{"impulse 2",		"Revolver"},
+	{"impulse 2",		"Pistol"},
 	{"impulse 3",		"Shotgun"},
 	{"impulse 4",		"Double SMGs"},
 	{"impulse 5",		"Chaingun"},
 	{"impulse 6",		"Grenade Launcher"},
 	{"impulse 7",		"Gauss Rifle"},
-	{"impulse 8",		"Shock Cannon"},
+	{"impulse 8",		"Lightning Gun"},
 };
 
 #define	NUMCOMMANDS		Q_COUNTOF(bindnames)
@@ -4989,7 +4965,7 @@ void M_Keys_Char (int key)
 /* HELP MENU */
 
 int		help_page;
-#define	NUM_HELP_PAGES	6
+#define	NUM_HELP_PAGES	10
 
 
 void M_Menu_Help_f (void)

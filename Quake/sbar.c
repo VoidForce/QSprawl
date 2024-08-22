@@ -33,14 +33,18 @@ static int		sb_updates;		// if >= vid.numpages, no update needed
 static qpic_t		*sb_nums[2][11];
 static qpic_t		*sb_colon, *sb_slash;
 static qpic_t		*sb_ibar;
-static qpic_t		*sb_sbar;
+static qpic_t		*sb_sbar[4];
 static qpic_t		*sb_scorebar;
 
 static qpic_t		*sb_weapons[7][8];   // 0 is active, 1 is owned, 2-5 are flashes
 static qpic_t		*sb_ammo[5];
+static qpic_t		*sb_ib_ammo[5];	//small ammo icons
+
 static qpic_t		*sb_sigil[4];
 static qpic_t		*sb_armor[3];
 static qpic_t		*sb_items[32];
+static qpic_t		*sb_keys[6][2];
+static qpic_t		*sb_powerups[6][4];
 
 static qpic_t		*sb_faces[9][3];	// 0 is gibbed, 1 is dead, 2-6 are alive
 							// 0 is static, 1 is temporary animation
@@ -166,12 +170,44 @@ void Sbar_LoadPics (void)
 	sb_armor[1] = Draw_PicFromWad ("sb_armor2");
 	sb_armor[2] = Draw_PicFromWad ("sb_armor3");
 
-	sb_items[0] = Draw_PicFromWad ("sb_key1");
-	sb_items[1] = Draw_PicFromWad ("sb_key2");
-	sb_items[2] = Draw_PicFromWad ("sb_invis");
-	sb_items[3] = Draw_PicFromWad ("sb_invuln");
-	sb_items[4] = Draw_PicFromWad ("sb_suit");
-	sb_items[5] = Draw_PicFromWad ("sb_quad");
+	//sb_items[0] = Draw_PicFromWad ("sb_key1");
+	sb_keys[0][0] = Draw_PicFromWad("sb_key1");
+	sb_keys[1][0] = Draw_PicFromWad ("sba1_key1");
+	sb_keys[2][0] = Draw_PicFromWad ("sba2_key1");
+	sb_keys[3][0] = Draw_PicFromWad ("sba3_key1");
+	sb_keys[4][0] = Draw_PicFromWad ("sba4_key1");
+	sb_keys[5][0] = Draw_PicFromWad ("sba5_key1");
+	sb_keys[0][1] = Draw_PicFromWad ("sb_key2");
+	sb_keys[1][1] = Draw_PicFromWad("sba1_key2");
+	sb_keys[2][1] = Draw_PicFromWad("sba2_key2");
+	sb_keys[3][1] = Draw_PicFromWad("sba3_key2");
+	sb_keys[4][1] = Draw_PicFromWad("sba4_key2");
+	sb_keys[5][1] = Draw_PicFromWad("sba5_key2");
+
+	sb_powerups[0][0] = Draw_PicFromWad("sb_invis");
+	sb_powerups[1][0] = Draw_PicFromWad("sba1_invis");
+	sb_powerups[2][0] = Draw_PicFromWad("sba2_invis");
+	sb_powerups[3][0] = Draw_PicFromWad("sba3_invis");
+	sb_powerups[4][0] = Draw_PicFromWad("sba4_invis");
+	sb_powerups[5][0] = Draw_PicFromWad("sba5_invis");
+	sb_powerups[0][1] = Draw_PicFromWad("sb_invuln");
+	sb_powerups[1][1] = Draw_PicFromWad("sba1_invul");
+	sb_powerups[2][1] = Draw_PicFromWad("sba2_invul");
+	sb_powerups[3][1] = Draw_PicFromWad("sba3_invul");
+	sb_powerups[4][1] = Draw_PicFromWad("sba4_invul");
+	sb_powerups[5][1] = Draw_PicFromWad("sba5_invul");
+	sb_powerups[0][2] = Draw_PicFromWad("sb_suit");
+	sb_powerups[1][2] = Draw_PicFromWad("sba1_suit");
+	sb_powerups[2][2] = Draw_PicFromWad("sba2_suit");
+	sb_powerups[3][2] = Draw_PicFromWad("sba3_suit");
+	sb_powerups[4][2] = Draw_PicFromWad("sba4_suit");
+	sb_powerups[5][2] = Draw_PicFromWad("sba5_suit");
+	sb_powerups[0][3] = Draw_PicFromWad("sb_quad");
+	sb_powerups[1][3] = Draw_PicFromWad("sba1_quad");
+	sb_powerups[2][3] = Draw_PicFromWad("sba2_quad");
+	sb_powerups[3][3] = Draw_PicFromWad("sba3_quad");
+	sb_powerups[4][3] = Draw_PicFromWad("sba4_quad");
+	sb_powerups[5][3] = Draw_PicFromWad("sba5_quad");
 
 	sb_sigil[0] = Draw_PicFromWad ("sb_sigil1");
 	sb_sigil[1] = Draw_PicFromWad ("sb_sigil2");
@@ -208,16 +244,23 @@ void Sbar_LoadPics (void)
 	sb_faces[1][2] = Draw_PicFromWad("face_quad8");
 	sb_faces[0][2] = Draw_PicFromWad("face_quad9");
 
-	//sb_face_invis = Draw_PicFromWad ("face_invis");
 	sb_face_invuln[0] = Draw_PicFromWad ("face_invul1");
 	sb_face_invuln[1] = Draw_PicFromWad ("face_invul2");
 	sb_face_invuln[2] = Draw_PicFromWad ("face_invul3");
 	sb_face_invuln[3] = Draw_PicFromWad ("face_invul4");
 	sb_face_invuln[4] = Draw_PicFromWad ("face_invul5");
-	//sb_face_invis_invuln = Draw_PicFromWad ("face_inv2");
-	//sb_face_quad = Draw_PicFromWad ("face_quad");
 
-	sb_sbar = Draw_PicFromWad ("sbar");
+	sb_ib_ammo[0] = Draw_PicFromWad("ib_shells");
+	sb_ib_ammo[1] = Draw_PicFromWad("ib_nails");
+	sb_ib_ammo[2] = Draw_PicFromWad("ib_highs"); // bullets
+	sb_ib_ammo[3] = Draw_PicFromWad("ib_rocket");
+	sb_ib_ammo[4] = Draw_PicFromWad("ib_cells");
+
+	sb_sbar[0] = Draw_PicFromWad ("sbar0");
+	sb_sbar[1] = Draw_PicFromWad ("sbar1");
+	sb_sbar[2] = Draw_PicFromWad ("sbar2");
+	sb_sbar[3] = Draw_PicFromWad ("sbar3");
+
 	sb_ibar = Draw_PicFromWad ("ibar");
 	sb_scorebar = Draw_PicFromWad ("scorebar");
 }
@@ -565,54 +608,79 @@ void Sbar_DrawInventory (void)
 				sb_updates = 0;		// force update to remove flash
 		}
 	}
-
-// ammo counts
-	//for (i = 0; i < 4; i++)
-
+// ammo amount
 	Sbar_DrawSmallNum ( 5, -24, cl.stats[STAT_SHELLS]);
+	Sbar_DrawPic(32, -23, sb_ib_ammo[0]);
 	Sbar_DrawSmallNum (45, -24, cl.stats[STAT_NAILS]);
+	Sbar_DrawPic(71, -23, sb_ib_ammo[1]);
 	Sbar_DrawSmallNum (77, -24, cl.stats[STAT_BULLETS]);
+	Sbar_DrawPic(104, -23, sb_ib_ammo[2]);
 	Sbar_DrawSmallNum (117, -24, cl.stats[STAT_ROCKETS]);
+	Sbar_DrawPic(144, -23, sb_ib_ammo[3]);
 	Sbar_DrawSmallNum (157, -24, cl.stats[STAT_CELLS]);
+	Sbar_DrawPic(183, -23, sb_ib_ammo[4]);
+	
+	
+// new ammo icons
 
+
+// keys
 	flashon = 0;
-	// items
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < 2; i++)
 	{
-		if (cl.items & (1<<(17+i)))
+		if (cl.items & (1 << (17 + i)))
 		{
 			time = cl.item_gettime[17+i];
-			if (time && time > cl.time - 2 && flashon)
-			{	// flash frame
-				sb_updates = 0;
-			}
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
 			else
-			{
-				//MED 01/04/97 changed keys
-				if (!hipnotic || (i > 1)) //?
-				{
-					Sbar_DrawPic (192 + i*16, -16, sb_items[i]);
-				}
-			}
-			if (time && time > cl.time - 2)
-				sb_updates = 0;
+				flashon = flashon % 5;
+
+			Sbar_DrawPic(192 + i * 16, -16, sb_keys[flashon][i]);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
 		}
 	}
 
-	// sigils
+// items
+	flashon = 0;
 	for (i = 0; i < 4; i++)
 	{
-		if (cl.items & (1<<(28+i)))
+		if (cl.items & (1<<(19+i)))
 		{
-			time = cl.item_gettime[28+i];
-			if (time && time > cl.time - 2 && flashon)
-			{	// flash frame
-				sb_updates = 0;
-			}
+			time = cl.item_gettime[19 + i];
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
 			else
-				Sbar_DrawPic (320-32 + i*8, -16, sb_sigil[i]);
-			if (time && time > cl.time - 2)
-				sb_updates = 0;
+				flashon = flashon % 5;
+
+			Sbar_DrawPic(224 + i * 16, -16, sb_powerups[flashon][i]);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
+		}
+	}
+
+// sigils
+	flashon = 0;
+	for (i = 0; i < 4; i++)
+	{
+		if (cl.items & (1 << (28 + i)))
+		{
+			time = cl.item_gettime[28 + i];
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
+			else
+				flashon = flashon % 5;
+
+			Sbar_DrawPicAlpha(288 + i * 8, -16, sb_sigil[i], (float)(5 - flashon) / 5);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
 		}
 	}
 }
@@ -626,7 +694,7 @@ void Sbar_DrawInventoryQW (void)
 {
 	int		i;
 	float	time;
-	float	t2, s2;
+	//float	t2, s2;
 	int	flashon;
 	int scoreboard_y_gap = 0;
 	qpic_t	*pic;
@@ -668,82 +736,94 @@ void Sbar_DrawInventoryQW (void)
 					sb_updates = 0;		// force update to remove flash
 			}
 		}
-		s2 = 40 / 320.f;
-		t2 = 10 / 24.f;
-		//			x	y							 w	 h	 p	  s1							t1   s2			 t2
-		Draw_SubPic( 10, -45 - scoreboard_y_gap +  0, 38, 10, pic,		 0.f, 0.f,  s2, t2, NULL, scr_sbaralpha.value);
-		Draw_SubPic( 10, -45 - scoreboard_y_gap + 10, 38, 10, pic,  40/320.f, 0.f,  s2, t2, NULL, scr_sbaralpha.value);
-		Draw_SubPic( 10, -45 - scoreboard_y_gap + 20, 38, 10, pic, 112/320.f, 0.f,  s2, t2, NULL, scr_sbaralpha.value);
-		Draw_SubPic( 10, -45 - scoreboard_y_gap + 30, 38, 10, pic, 152/320.f, 0.f,  s2, t2, NULL, scr_sbaralpha.value);
-		Draw_SubPic( 16, -45 - scoreboard_y_gap + 40, 32, 10, pic,  80/320.f, 0.f,0.1f, t2, NULL, scr_sbaralpha.value);
-		//Draw_SubPic(10, -69, 38, 10, pic, 0, 0.f, 40 / 320.f, 10 / 24.f, NULL, scr_sbaralpha.value);
 
-		//Draw_SubPic(6, -45 - scoreboard_y_gap + (i * 10), 42, 10, pic, 3 / 320.f + i * (48 / 320.f), 0.f, 42 / 320.f, 10 / 24.f, NULL, scr_sbaralpha.value);
-
+		Sbar_DrawPic(10, -70 - scoreboard_y_gap, Draw_PicFromWad("abar"));
 
 		// ammo counts
-		for (i = 0; i < 4; i++)
-		{
-			Sbar_DrawSmallNum(13, -69 - scoreboard_y_gap + (i * 10), cl.stats[STAT_SHELLS + i]);
-		}
-		Sbar_DrawSmallNum(13, -69 - scoreboard_y_gap + 40, cl.stats[STAT_BULLETS]); // extra
+		Sbar_DrawSmallNum(13, -70 - scoreboard_y_gap, cl.stats[STAT_SHELLS]);
+		Sbar_DrawSmallNum(13, -70 - scoreboard_y_gap + 10, cl.stats[STAT_NAILS]);
+		Sbar_DrawSmallNum(13, -70 - scoreboard_y_gap + 20, cl.stats[STAT_BULLETS]); // extra
+		Sbar_DrawSmallNum(13, -70 - scoreboard_y_gap + 30, cl.stats[STAT_ROCKETS]);
+		Sbar_DrawSmallNum(13, -70 - scoreboard_y_gap + 40, cl.stats[STAT_CELLS]);
 
 		flashon = 0;
 
 		// sigils bg - hide if none
-		int has_a_sigil = 0;
+		static int has_a_sigil = 0;
 
-		for (i = 0; i < 4; i++)
+		if (!has_a_sigil)
 		{
-			if (cl.items & (1<<(28+i)))
-				has_a_sigil = 1;
-		}
-
-		if (has_a_sigil)
-			Draw_SubPic (16, -16 - scoreboard_y_gap + 24, 32, 16, sb_ibar, 1.f-32/320.f, 8/24.f, 32/320.f, 16/24.f, NULL, 1.f);
-
-		// sigils
-		for (i = 0; i < 4; i++)
-		{
-			if (cl.items & (1<<(28+i)))
+			for (i = 0; i < 4; i++)
 			{
-				time = cl.item_gettime[28+i];
-				if (time && time > cl.time - 2 && flashon)
-				{	// flash frame
-					sb_updates = 0;
+				if (cl.items & (1 << (28 + i)))
+					has_a_sigil = 1;
+			}
+		}
+		else
+		{
+			Draw_SubPic(16, -16 - scoreboard_y_gap + 24, 32, 16, sb_ibar, 1.f - 32 / 320.f, 8 / 24.f, 32 / 320.f, 16 / 24.f, NULL, 1.f);
+
+			// sigils
+			flashon = 0;
+			for (i = 0; i < 4; i++)
+			{
+				if (cl.items & (1 << (28 + i)))
+				{
+					time = cl.item_gettime[28 + i];
+					flashon = (int)((cl.time - time) * 10);
+					if (flashon >= 10)
+						flashon = 0;
+					else
+						flashon = flashon % 5;
+
+					Sbar_DrawPicAlpha(16 + i * 8, -16 - scoreboard_y_gap, sb_sigil[i], (float)(5 - flashon) / 5);
+
+					if (flashon > 1)
+						sb_updates = 0;		// force update to remove flash
 				}
-				else
-					Sbar_DrawPic (16 + i*8, -16 - scoreboard_y_gap, sb_sigil[i]);
-				if (time && time > cl.time - 2)
-					sb_updates = 0;
 			}
 		}
 	}
 
 	// draw items/powerups with main hud
 	GL_SetCanvas (CANVAS_SBAR);
-
+	// keys
 	flashon = 0;
-	// items
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < 2; i++)
 	{
-		if (cl.items & (1<<(17+i)))
+		if (cl.items & (1 << (17 + i)))
 		{
-			time = cl.item_gettime[17+i];
-			if (time && time > cl.time - 2 && flashon)
-			{	// flash frame
-				sb_updates = 0;
-			}
+			time = cl.item_gettime[17 + i];
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
 			else
-			{
-				//MED 01/04/97 changed keys
-				if (!hipnotic || (i > 1))
-				{
-					Sbar_DrawPic (192 + i*16, -16, sb_items[i]);
-				}
-			}
-			if (time && time > cl.time - 2)
-				sb_updates = 0;
+				flashon = flashon % 5;
+
+			Sbar_DrawPic(192 + i * 16, -16, sb_keys[flashon][i]);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
+		}
+	}
+
+	// items
+	flashon = 0;
+	for (i = 0; i < 4; i++)
+	{
+		if (cl.items & (1 << (19 + i)))
+		{
+			time = cl.item_gettime[19 + i];
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
+			else
+				flashon = flashon % 5;
+
+			Sbar_DrawPic(224 + i * 16, -16, sb_powerups[flashon][i]);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
 		}
 	}
 }
@@ -760,6 +840,7 @@ void Sbar_DrawInventory2 (void)
 	int		flashon;
 	qpic_t	*pic;
 
+	GL_SetCanvas(CANVAS_SBAR2GUNS);
 	// weapons
 	if (scr_viewsize.value < 110)
 	{
@@ -814,53 +895,74 @@ void Sbar_DrawInventory2 (void)
 			x = (int)((glcanvas.right + glcanvas.left) * 0.5f + 0.5f) - 96;
 			y = (int)(glcanvas.bottom - 9 + 0.5f);
 			Draw_SubPic (x, y, 192, 10, pic, 0.f, 0.f, 192/320.f, 10/24.f, NULL, scr_sbaralpha.value);
-			//for (i = 0; i < 4; i++)
-			//	Sbar_DrawSmallNum (x + 10 + 48*i, y - 24, cl.stats[STAT_SHELLS+i]);
+
 			Sbar_DrawSmallNum(x + 5, y - 24, cl.stats[STAT_SHELLS]);
+			Sbar_DrawPic(x + 32, y - 23, sb_ib_ammo[0]);
+
 			Sbar_DrawSmallNum(x + 45, y - 24, cl.stats[STAT_NAILS]);
+			Sbar_DrawPic(x + 71, y - 23, sb_ib_ammo[1]);
+
 			Sbar_DrawSmallNum(x + 77, y - 24, cl.stats[STAT_BULLETS]);
+			Sbar_DrawPic(x + 104, y - 23, sb_ib_ammo[2]);
+
 			Sbar_DrawSmallNum(x + 117, y - 24, cl.stats[STAT_ROCKETS]);
+			Sbar_DrawPic(x + 144, y - 23, sb_ib_ammo[3]);
+
 			Sbar_DrawSmallNum(x + 157, y - 24, cl.stats[STAT_CELLS]);
+			Sbar_DrawPic(x + 183, y - 23, sb_ib_ammo[4]);
 		}
 	}
 
-	// items
-	if (scr_viewsize.value < 110 && hudstyle == HUD_QUAKEWORLD) // hudstyle == HUD_MODERN_SIDEAMMO ||
+	// keys
+	x = (int)(glcanvas.right - 40 + 0.5f);
+	y = (int)(glcanvas.bottom - 70 + 0.5f);
+	flashon = 0;
+	for (i = 0; i < 2; i++)
 	{
-		x = (int)(glcanvas.right - SBAR2_MARGIN_X - 16 + 0.5f);
-		y = (int)(glcanvas.bottom - SBAR2_MARGIN_Y - 68 - 20 + 0.5f);
-	}
-	else
-	{
-		x = (int)(glcanvas.right - SBAR2_MARGIN_X - 20 + 0.5f);
-		y = (int)(glcanvas.bottom - SBAR2_MARGIN_Y - 68 + 0.5f);
-	}
-
-	for (i = 0; i < 6; i++)
-	{
-		if (i == 2)
+		if (cl.items & (1 << (17 + i)))
 		{
-			if (scr_viewsize.value >= 110) // just the keys in the mini HUD
-				break;
-			x = (int)(glcanvas.left + SBAR2_MARGIN_X + 4 + 0.5f);
-			y = (int)(glcanvas.bottom - SBAR2_MARGIN_Y - 66 + 0.5f);
-			if (cl.items & IT_INVULNERABILITY || cl.stats[STAT_ARMOR] > 0)
-				y -= 24; // armor row is visible, move starting position above it
+			time = cl.item_gettime[17 + i];
+			flashon = (int)((cl.time - time) * 10);
+			if (flashon >= 10)
+				flashon = 0;
+			else
+				flashon = flashon % 5;
+
+			Sbar_DrawPic(x + i * 16, y, sb_keys[flashon][i]);
+
+			if (flashon > 1)
+				sb_updates = 0;		// force update to remove flash
 		}
+	}
+	GL_SetCanvas(CANVAS_SBAR2);
+	if (scr_viewsize.value < 110) // just the keys in the mini HUD
+	{
+		x = (int)(glcanvas.left + 40 + 0.5f);
+		y = (int)(glcanvas.bottom - 80 + 0.5f);
+		if (cl.stats[STAT_ARMOR] > 0)
+			y -= 24; // armor row is visible, move starting position above it
 
-		if (cl.items & (1<<(17+i)))
+		// items
+		flashon = 0;
+		for (i = 0; i < 4; i++)
 		{
-			time = cl.item_gettime[17+i];
-			//MED 01/04/97 changed keys
-			if (!hipnotic || (i > 1))
+			if (cl.items & (1 << (19 + i)))
 			{
-				Sbar_DrawPic (x, y, sb_items[i]);
-				y -= 16;
+				time = cl.item_gettime[19 + i];
+				flashon = (int)((cl.time - time) * 10);
+				if (flashon >= 10)
+					flashon = 0;
+				else
+					flashon = flashon % 5;
+
+				Sbar_DrawPic(x + i * 16, y, sb_powerups[flashon][i]);
+
+				if (flashon > 1)
+					sb_updates = 0;		// force update to remove flash
 			}
-			if (time && time > cl.time - 2)
-				sb_updates = 0;
 		}
 	}
+
 }
 
 /*
@@ -1285,10 +1387,10 @@ void Sbar_DrawAdrenaline(void)
 
 
 //extern void Draw_StringEx(float x, float y, float dim, const char* str);
-#define HUD_VERT_OFFSET 12
-#define HUD_BAR_HEIGHT 10
+#define HUD_VERT_OFFSET 11
+#define HUD_BAR_HEIGHT 8
 #define INFO_OFFSET_X 80
-#define INFO_OFFSET_Y 2
+#define INFO_OFFSET_Y 1
 #define INFO_SIZE 8
 extern void Draw_StringExInfo(float x, float y, float dim, const char* str);
 
@@ -1317,7 +1419,7 @@ void SCR_DrawHealthInfo(void)
 
 // target name, hardcoded for now, till i find out how to send strings from progs to client
 // or rather read this info from frik file
-	Draw_Fill(0, 0, 160, 12, 0, 0.8); // name bg
+	Draw_Fill(0, 0, 160, 11, 0, 0.8); // name bg
 	switch (ent_type)
 	{
 		default:
@@ -1361,18 +1463,18 @@ void SCR_DrawHealthInfo(void)
 	{
 		//hp
 		Draw_Fill(0, HUD_VERT_OFFSET, 98, HUD_BAR_HEIGHT, 0, 0.8); // bg
-		Draw_Fill(2, HUD_VERT_OFFSET + 2, (int)94 * hp / maxhp, HUD_BAR_HEIGHT - 4, 208, 1); // bar
-		Draw_Fill(0, HUD_VERT_OFFSET + 10, 36, 10, 0, 0.8); // value bg
-		Sbar_DrawSmallNum(10, -2, hp); // value text
+		Draw_Fill(2, HUD_VERT_OFFSET, (int)94 * hp / maxhp, HUD_BAR_HEIGHT - 2, 208, 1); // bar
+		Draw_Fill(0, HUD_VERT_OFFSET + HUD_BAR_HEIGHT, 36, 8, 0, 0.8); // value bg
+		Sbar_DrawSmallNum(10, -6, hp); // value text
 
 
 		//head
 		if (hhp > 0)
 		{
 			Draw_Fill(100, HUD_VERT_OFFSET, 60, HUD_BAR_HEIGHT, 0, 0.8); // bg
-			Draw_Fill(158, HUD_VERT_OFFSET + 2, -(int)56 * hhp / hmaxhp, HUD_BAR_HEIGHT - 4, 251, 1); // bar
-			Draw_Fill(160, HUD_VERT_OFFSET + 10, -36, 10, 0, 0.8); // value bg
-			Sbar_DrawSmallNum(134, -2, hhp); // value text
+			Draw_Fill(158, HUD_VERT_OFFSET, -(int)56 * hhp / hmaxhp, HUD_BAR_HEIGHT - 2, 251, 1); // bar
+			Draw_Fill(160, HUD_VERT_OFFSET + HUD_BAR_HEIGHT, -36, 8, 0, 0.8); // value bg
+			Sbar_DrawSmallNum(134, -6, hhp); // value text
 		}
 	}
 // dead
@@ -1515,7 +1617,23 @@ void Sbar_Draw (void)
 		else if (scr_viewsize.value < 120) //johnfitz -- check viewsize instead of sb_lines
 		{
 			if (hudstyle == HUD_CLASSIC)
-				Sbar_DrawPicAlpha (0, 0, sb_sbar, scr_sbaralpha.value); //johnfitz -- scr_sbaralpha
+			{
+				// ptoing's dynamic status bar 
+				if (cl.stats[STAT_ARMOR] > 0)
+				{
+					if (cl.stats[STAT_AMMO] > 0)
+						Sbar_DrawPicAlpha(0, 0, sb_sbar[3], scr_sbaralpha.value);
+					else
+						Sbar_DrawPicAlpha(0, 0, sb_sbar[2], scr_sbaralpha.value);
+				}
+				else
+				{
+					if (cl.stats[STAT_AMMO] > 0)
+						Sbar_DrawPicAlpha(0, 0, sb_sbar[1], scr_sbaralpha.value);
+					else
+						Sbar_DrawPicAlpha(0, 0, sb_sbar[0], scr_sbaralpha.value);
+				}
+			}
 
 			if (cl.stats[STAT_ARMOR] > 0)
 			{

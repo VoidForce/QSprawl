@@ -314,6 +314,9 @@ void() item_megahealth_rot =
 
 void() item_slowheal =
 {
+	if (self.owner.deadflag)
+		return;
+	
 	if (self.healamount < 1)
 		return;
 	
@@ -1934,6 +1937,9 @@ void() health_drop_touch =
 	if (!(other.flags & FL_CLIENT))
 		return;
 	
+	if (other.deadflag)
+		return;
+	
 	if (!self.fA && other.health >= 100) // overheal not allowed
 		return;
 	
@@ -1960,6 +1966,9 @@ void() health_drop_touch =
 void() armor_drop_touch =
 {
 	if (!(other.flags & FL_CLIENT))
+		return;
+	
+	if (other.deadflag)
 		return;
 	
 	if (!self.fA && other.armorvalue >= 100) // overheal not allowed

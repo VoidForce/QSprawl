@@ -92,7 +92,7 @@ cvar_t		scr_clock = {"scr_clock", "0", CVAR_ARCHIVE};
 //johnfitz
 cvar_t		scr_usekfont = {"scr_usekfont", "0", CVAR_NONE}; // 2021 re-release
 
-cvar_t		scr_hudstyle = {"hudstyle", "2", CVAR_ARCHIVE};
+cvar_t		scr_hudstyle = {"hudstyle", "0", CVAR_ARCHIVE};
 cvar_t		cl_screenshotname = {"cl_screenshotname", "screenshots/%map%_%date%_%time%", CVAR_ARCHIVE};
 cvar_t		scr_demobar_timeout = {"scr_demobar_timeout", "1", CVAR_ARCHIVE};
 

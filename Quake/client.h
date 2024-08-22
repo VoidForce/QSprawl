@@ -54,6 +54,7 @@ extern cshift_t		cshift_empty;
 #define	CSHIFT_DAMAGE	1
 #define	CSHIFT_BONUS	2
 #define	CSHIFT_POWERUP	3
+//#define	CSHIFT_SLOWMO	4
 #define	NUM_CSHIFTS		4
 
 #define	NAME_LENGTH	64
@@ -277,10 +278,11 @@ typedef struct
 extern	cvar_t	cl_name;
 extern	cvar_t	cl_color;
 
-extern	cvar_t	cl_upspeed;
-extern	cvar_t	cl_forwardspeed;
-extern	cvar_t	cl_backspeed;
-extern	cvar_t	cl_sidespeed;
+//extern	cvar_t	cl_upspeed;
+//extern	cvar_t	cl_forwardspeed;
+//extern	cvar_t	cl_backspeed;
+//extern	cvar_t	cl_sidespeed;
+#define MOVEMENT_SPEED 1000.f
 
 extern	cvar_t	cl_movespeedkey;
 

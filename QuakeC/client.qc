@@ -61,8 +61,8 @@ void() SetChangeParms =
 	if (self.health > 100)
 		self.health = 100;
 
-	if (self.health < 50)
-		self.health = 50;
+	if (self.health < 75)
+		self.health = 75;
 
 	parm1 = self.items;
 	parm2 = self.health;
@@ -84,7 +84,7 @@ void() SetNewParms =
 	parm2 = 100;
 	parm3 = 0;
 	parm4 = 0;
-	parm5 = 30;
+	parm5 = 50;
 	parm6 = 0;
 	parm7 = 0;
 	parm8 = 1;
@@ -1438,7 +1438,7 @@ void() catchComboInput =
 		if (changed_bits)
 		{
 			pushQueue(changed_bits); // push all bits that was changed, this way we can check both perfect (1 key) and non-perfect combos
-			self.combo_timer = time + COMBO_RESET_TIME;
+			self.combo_timer = time + cvar("dodge_tap_speed");//COMBO_RESET_TIME;
 			checkPressCombo();
 		}
 	}
@@ -1447,8 +1447,9 @@ void() catchComboInput =
 void() checkMovementInput =
 {
 // allow dodges with katana on any skill, and with any weapon on hard and nightmare
-	if (self.weapon != IT_KATANA && skill < 2)
-		return;
+// since now we have adjustable tap speed, we can allow dodges on any difficulty
+	//if (self.weapon != IT_KATANA && skill < 2)
+	//	return;
 	catchComboInput();
 // Important! must be set after all the input/combo checks
 // any of this shouldn't be modified outside of body of this procedure
@@ -1679,6 +1680,8 @@ void() PlayerPreThink =
 						consumeAdrenaline(0.2, 0);
 					}
 				}
+				else
+					self.speedmodifier = 1.25;
 			}
 			else
 				self.speedmodifier = 1.25;

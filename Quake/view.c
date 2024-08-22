@@ -74,6 +74,7 @@ cvar_t	gl_cshiftpercent_contents = {"gl_cshiftpercent_contents", "100", CVAR_NON
 cvar_t	gl_cshiftpercent_damage = {"gl_cshiftpercent_damage", "100", CVAR_NONE}; // QuakeSpasm
 cvar_t	gl_cshiftpercent_bonus = {"gl_cshiftpercent_bonus", "100", CVAR_NONE}; // QuakeSpasm
 cvar_t	gl_cshiftpercent_powerup = {"gl_cshiftpercent_powerup", "100", CVAR_NONE}; // QuakeSpasm
+//cvar_t	gl_cshiftpercent_slowmo = { "gl_cshiftpercent_slowmo", "100", CVAR_NONE }; // Sprawl 
 
 cvar_t	r_viewmodel_quake = {"r_viewmodel_quake", "0", CVAR_ARCHIVE};
 
@@ -205,7 +206,7 @@ void V_DriftPitch (void)
 // don't count small mouse motion
 	if (cl.nodrift)
 	{
-		if ( fabs(cl.cmd.forwardmove) < cl_forwardspeed.value)
+		if ( fabs(cl.cmd.forwardmove) < MOVEMENT_SPEED)
 			cl.driftmove = 0;
 		else
 			cl.driftmove += host_frametime;
@@ -493,7 +494,8 @@ void V_CalcBlend (void)
 		&gl_cshiftpercent_contents,
 		&gl_cshiftpercent_damage,
 		&gl_cshiftpercent_bonus,
-		&gl_cshiftpercent_powerup
+		&gl_cshiftpercent_powerup,
+		//&gl_cshiftpercent_slowmo
 	};
 
 	r = 0;
@@ -1105,6 +1107,7 @@ void V_Init (void)
 	Cvar_RegisterVariable (&gl_cshiftpercent_damage); // QuakeSpasm
 	Cvar_RegisterVariable (&gl_cshiftpercent_bonus); // QuakeSpasm
 	Cvar_RegisterVariable (&gl_cshiftpercent_powerup); // QuakeSpasm
+	//Cvar_RegisterVariable (&gl_cshiftpercent_slowmo);
 
 	Cvar_RegisterVariable (&scr_ofsx);
 	Cvar_RegisterVariable (&scr_ofsy);

@@ -2000,7 +2000,7 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 		{
 			//qsprawl, crc check information
 			Con_Printf("%d \n", qcvm->progs->crc);
-			Con_Printf("\n\nYou trying to load basegame, please type 'game sprawl'\n\n");
+			Con_Printf("\n\nSprawl is not compatible with custom progs.dat\n\n");
 			Cbuf_InsertText("game sprawl\n");
 			Host_Error("%s system vars have been modified, progdefs.h is out of date", filename);
 		}

@@ -250,10 +250,10 @@ float CL_KeyState (kbutton_t *key)
 
 //==========================================================================
 //qsprawl changed default values to 1000
-cvar_t	cl_upspeed = {"cl_upspeed","1000",CVAR_NONE};
-cvar_t	cl_forwardspeed = {"cl_forwardspeed","1000", CVAR_ARCHIVE};
-cvar_t	cl_backspeed = {"cl_backspeed","1000", CVAR_ARCHIVE};
-cvar_t	cl_sidespeed = {"cl_sidespeed","1000",CVAR_NONE};
+//cvar_t	cl_upspeed = {"cl_upspeed","1000",CVAR_NONE };
+//cvar_t	cl_forwardspeed = {"cl_forwardspeed","1000", CVAR_NONE };
+//cvar_t	cl_backspeed = {"cl_backspeed","1000", CVAR_NONE };
+//cvar_t	cl_sidespeed = {"cl_sidespeed","1000",CVAR_NONE};
 
 cvar_t	cl_movespeedkey = {"cl_movespeedkey","2.0",CVAR_NONE};
 
@@ -362,20 +362,20 @@ void CL_BaseMove (usercmd_t *cmd)
 
 	if (in_strafe.state & 1)
 	{
-		cmd->sidemove += cl_sidespeed.value * CL_KeyState (&in_right);
-		cmd->sidemove -= cl_sidespeed.value * CL_KeyState (&in_left);
+		cmd->sidemove += MOVEMENT_SPEED * CL_KeyState (&in_right);
+		cmd->sidemove -= MOVEMENT_SPEED * CL_KeyState (&in_left);
 	}
 
-	cmd->sidemove += cl_sidespeed.value * CL_KeyState (&in_moveright);
-	cmd->sidemove -= cl_sidespeed.value * CL_KeyState (&in_moveleft);
+	cmd->sidemove += MOVEMENT_SPEED * CL_KeyState (&in_moveright);
+	cmd->sidemove -= MOVEMENT_SPEED * CL_KeyState (&in_moveleft);
 
-	cmd->upmove += cl_upspeed.value * CL_KeyState (&in_up);
-	cmd->upmove -= cl_upspeed.value * CL_KeyState (&in_down);
+	cmd->upmove += MOVEMENT_SPEED * CL_KeyState (&in_up);
+	cmd->upmove -= MOVEMENT_SPEED * CL_KeyState (&in_down);
 
 	if (! (in_klook.state & 1) )
 	{
-		cmd->forwardmove += cl_forwardspeed.value * CL_KeyState (&in_forward);
-		cmd->forwardmove -= cl_backspeed.value * CL_KeyState (&in_back);
+		cmd->forwardmove += MOVEMENT_SPEED * CL_KeyState (&in_forward);
+		cmd->forwardmove -= MOVEMENT_SPEED * CL_KeyState (&in_back);
 	}
 
 //
