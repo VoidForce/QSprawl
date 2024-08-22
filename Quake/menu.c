@@ -6083,7 +6083,7 @@ static qboolean M_Mods_IsActive (const char *game)
 	extern char com_gamenames[];
 	const char *list, *end, *p;
 
-	if (!q_strcasecmp (game, GAMENAME))
+	if (!q_strcasecmp(game, GAMENAME) || !q_strcasecmp(game, TCGAMENAME))
 		return !*com_gamenames;
 
 	list = com_gamenames;

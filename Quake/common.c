@@ -2293,9 +2293,9 @@ const char *COM_GetGameNames(qboolean full)
 	if (full)
 	{
 		if (*com_gamenames)
-			return va("%s;%s", GAMENAME, com_gamenames);
+			return va("%s;%s", GAMENAME ";" TCGAMENAME, com_gamenames);
 		else
-			return GAMENAME;
+			return GAMENAME ";" TCGAMENAME;
 	}
 	return com_gamenames;
 //	return COM_SkipPath(com_gamedir);
@@ -2429,7 +2429,7 @@ void COM_ResetGameDirectories(const char *newgamedirs)
 	//wipe the list of mod gamedirs
 	*com_gamenames = 0;
 	//reset this too
-	q_strlcpy (com_gamedir, va("%s/%s", com_basedirs[com_numbasedirs-1], GAMENAME), sizeof(com_gamedir));
+	q_strlcpy (com_gamedir, va("%s/%s", com_basedirs[com_numbasedirs - 1], TCGAMENAME), sizeof(com_gamedir));
 
 	for(newpath = newgamedirs; newpath && *newpath; )
 	{
@@ -2437,7 +2437,7 @@ void COM_ResetGameDirectories(const char *newgamedirs)
 		if (e)
 			*e++ = 0;
 
-		if (!q_strcasecmp(GAMENAME, newpath))
+		if (!q_strcasecmp(GAMENAME, newpath) || !q_strcasecmp(TCGAMENAME, newpath))
 			path = NULL;
 		else for (path = newgamedirs; path < newpath; path += strlen(path)+1)
 		{
@@ -3223,7 +3223,8 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 	{
 		// start up with GAMENAME by default (id1)
 		COM_AddGameDirectory (GAMENAME);
-		COM_AddGameDirectory ("sprawl");
+		// add total conversion base directory
+		COM_AddGameDirectory (TCGAMENAME);
 	}
 
 	/* this is the end of our base searchpath:
