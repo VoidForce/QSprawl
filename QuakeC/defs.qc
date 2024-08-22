@@ -513,7 +513,7 @@ float	framecount;
 const float SLOWMO_VALUE = 0.4;
 const float SLOWMO_FADE_TIME = 0.25;
 const float SLOWMO_FADE_HELPER = 4; // 1/SLOWMO_FADE_TIME
-
+/*
 enumflags SLOWMOSTATE {
 	SLOWMO_OFF = 0,
 	SLOWMO_ON = 1,
@@ -526,7 +526,7 @@ enumflags SLOWMOSTATE {
 	SLOWMO_TRANSITION_TO_OFF,
 	SLOWMO_TRANSITION_TO_ON,
 	SLOWMO_NEEDSCHANGE,
-};
+};*/
 
 float	slowmotion;		// flags based?
 //float 	slowmotion_flags;
@@ -699,6 +699,7 @@ const float SFL_VMOFFSET = 128;
 const float SFL_NEEDTOSETSPEED = 256;
 const float SFL_SPRINT = 512;
 const float SFL_UNLIMITED_ADRENALINE = 1024;
+const float SFL_CHANGESCREENTINT = 2048;
 
 // world brush flags
 const float SFL_MOVINGSOLID = 1;
@@ -866,6 +867,8 @@ entity		grenade_handler; // global
 .float		chaingun_frame;
 .float		chaingun_speed;
 .float		chaingun_count;
+
+.float		cshift_value;
 
 .float		forcedslide_timer; // no friction until timer ends
 .float		noairacceleration_timer; // same for air acceleration

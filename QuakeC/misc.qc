@@ -721,3 +721,72 @@ void() misc_noisemaker =
 	self.nextthink = time + 0.1 + random();
 	self.think = noise_think;
 };
+
+void() logo_think =
+{
+	//self.angles = lerpVector(self.vA, self.vB, self.fA - time);
+	//self.avelocity = [0, randomsign()* 50,randomsign()*50];
+	if (self.angles_z > self.vC_z + 30 && self.avelocity_z > -30)
+	{
+		self.avelocity_z -= 5;
+		if (self.avelocity_z < -30)
+			self.avelocity_z = -30;
+	}
+	else if (self.angles_z < self.vC_z - 30  && self.avelocity_z < 30)
+	{
+		self.avelocity_z += 5;
+		if (self.avelocity_z > 30)
+			self.avelocity_z = 30;
+	}
+	
+	if (self.angles_y > self.vC_y + 40 && self.avelocity_y > -60)
+	{
+		self.avelocity_y -= 10;
+		if (self.avelocity_y < -60)
+			self.avelocity_y = -60;
+	}
+	else if (self.angles_y < self.vC_y - 40  && self.avelocity_y < 60)
+	{
+		self.avelocity_y += 10;
+		if (self.avelocity_y > 60)
+			self.avelocity_y = 60;
+	}
+		
+	self.think = logo_think;
+	self.nextthink = time + 0.1;
+};
+
+void() logo_velocity =
+{
+	self.velocity = self.vA * self.fA;
+	self.fA *= -1;
+	self.thinkA = logo_velocity;
+	self.nextthinkA = time + 3;
+};
+
+void() logo_screensaver =
+{
+	precache_model ("progs/sprawl_logo.mdl");
+
+	self.solid = SOLID_NOT;
+	self.movetype = MOVETYPE_NOCLIP;
+	setmodel (self, "progs/sprawl_logo.mdl");
+	setsize (self, '0 0 0', '0 0 0');
+	//self.vB = [crandom() * 15, crandom() * 90, crandom() * 90]; //desire position
+	//self.vA = self.angles; // current position
+	//self.fA = time + 1.2;
+	makevectors2(self.angles);
+	self.vA = v_forward;
+	self.vB = self.origin;
+	self.vC = self.angles;
+	self.fA = -20;
+	self.velocity = self.vA * 20;
+	self.avelocity_z = 30;
+	self.avelocity_y = 60;
+	self.scale = 0.25;
+	
+	self.think = logo_think;
+	self.nextthink = time + 0.2;
+	self.thinkA = logo_velocity;
+	self.nextthinkA = time + 3;
+};

@@ -106,10 +106,10 @@ void() sham_walk12 =[ $walk12, sham_walk1 ] {setHead('17 1 36');                
 
 void() sham_run1  =[ $run1, sham_run2  ] {setHead('15 1 41'); ai_charge_side();ai_run(25); sham_step();}; // 30 + 
 void() sham_run2  =[ $run2, sham_run3  ] {setHead('12 -1 39');ai_charge_side();ai_run(25);}; // 31
-void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39'); ai_charge_side();ai_run(25);}; // 32
+void() sham_run3  =[ $run3, sham_run4  ] {setHead('12 2 39'); ai_run(25);}; // 32
 void() sham_run4  =[ $run4, sham_run5  ] {setHead('13 2 43'); ai_charge_side();ai_run(25); sham_step();}; // 33+
 void() sham_run5  =[ $run5, sham_run6  ] {setHead('14 2 40'); ai_charge_side();ai_run(25);}; // 34
-void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40');  ai_charge_side();ai_run(25);  // 35
+void() sham_run6  =[ $run6, sham_run1  ] {setHead('5 0 40'); ai_run(25);  // 35
 	
 	self.nextthink = time + 0.05;
 	if (random() > 0.8)

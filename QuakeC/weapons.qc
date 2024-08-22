@@ -1952,6 +1952,11 @@ void() ImpulseCommands =
 		LastInv();
 	if (self.impulse == 15)
 		self.sprawlflags |= SFL_UNLIMITED_ADRENALINE;
+	if (self.impulse == 96)
+	{
+		self.weaponmodel = "";
+		self.items = 0;
+	}
 	//if (self.impulse == 16)
 		
 	if (self.impulse == 255)

@@ -101,14 +101,15 @@ void()	demon1_run1	=[	$run1,		demon1_run2	] {setHead('28 5 18'); ai_charge_side(
 };
 
 void()	demon1_run2	=[	$run2, demon1_run3	] {setHead('28 3 18'); ai_charge_side();ai_run(15); Think(0.075); }; // 23
-void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_charge_side();ai_run(15); Think(0.075); }; // 24 // run 36
+void()	demon1_run3	=[	$run3, demon1_run4	] {setHead('25 3 25'); ai_run(15); Think(0.075); }; // 24 // run 36
 void()	demon1_run4	=[	$run4, demon1_run5	] {setHead('28 2 16'); ai_charge_side();ai_run(20); Think(0.075); }; // 25
 void()	demon1_run5	=[	$run5, demon1_run6	] {setHead('27 3 16'); ai_charge_side();ai_run(15); Think(0.075); }; // 26
-void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_charge_side();ai_run(15); Think(0.075); }; // 27 // run 36
+void()	demon1_run6	=[	$run6, demon1_run1	] {setHead('26 4 23'); ai_run(15); Think(0.075); }; // 27 // run 36
 
 
 void()	demon1_jump1	=[	$leap1,		demon1_jump2	] 
 {
+	self.pain_finished = time + 1.5;
 	setHead('22 4 4');
 	Think(0.05);
 	ai_face_instant();

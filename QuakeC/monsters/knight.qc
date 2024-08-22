@@ -170,6 +170,7 @@ void()	knight_runatk1	=[	$runattack1, knight_runatk2	] {Think(0.04);setHead('2 1
 
 	if (self.flags & FL_ONGROUND)
 		self.flags = self.flags - FL_ONGROUND;
+	
 	ai_charge(20);
 };
 

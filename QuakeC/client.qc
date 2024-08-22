@@ -270,8 +270,7 @@ When the player presses attack or jump, change to the next level
 ============*/
 void() IntermissionThink =
 {
-	if (slowmotion)
-		ResetSlowmotion();
+	self.sprawlflags |= SFL_CHANGESCREENTINT;
 	if (time < intermission_exittime)
 		return;
 
@@ -611,7 +610,7 @@ void() PutClientInServer =
 	setsize (self, VEC_HULL_MIN, VEC_HULL_MAX);
 	
 	self.view_ofs = '0 0 22';
-
+	self.sprawlflags |= SFL_CHANGESCREENTINT;
 	player_stand1 ();
 	
 	if (deathmatch || coop)
@@ -821,6 +820,9 @@ void() PlayerDeathThink =
 	self.button0 = 0;
 	self.button1 = 0;
 	self.button2 = 0;
+	self.b_adrenaline = 0;
+	self.b_slide = 0;
+	self.b_melee = 0;
 	respawn();
 };
 
@@ -1553,8 +1555,29 @@ Called every frame before physics are run
 ================*/
 void() PlayerPreThink =
 {
+	if (self.sprawlflags & SFL_CHANGESCREENTINT)
+	{
+		if (self.cshift_value)
+		{
+			stuffcmd(self, "v_cshift 40 100 170");
+			stuffcmd(self, ftos(self.cshift_value)); // [0 .. 30]
+			stuffcmd(self, "\n");
+			self.cshift_value = 0;
+		}
+		else
+			stuffcmd(self,"\nv_cshift 0 0 0 0\n");
+		
+		self.sprawlflags -= self.sprawlflags & SFL_CHANGESCREENTINT;
+	}
+	
 	if (intermission_running)
 	{
+		if (slowmotion)
+		{
+			ResetSlowmotion();
+			self.sprawlflags |= SFL_CHANGESCREENTINT;
+		}
+		
 		IntermissionThink ();	// otherwise a button could be missed between
 		return;					// the think tics
 	}
@@ -1565,7 +1588,11 @@ void() PlayerPreThink =
 	if (self.deadflag >= DEAD_DEAD)
 	{
 		if (slowmotion)
+		{
 			ResetSlowmotion();
+			self.sprawlflags |= SFL_CHANGESCREENTINT;
+		}
+
 		PlayerDeathThink ();
 		return;
 	}
@@ -1809,11 +1836,9 @@ void() PlayerPreThink =
 		cshift_val = 1 - interpolation;
 		interpolation = (ceil(interpolation * 10)) * 0.1; // round to 0.1
 		change_timescale(interpolation);
-
-		stuffcmd(self, "v_cshift 40 100 170");
-		stuffcmd(self, ftos(cshift_val * 50)); // [0 .. 30]
-		stuffcmd(self, "\n");
-		//175 90 55
+		
+		self.cshift_value = cshift_val * 50;
+		self.sprawlflags |= SFL_CHANGESCREENTINT;
 		
 		if (slowmotion_time < time)
 			slowmotion_time = 0;
@@ -1929,7 +1954,7 @@ void() PlayerPostThink =
 
 	if (self.deadflag)
 		return;
-	
+		
 	regenAdrenaline();
 	
 	if (self.sprawlflags & SFL_VMOFFSET)

@@ -2099,10 +2099,10 @@ void M_Skill_Draw (void)
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	x = 72;
-	y = 32;
+	y = 16;
 
 	M_Ticker_Update (&m_skill_ticker);
-	M_PrintScroll (x, 32, 30*8, m_skill_maptitle, m_skill_ticker.scroll_time, false);
+	M_PrintScroll (x, 136, 30*8, m_skill_maptitle, m_skill_ticker.scroll_time, false);
 
 	y += 16;
 

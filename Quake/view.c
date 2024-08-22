@@ -314,8 +314,8 @@ void V_ParseDamage (void)
 	cl.cshifts[CSHIFT_DAMAGE].percent += 3*count;
 	if (cl.cshifts[CSHIFT_DAMAGE].percent < 0)
 		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
-	if (cl.cshifts[CSHIFT_DAMAGE].percent > 150)
-		cl.cshifts[CSHIFT_DAMAGE].percent = 150;
+	if (cl.cshifts[CSHIFT_DAMAGE].percent > 70)
+		cl.cshifts[CSHIFT_DAMAGE].percent = 70;
 
 	if (armor > blood)
 	{
