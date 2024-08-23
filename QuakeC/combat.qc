@@ -416,7 +416,6 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (dflags & DF_INSTAGIB)
 	{
-		dprint("instagib\n");
 		targ.health = -1;
 		targ.lasthit_damage = 1000;
 	}
