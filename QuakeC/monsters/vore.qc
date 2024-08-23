@@ -51,12 +51,7 @@ void() shieldOn =
 	self.eA.frame = 1;
 	self.eA.effects |= EF_NOLERP;
 	self.eA.touch = pushAway;
-	
-	//if (!(other.flags & FL_CLIENT))
-	//	return;
-	//
-	//T_Push(other, self, 600, 200);
-	//other.pushback_time = time + 0.3;
+
 	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);
 };
 
@@ -68,7 +63,8 @@ void(float timer) shieldOff =
 	self.monsterflags -= self.monsterflags & MFL_SHIELD;
 	self.eA.frame = 0;
 	self.eA.effects |= EF_NOLERP;
-	//self.eA.touch = SUB_Null;
+	self.eA.touch = SUB_Null;
+
 	self.nextthinkA = time + timer;
 	self.thinkA = shieldOn;
 };
@@ -632,6 +628,7 @@ void() pushAway =
 		return;
 	
 	T_Push(other, self, 600, 200);
+	T_Damage (other, self, self, (skill + 1) * 10, 0);
 	other.pushback_time = time + 0.3;
 }
 

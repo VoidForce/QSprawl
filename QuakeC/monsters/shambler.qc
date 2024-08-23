@@ -269,7 +269,7 @@ void() sham_magic
 }*/
 
 void() sham_magic1     =[      $magic1,       sham_magic2    ] {setHead('17 3 40');ai_face();  // 66
-	sound (self, CHAN_WEAPON, "shambler/sattck1.wav", 1, ATTN_NORM);
+	sound (self, CHAN_AUTO, "shambler/sattck1.wav", 1, ATTN_NONE);
 	self.pain_finished = time + 3;	
 };
 void() sham_magic2     =[      $magic2,       sham_magic3    ] {setHead('-5 5 45');ai_face();}; // 67

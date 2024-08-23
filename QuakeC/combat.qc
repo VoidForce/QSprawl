@@ -414,21 +414,30 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	if ( teamplay == 1 && targ.team > 0 && targ.team == attacker.team )
 		return;
 	
-	if (dflags & DF_NEVERGIB)
-		targ.lasthit_damage = 1; // prevent gib death
-	else if (dflags & DF_ALWAYSGIB)
-		targ.monsterflags |= MFL_GIB_ME;
-	else
-		targ.lasthit_damage = take;
-	// do the damage
-	if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
+	if (dflags & DF_INSTAGIB)
 	{
-		targ.health_head -= take;
-		targ.health -= rint(take * 0.4);
-		targ.monsterflags |= MFL_PAIN_HEADSHOT;
+		dprint("instagib\n");
+		targ.health = -1;
+		targ.lasthit_damage = 1000;
 	}
 	else
-		targ.health -= take;
+	{
+		if (dflags & DF_NEVERGIB)
+			targ.lasthit_damage = 1; // prevent gib death
+		else if (dflags & DF_ALWAYSGIB)
+			targ.monsterflags |= MFL_GIB_ME;
+		else
+			targ.lasthit_damage = take;
+		// do the damage
+		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
+		{
+			targ.health_head -= take;
+			targ.health -= rint(take * 0.4);
+			targ.monsterflags |= MFL_PAIN_HEADSHOT;
+		}
+		else
+			targ.health -= take;
+	}
 	
 // HUD INFO SET if none was currently set by trace
 	if (attacker.flags & FL_CLIENT && targ.flags & FL_MONSTER && !(attacker.engineflags & ENF_HUDINFO))
@@ -566,7 +575,6 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 	{
 		if (head == ignore)
 		{
-			endl();
 			head = head.chain;
 			continue;
 		}

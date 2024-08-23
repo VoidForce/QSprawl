@@ -625,7 +625,7 @@ void() W_SwingKatana =
 		}
 		if (trace_fraction == 1.0)
 			continue;
-		if (trace_ent == previous)
+		if (trace_ent && trace_ent == previous)
 			continue;
 		
 		org = trace_endpos - v_forward*4;
@@ -657,7 +657,6 @@ void() W_SwingKatana =
 			}
 			previous = trace_ent;
 		}
-	
 		else
 		{	// hit wall
 			if (self.katanasound_finished < time)

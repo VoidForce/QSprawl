@@ -729,6 +729,7 @@ const float DF_ALWAYSGIB = 4;
 const float DF_KATANA = 8; // damage was done by katana
 const float DF_EXPLOSION = 16; // damage was done by explosion
 const float DF_EPICENTER = 32; // target was close to the epicenter, used by ogres to explode their weapons
+const float DF_INSTAGIB = 64; // telefrag
 
 //monstertypes
 //"enum [class] [name_e]:type"

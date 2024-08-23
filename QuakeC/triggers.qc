@@ -361,7 +361,7 @@ void() tdeath_touch =
 
 		if (self.owner.classname != "player")
 		{	// other monsters explode themselves
-			T_Damage (self.owner, self, self, 50000, 0);
+			T_Damage (self.owner, self, self, 50000, DF_INSTAGIB);
 			return;
 		}
 		
@@ -369,7 +369,7 @@ void() tdeath_touch =
 
 	if (other.health)
 	{
-		T_Damage (other, self, self, 50000, 0);
+		T_Damage (other, self, self, 50000, DF_INSTAGIB);
 	}
 };
 

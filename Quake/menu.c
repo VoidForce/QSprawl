@@ -2203,7 +2203,7 @@ void M_Skill_Key (int key)
 
 void M_Skill_Mousemove (int cx, int cy)
 {
-	int ybase = 48;
+	int ybase = 32;
 	int itemheight = m_skill_usegfx ? 20 : 16;
 	int prev = m_skill_cursor;
 
@@ -5067,7 +5067,7 @@ const char*const quitMessage [] =
   "   for you next time!   ",
   "                        ",
 
-  "  Leave QUAKE?  ",
+  "  Leave Sprawl96?  ",
   "",
   "",
   "\xD9\x65s   \xCE\x6F",
