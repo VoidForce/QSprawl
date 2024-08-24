@@ -3321,7 +3321,7 @@ static void Host_Give_f (void)
 		if (v > 0)
 		{
 			sv_player->v.armorvalue = v;
-			(int)sv_player->v.items |= (int)IT_ARMOR;
+			sv_player->v.items = (int)sv_player->v.items | (int)IT_ARMOR; //fix by plague_spreader
 		}
 		break;
 		//johnfitz
