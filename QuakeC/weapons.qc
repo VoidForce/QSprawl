@@ -499,7 +499,7 @@ void(float shotcount, vector dir, vector spread, float damage) FireBullets =
 };
 
 #define FBA_ISMULTIDAMAGE 1
-#define FBA_GRENADE 2
+//#define FBA_GRENADE 2
 #define FBA_IMPACT 8
 #define FBA_NOSHIELD_IMPACT 16
 //  DF_ALWAYSGIB 4
@@ -524,7 +524,6 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 // trace
 	traceline (src, src + direction*2048, FALSE, self);
 
-	
 	if (trace_fraction != 1.0)
 	{
 	//decide what we hit
@@ -580,15 +579,7 @@ void(vector dir, float offset_x, float offset_y, float damage, float penetration
 			if (lflags & FBA_ISMULTIDAMAGE)
 				AddMultiDamage (trace_ent, damage, dflags);
 			else
-			{	
-				if (lflags & FBA_GRENADE)
-				{
-					dflags |= DF_NEVERGIB;
-					T_Damage (trace_ent, self, self.owner, damage, dflags, penetration); // grenade's heat trace
-				}
-				else
-					T_Damage (trace_ent, self, self, damage, dflags, penetration);
-			}
+				T_Damage (trace_ent, self, self, damage, dflags, penetration);
 		}
 		else
 		{
@@ -1007,9 +998,8 @@ void (entity who) traceGrenade =
 	dflags = 0;
 	if (who.monsterflags & MFL_HASHEAD)
 	{
-		makevectors2(self.angles);
 	// calculate if it's a headshot or not
-		if (distancetoray(self.origin, v_forward, findHeadPosition(who)) < who.head_size)
+		if (distancetoray(self.origin, self.vA, findHeadPosition(who)) < who.head_size * 1.25)
 			dflags |= DF_HEADSHOT;
 	}
 	
@@ -1033,6 +1023,7 @@ void() GrenadeTouch =
 	{
 		self.thinkA = SUB_Null;
 		self.nextthinkA = -1;
+		self.velocity = '0 0 0';
 		traceGrenade(other);
 		GrenadeExplode();
 		return;
@@ -1073,8 +1064,9 @@ void() AngleGrenade =
 	if (!self.velocity)
 		return;
 	self.angles = vectoangles(self.velocity);	
+	self.vA = self.angles; // save cumulative trace direction
 	self.thinkA = AngleGrenade;
-	self.nextthinkA = time + 0.1;
+	self.nextthinkA = time + 0.05;
 };
 
 void() ChargeGrenade =
