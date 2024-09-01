@@ -273,7 +273,7 @@ void() misc_explobox =
 	
 	precache_model ("maps/b_explob.bsp");
 	setmodel (self, "maps/b_explob.bsp");
-	setsize (self, '-15 -15 0', '15 15 64');
+	//setsize (self, '-15 -15 0', '15 15 64');
 	precache_sound ("weapons/r_exp3.wav");
 	self.health = 20;
 	self.th_die = barrel_explode;
