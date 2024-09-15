@@ -18,14 +18,6 @@
 */
 
 // prototypes
-void () W_WeaponFrame;
-void() W_SetCurrentAmmo;
-//void() player_pain;
-void(entity attacker, float damage) player_pain;
-void() player_stand1;
-void (vector org) spawn_tfog;
-void (vector org, entity death_owner) spawn_tdeath;
-
 float	modelindex_eyes, modelindex_player;
 
 /*=============================================================================
@@ -37,14 +29,53 @@ float	modelindex_eyes, modelindex_player;
 float	intermission_running;
 float	intermission_exittime;
 
+entity() get_closest_client =
+{
+	if (coop == 0 || clients == 1)
+		return nextent(world);
+		
+	entity next, best;
+	float close, dist;
+	close = A_SHITLOAD;
+	next = nextent(world);
+	while (next.flags & FL_CLIENT)
+	{
+		dist = vlen(self.origin - next.origin);
+		if (dist < close)
+		{
+			best = next;
+			close = dist;
+		}
+		next = nextent(next);
+	}
+	return best;
+}
+
+entity(entity start) get_next_client =
+{
+	// nice trick from necros: clients are always the first entities after world
+	entity next;
+	next = nextent(start);
+	if (next.flags & FL_CLIENT == 0)
+		next = nextent(world);
+	return next;
+}
+
 /*QUAKED info_intermission (1 0.5 0.5) (-16 -16 -16) (16 16 16)
 This is the camera point for the intermission.
 Use mangle instead of angle, so you can set pitch or roll as well as yaw.  'pitch roll yaw'*/
+/*
 void() info_intermission =
 {
 };
-
-
+*/
+// should this use localcmd()?
+void(entity client, string savename) autosave =
+{
+	stuffcmd(client, "echo Autosaving...; wait; save ");
+	stuffcmd(client, savename);
+	stuffcmd(client, "\n");
+}
 
 void() SetChangeParms =
 {
@@ -93,7 +124,7 @@ void() SetNewParms =
 
 void() DecodeLevelParms =
 {
-	if (serverflags)
+	if (!deathmatch)	
 	{
 		if (world.model == "maps/start.bsp")
 			SetNewParms ();		// take away all stuff on starting new episode
@@ -115,6 +146,7 @@ FindIntermission
 
 Returns the entity to view from
 ============*/
+/* copper
 entity() FindIntermission =
 {
 	local	entity spot;
@@ -152,8 +184,9 @@ entity() FindIntermission =
 	return world;
 };
 
-
+*/
 string nextmap;
+/* copper
 void() GotoNextMap =
 {
 	if (cvar("samelevel"))	// if samelevel is set, stay on same level
@@ -162,7 +195,6 @@ void() GotoNextMap =
 	else
 		changelevel (nextmap);
 };
-
 
 void() ExitIntermission =
 {
@@ -262,12 +294,13 @@ void() ExitIntermission =
 
 	GotoNextMap();
 };
-
+*/
 /*============
 IntermissionThink
 
 When the player presses attack or jump, change to the next level
 ============*/
+/*
 void() IntermissionThink =
 {
 	self.sprawlflags |= SFL_CHANGESCREENTINT;
@@ -278,8 +311,60 @@ void() IntermissionThink =
 		return;
 	
 	ExitIntermission ();
-};
+};*/
+void() IntermissionThink =
+{
+	self.sprawlflags |= SFL_CHANGESCREENTINT; // change to cleanUpClientShit?
+	// this was for coop pre-exit camera spectating, but it shudders really badly 
+	// on non-server clients, so players just get to look around while waiting
+//	self.angles = self.v_angle = self.goalentity.mangle;
+//	self.fixangle = TRUE;
+	self.flags = not(self.flags, FL_ONGROUND);
 
+	if (self.impulse)
+	{
+		// cycle forward or back in the intermissions with weapnext/weapprev
+		if (self.attack_finished < time)
+		{
+			// stay on cameras twice as long if player cycles to them manually
+			if (self.impulse == 10)
+			{
+				move_player_to_next_intermission();
+				self.attack_finished = time + 0.2;
+				self.lifetime_finished = time + 12;
+			}
+			else if (self.impulse == 12)
+			{
+				move_player_to_previous_intermission();
+				self.attack_finished = time + 0.2;
+				self.lifetime_finished = time + 12;
+			}
+		}
+		self.impulse = 0;
+	}
+	
+	if (!intermission) return;
+	
+	// auto-cycle intermission camera after six seconds
+	else if (time > self.lifetime_finished)
+	{
+		move_player_to_next_intermission();
+		self.lifetime_finished = time + 6;
+	}
+	
+	if (time < intermission_exittime)
+		return;
+
+	// start listening for input to leave
+	if (!self.button0 && !self.button1 && !self.button2) {
+		if (self.wait) ExitIntermission ();
+		self.wait = 0;
+		return;
+	}
+	
+	self.wait = 1;
+}
+/*
 void() execute_changelevel =
 {
 	local entity	pos;
@@ -318,8 +403,8 @@ void() execute_changelevel =
 
 	WriteByte (MSG_ALL, SVC_INTERMISSION);
 };
-
-
+*/
+/* copper
 void() changelevel_touch =
 {
 	if (other.classname != "player")
@@ -352,11 +437,12 @@ void() changelevel_touch =
 	self.think = execute_changelevel;
 	self.nextthink = time + 0.1;
 };
-
+*/
 /*QUAKED trigger_changelevel (0.5 0.5 0.5) ? NO_INTERMISSION
 When the player touches this, he gets sent to the map listed in the "map" variable.  
 Unless the NO_INTERMISSION flag is set, the view will go to the info_intermission 
 spot and display stats.*/
+/*
 void() trigger_changelevel =
 {
 	if (!self.map)
@@ -369,7 +455,7 @@ void() trigger_changelevel =
 	InitTrigger ();
 	self.touch = changelevel_touch;
 };
-
+*/
 
 /*=============================================================================
 
@@ -555,7 +641,8 @@ void() PutClientInServer =
 	self.takedamage = DAMAGE_AIM;
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_WALK;
-
+	self.clip = CLIP_CLIENT;
+	
 	self.phys_speed = 320; // absolute value in units/s
 	self.phys_friction = 8; // absolute value
 	self.phys_gravity = 1; // 800, this is force multiplyer
@@ -599,6 +686,16 @@ void() PutClientInServer =
 	self.trail1 = self.trail2 = self.trail3 = self.trail4 = self.origin;
 	self.angles = spot.angles;
 	self.fixangle = TRUE;		// turn this way immediately
+	
+	// yet another thing that doesn't work on the first frame
+	if (spot.fog_density || spot.fog_color || spot.fog_sky)
+		fog_save(self, spot.fog_density, spot.fog_color, spot.fog_sky);
+	else if (world.fog_density || world.fog_color || world.fog_sky)
+		fog_save(self, world.fog_density, world.fog_color, world.fog_sky);
+
+	if (!self.fog_sky)
+		self.fog_sky = cvar("r_skyfog");
+	cleanUpClientShit = 2; 
 
 	// oh, this is a hack!
 	setmodel (self, "progs/eyes.mdl");
@@ -625,55 +722,13 @@ void() PutClientInServer =
 	
 //	centerprint(self, getMapname(mapname));	//gnounc --thought it would be fun. I was at odds about adding an unexpected feature. I may remove it later
 	//BAM removed it later. --gnounc
+
 	if (!grenade_handler)
 		grenade_handler = spawn();
 	grenade_handler.classname = "GrenadeHandler";
 	
 	self.thinkA = trailPlayer;
 	self.nextthinkA = time + 1;
-};
-
-
-/*=============================================================================
-
-				QUAKED FUNCTIONS
-
-=============================================================================*/
-
-
-/*QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 24)
-The normal starting point for a level.
-*/
-void() info_player_start =
-{
-};
-
-/*QUAKED info_player_start2 (1 0 0) (-16 -16 -24) (16 16 24)
-Only used on start map for the return point from an episode.
-*/
-void() info_player_start2 =
-{
-};
-
-/*
-saved out by quaked in region mode
-*/
-void() testplayerstart =
-{
-};
-
-/*QUAKED info_player_deathmatch (1 0 1) (-16 -16 -24) (16 16 24)
-potential spawning position for deathmatch games
-*/
-void() info_player_deathmatch =
-{
-};
-
-/*QUAKED info_player_coop (1 0 1) (-16 -16 -24) (16 16 24)
-potential spawning position for coop games
-*/
-void() info_player_coop =
-{
 };
 
 void() info_wind =
@@ -788,9 +843,9 @@ void() CheckRules =
 
 void() PlayerDeathThink =
 {
-	local float		forward;
+	float forward;
 
-	if ((self.flags & FL_ONGROUND))
+	if (self.flags & FL_ONGROUND)
 	{
 		forward = vlen (self.velocity);
 		forward = forward - 20;
@@ -802,28 +857,20 @@ void() PlayerDeathThink =
 			self.velocity = forward * normalize(self.velocity);
 	}
 
+	//copper -- start
+	if (time < self.lifetime_finished) return;
+	
 	// wait for all buttons released
-	if (self.deadflag == DEAD_DEAD)
-	{
-		if (self.button2 || self.button1 || self.button0)
-			return;
-
-		self.deadflag = DEAD_RESPAWNABLE;
-
+	if (!self.button0 && !self.button1 && !self.button2) {
+		if (self.wait)
+			respawn();
+		
+		self.wait = 0;
 		return;
 	}
-
-	// wait for any button down
-	if (!self.button2 && !self.button1 && !self.button0)
-		return;
-
-	self.button0 = 0;
-	self.button1 = 0;
-	self.button2 = 0;
-	self.b_adrenaline = 0;
-	self.b_slide = 0;
-	self.b_melee = 0;
-	respawn();
+	
+	self.wait = 1;
+	//copper -- end
 };
 
 
@@ -1557,20 +1604,32 @@ void() PlayerPreThink =
 {
 	if (self.sprawlflags & SFL_CHANGESCREENTINT)
 	{
-		if (self.cshift_value)
+		if (!(self.copperflags & CFL_PLUNGE))
 		{
-			stuffcmd(self, "v_cshift 40 100 170");
-			stuffcmd(self, ftos(self.cshift_value)); // [0 .. 30]
-			stuffcmd(self, "\n");
-			self.cshift_value = 0;
+			if (self.cshift_value)
+			{
+				stuffcmd(self, "v_cshift 40 100 170");
+				stuffcmd(self, ftos(self.cshift_value)); // [0 .. 30]
+				stuffcmd(self, "\n");
+				self.cshift_value = 0;
+			}
+			else
+				stuffcmd(self,"\nv_cshift 0 0 0 0\n");
+			
+			self.sprawlflags -= self.sprawlflags & SFL_CHANGESCREENTINT;
 		}
-		else
-			stuffcmd(self,"\nv_cshift 0 0 0 0\n");
-		
-		self.sprawlflags -= self.sprawlflags & SFL_CHANGESCREENTINT;
+	}
+// todo: look closer to this 
+	if (cleanUpClientShit)
+	{
+		fog_setFromEnt(self, self);
+		if (!(self.copperflags & ( CFL_PLUNGE | CFL_LIMBO )))
+			TintScreen(self, 0);
+		else if ( self.copperflags & CFL_LIMBO )
+			TintScreen(self, 255);
 	}
 	
-	if (intermission_running)
+	if (intermission_running || intermission || self.deadflag == DEAD_SPECTATING )
 	{
 		if (slowmotion)
 		{
@@ -1584,7 +1643,7 @@ void() PlayerPreThink =
 
 	if (self.view_ofs == '0 0 0')
 		return;		// intermission or finale
-	
+
 	if (self.deadflag >= DEAD_DEAD)
 	{
 		if (slowmotion)
@@ -1596,10 +1655,18 @@ void() PlayerPreThink =
 		PlayerDeathThink ();
 		return;
 	}
-	
+
 	if (self.deadflag == DEAD_DYING)
 		return;	// dying, so do nothing
 	
+	if (self.health > 125)
+	{
+		if (self.overheal_decay < time)
+		{
+			self.health--;
+			self.overheal_decay = time + 2.5;
+		}
+	}
 // move trail back to origin, until we reach it
 	if (self.trail && self.trail_time < time)
 	{
@@ -1949,12 +2016,9 @@ Called every frame after physics are run
 ================*/
 void() PlayerPostThink =
 {
-	if (self.view_ofs == '0 0 0')
+	if (self.view_ofs == '0 0 0' || intermission || self.deadflag)
 		return;		// intermission or finale
 
-	if (self.deadflag)
-		return;
-		
 	regenAdrenaline();
 	
 	if (self.sprawlflags & SFL_VMOFFSET)
@@ -2185,7 +2249,7 @@ void() ClientConnect =
 	bprint (" entered the game\n");
 
 	// a client connecting during an intermission can cause problems
-	if (intermission_running)
+	if (intermission_running || intermission)
 		ExitIntermission ();
 };
 
@@ -2479,3 +2543,174 @@ void(entity targ, entity attacker) ClientObituary =
 		}
 	}
 };
+
+/*
+=============================================================================
+
+	SPAWNPOINTS
+
+=============================================================================
+*/
+
+/*FGD
+@baseclass base(Appearflags, Angle, Fog, Target) size(-16 -16 -24, 16 16 32) 
+	color(0 255 0) model({ "path": ":progs/player.mdl" }) = PlayerClass []
+*/
+
+/*QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 24) 
+The normal starting point for a level. Only one is allowed. Will fire its targets when a player is spawned here, with player as activator.
+
+"angle" viewing angle when spawning
+"fog_color"/"fog_density"/"fog_sky" set the fog when spawning at this spot (fog_sky 0 = no change, -1 = clear to 0)
+*/
+/*FGD
+@PointClass base(PlayerClass) = info_player_start : "Player 1 start. Fires targets when a player spawns here." []
+*/
+void() info_player_start =
+{
+	setsize(self,VEC_HULL_MIN,VEC_HULL_MAX);	// for telefrag testing
+	self.mangle = self.angles;
+	fog_fixKeys();
+}
+
+
+/*QUAKED info_player_start2 (1 0 0) (-16 -16 -24) (16 16 24) 
+Only used on start map for the return point from an episode. Will fire its targets when a player is spawned here, with player as activator.
+
+"angle" viewing angle when spawning
+"fog_color"/"fog_density"/"fog_sky" set the fog when spawning at this spot (fog_sky 0 = no change, -1 = clear to 0)
+"svflags" set the bits for a specific set of runes/serverflags you want to test
+"style" how to interpret svflags:
+	0: player will spawn here if they have any of the runes in svflags
+	1: player will only spawn here if they have all of them
+	2: player will NOT spawn here if they have any of them
+*/
+/*FGD
+@PointClass base(PlayerClass) = info_player_start2 : "Player episode return point. Fires targets when a player spawns here." [
+	svflags(Flags) =
+	[
+		1		: "Episode 1" : 0
+		2		: "Episode 2" : 0
+		4		: "Episode 3" : 0
+		8		: "Episode 4" : 0
+		16		: "Bit 5" :  0
+		32		: "Bit 6" :  0
+		64		: "Bit 7" :  0
+		128		: "Bit 8" :  0
+		256		: "Bit 9" :  0
+		512		: "Bit 10" : 0
+		1024	: "Bit 11" : 0
+		2048	: "Bit 12" : 0
+		4096	: "Bit 13" : 0
+		8192	: "Bit 14" : 0
+		16384	: "Bit 15" : 0
+		32768	: "Bit 16" : 0
+		65536	: "Bit 17" : 0
+		131072	: "Bit 18" : 0
+		262144	: "Bit 19" : 0
+		524288	: "Bit 20" : 0
+		1048576	: "Bit 21" : 0
+	]
+	style(Choices) : "Requirement" : 0 =
+	[
+		0 : "Have Any"
+		1 : "Must Have All"
+		2 : "Must Not Have Any"
+	]
+]
+*/
+void() info_player_start2 =
+{
+	setsize(self,VEC_HULL_MIN,VEC_HULL_MAX);	// for telefrag testing
+	self.mangle = self.angles;
+	fog_fixKeys();
+	
+	if (!self.svflags)
+		self.svflags = 2097151;	// all bits up to 21
+	if (self.style < 0 || self.style > 2)
+		self.style = 0;
+}
+
+
+/*QUAKED info_player_start_test (1 0 0) (-16 -16 -24) (16 16 24) USE
+Debug starting point for a level.  Overrides info_player_start if present and 'USE' is checked, does nothing if 'USE' is not checked. Will fire its targets when a player is spawned, here with player as activator.
+
+"angle" viewing angle when spawning
+"fog_color"/"fog_density"/"fog_sky" set the fog when spawning at this spot (fog_sky 0 = no change, -1 = clear to 0)
+*/
+/*FGD
+@PointClass base(PlayerClass) = info_player_start_test : "Developer-only spawn point" [
+	spawnflags(flags) = [
+		1 : "Spawn at this one plz" : 0
+	]
+]
+*/
+void() info_player_start_test =
+{
+	if (!(self.spawnflags & 1))
+	{
+		remove(self);
+		return;
+	}
+	self.mangle = self.angles;
+	fog_fixKeys();
+}
+void() testplayerstart = {info_player_start_test();}	// back compat with old editors that use regioned compiles
+
+/*QUAKED info_player_deathmatch (1 0 1) (-16 -16 -24) (16 16 24)
+potential spawning position for deathmatch games
+
+"angle" viewing angle when spawning
+"fog_color"/"fog_density"/"fog_sky" set the fog when spawning at this spot (fog_sky 0 = no change, -1 = clear to 0)
+*/
+/*FGD
+@PointClass base(PlayerClass) = info_player_deathmatch : "Deathmatch start" []
+*/
+void() info_player_deathmatch =
+{
+	fog_fixKeys();
+}
+
+// dumb way to make coop starts visible/invisible to the cyclical spawnpoint search 
+// code without making that code overly complex
+void(float unlock) coop_lock =
+{
+	if (unlock)
+		self.classname = "info_player_coop";
+	else
+		self.classname = "info_player_coop_notyet";
+}
+
+void() coop_enable =
+{
+	self.classname = "info_player_coop";
+	self.use = SUB_Null;
+}
+
+/*QUAKED info_player_coop (1 0 1) (-16 -16 -24) (16 16 24) TRIGGER_FIRST
+Potential spawning position(s) for coop games. Will fire its targets when a player is spawned here, with player as activator.
+
+"angle" viewing angle when spawning
+"fog_color"/"fog_density"/"fog_sky" set the fog when spawning at this spot (fog_sky 0 = no change, -1 = clear to 0)
+
+TRIGGER_FIRST - this start won't be used to spawn coop players until triggered, so respawning players don't have to walk all the way back to the action
+*/
+/*FGD
+@PointClass base(PlayerClass, Targetname) = info_player_coop : "Player cooperative start" [
+	spawnflags(flags) = [
+		1 : "Trigger first" : 0
+	]
+]
+*/
+void() info_player_coop =
+{
+	self.mangle = self.angles;
+	if (self.spawnflags & 1)
+	{
+		self.classname = "info_player_coop_notyet";
+		self.use = coop_enable;
+	}
+	self.lock = coop_lock;
+	fog_fixKeys();
+	setsize(self,VEC_HULL_MIN,VEC_HULL_MAX);	// for telefrag testing
+}

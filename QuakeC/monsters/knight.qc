@@ -334,38 +334,20 @@ void() knight_die =
 
 
 /*QUAKED monster_knight (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
-void() monster_knight =
+void() monster_knight_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-
-	precache_model ("progs/knight.mdl");
-	precache_model ("progs/knight_trail.mdl");
-	precache_model ("progs/knight_headless.mdl");
-	precache_model ("progs/h_knight.mdl");
-
-	precache_sound ("knight/kdeath.wav");
-	precache_sound ("knight/khurt.wav");
-	precache_sound ("knight/ksight.wav");
-	precache_sound ("knight/sword1.wav");
-	precache_sound ("knight/sword2.wav");
-	precache_sound ("knight/idle.wav");
-
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_knight";
+	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/knight.mdl");
+	setsize (self, '-16 -16 -24', '16 16 32'); //28
 
-	//gnounc
 	self.noise = "knight/ksight.wav";	//gnounc
 	self.netname = "Knight";
-	//self.info_name = " Infiltration Unit";
 	self.killstring = " was slashed by a Junta's Cyborg\n";
-
-	setsize (self, '-16 -16 -24', '16 16 32'); //28
 	self.head_offset = '2 0 22';
 	self.head_size = 12;
 	self.health = KNIGHT_HEALTH;
@@ -373,10 +355,10 @@ void() monster_knight =
 	self.health_head = KNIGHT_HEAD;
 	self.health_head_max = KNIGHT_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_SYNTH;
+	self.copperflags |= CFL_MELEEONLY;
 	self.monstertype = TYPE_KNIGHT;
 	self.skinchange = 1;
 	self.gib_threshold = 75;
-
 	self.th_stand = knight_stand1;
 	self.th_walk = knight_walk1;
 	self.th_run = knight_run1;
@@ -385,4 +367,39 @@ void() monster_knight =
 	self.th_die = knight_die;
 	
 	walkmonster_start ();
+};
+
+void() monster_knight_spawner = 
+{
+	mon_spawner_use(monster_knight_spawn);
+};
+
+void() monster_knight =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/knight.mdl");
+	precache_model ("progs/knight_trail.mdl");
+	precache_model ("progs/knight_headless.mdl");
+	precache_model ("progs/h_knight.mdl");
+	precache_sound ("knight/kdeath.wav");
+	precache_sound ("knight/khurt.wav");
+	precache_sound ("knight/ksight.wav");
+	precache_sound ("knight/sword1.wav");
+	precache_sound ("knight/sword2.wav");
+	precache_sound ("knight/idle.wav");
+	
+	setsize (self, '-16 -16 -24', '16 16 32'); // set for telefrag check
+	self.health = KNIGHT_HEALTH;
+	if ( monster_spawnsetup( monster_knight_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_knight_spawn();
 };

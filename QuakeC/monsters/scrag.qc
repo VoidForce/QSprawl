@@ -86,7 +86,7 @@ void(float offset) wizzard_fire =
 	start = self.origin + v_right * offset + '0 0 8';
 	dir = getPlayerPosition(self.enemy, 1);
 	dir = normalize (dir - start);
-	FireBullets (1, dir, '0.01 0.01 0', 4);
+	FireBullets (1, dir, '0.04 0.04 0', 4);
 	sendMessageVecVecFlag(start, trace_endpos, MF_SMG, TE_BULLETTRACE);
 };
 
@@ -228,23 +228,23 @@ void()	wiz_walk6	=[ $hover6, wiz_walk7 ] {ai_walk(8);};
 void()	wiz_walk7	=[ $hover7, wiz_walk8 ] {ai_walk(8);};
 void()	wiz_walk8	=[ $hover8, wiz_walk1 ] {ai_walk(8);};
 										   
-void()	wiz_side1	=[ $hover1, wiz_side2 ] {ai_run(8); Wiz_idlesound();};
-void()	wiz_side2	=[ $hover2, wiz_side3 ] {ai_run(8);};
-void()	wiz_side3	=[ $hover3, wiz_side4 ] {ai_run(8);};
-void()	wiz_side4	=[ $hover4, wiz_side5 ] {ai_run(8);};
-void()	wiz_side5	=[ $hover5, wiz_side6 ] {ai_run(8);};
-void()	wiz_side6	=[ $hover6, wiz_side7 ] {ai_run(8);};
-void()	wiz_side7	=[ $hover7, wiz_side8 ] {ai_run(8);};
-void()	wiz_side8	=[ $hover8, wiz_side1 ] {ai_run(8);};
+void()	wiz_side1	=[ $hover1, wiz_side2 ] {ai_run(16); Wiz_idlesound();};
+void()	wiz_side2	=[ $hover2, wiz_side3 ] {ai_run(16);};
+void()	wiz_side3	=[ $hover3, wiz_side4 ] {ai_run(16);};
+void()	wiz_side4	=[ $hover4, wiz_side5 ] {ai_run(16);};
+void()	wiz_side5	=[ $hover5, wiz_side6 ] {ai_run(16);};
+void()	wiz_side6	=[ $hover6, wiz_side7 ] {ai_run(16);};
+void()	wiz_side7	=[ $hover7, wiz_side8 ] {ai_run(16);};
+void()	wiz_side8	=[ $hover8, wiz_side1 ] {ai_run(16);};
 
-void()	wiz_run1	=[ $hover1, wiz_run2 ] {ai_run(16); Wiz_idlesound();};
-void()	wiz_run2	=[ $hover2, wiz_run3 ] {ai_run(16);};
-void()	wiz_run3	=[ $hover3, wiz_run4 ] {ai_run(16);};
-void()	wiz_run4	=[ $hover4, wiz_run5 ] {ai_run(16);};
-void()	wiz_run5	=[ $hover5, wiz_run6 ] {ai_run(16);};
-void()	wiz_run6	=[ $hover6, wiz_run7 ] {ai_run(16);};
-void()	wiz_run7	=[ $hover7, wiz_run8 ] {ai_run(16);};
-void()	wiz_run8	=[ $hover8, wiz_run1 ] {ai_run(16);};
+void()	wiz_run1	=[ $hover1, wiz_run2 ] {ai_run(20); Wiz_idlesound();};
+void()	wiz_run2	=[ $hover2, wiz_run3 ] {ai_run(20);};
+void()	wiz_run3	=[ $hover3, wiz_run4 ] {ai_run(20);};
+void()	wiz_run4	=[ $hover4, wiz_run5 ] {ai_run(20);};
+void()	wiz_run5	=[ $hover5, wiz_run6 ] {ai_run(20);};
+void()	wiz_run6	=[ $hover6, wiz_run7 ] {ai_run(20);};
+void()	wiz_run7	=[ $hover7, wiz_run8 ] {ai_run(20);};
+void()	wiz_run8	=[ $hover8, wiz_run1 ] {ai_run(20);};
 
 void()	wiz_fast1	=[ $hover1, wiz_fast22 ] {wizzard_laser(); ai_face(); };
 void()	wiz_fast22	=[ $hover2, wiz_fast23 ] {wizzard_laser(); ai_face(); };
@@ -330,35 +330,19 @@ void(entity attacker, float damage) Wiz_Pain =
 	QUAKED monster_wizard (1 0 0) (-16 -16 -24) (16 16 40) Ambush
 */
 
-void() monster_wizard =
+void() monster_wizard_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_wizard";
 	
-	precache_model ("progs/wizard.mdl");
-	precache_model ("progs/h_wizard.mdl");
-
-	precache_sound ("wizard/hit.wav");		// used by c code
-	precache_sound ("wizard/wattack.wav");
-	precache_sound ("wizard/wdeath.wav");
-	precache_sound ("wizard/widle1.wav");
-	precache_sound ("wizard/widle2.wav");
-	precache_sound ("wizard/wpain.wav");
-	precache_sound ("wizard/wsight.wav");
-
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/wizard.mdl");
-	setsize (self, '-16 -16 0', '16 16 24');// 24 48
+	setsize (self, '-16 -16 0', '16 16 24');
 	
-	//gnounc
 	self.noise = "wizard/wsight.wav";	//gnounc
 	self.netname = "Drone";
-	//self.info_name = "   Sendai Drone";
 	self.killstring = " couldn't handle this air superiority\n";
 	self.head_size = 0;
 	self.health = SCRAG_HEALTH;
@@ -366,8 +350,6 @@ void() monster_wizard =
 	self.gib_threshold = 40;
 	self.monstertype = TYPE_SCRAG;
 	self.monsterflags |= MFL_ROBOT;
-	self.fA = 2; // amoung of rockets to fire, will be depleted fully
-
 	self.th_stand = wiz_stand1;
 	self.th_walk = wiz_walk1;
 	self.th_run = wiz_run1;
@@ -377,4 +359,38 @@ void() monster_wizard =
 	self.yaw_speed = 75;
 		
 	flymonster_start ();
+};
+
+void() monster_wizard_spawner = 
+{
+	mon_spawner_use(monster_wizard_spawn);
+};
+
+void() monster_wizard =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/wizard.mdl");
+	precache_model ("progs/h_wizard.mdl");
+	precache_sound ("wizard/hit.wav");		// used by c code
+	precache_sound ("wizard/wattack.wav");
+	precache_sound ("wizard/wdeath.wav");
+	precache_sound ("wizard/widle1.wav");
+	precache_sound ("wizard/widle2.wav");
+	precache_sound ("wizard/wpain.wav");
+	precache_sound ("wizard/wsight.wav");
+
+	setsize (self, '-16 -16 0', '16 16 24');// set for telefrag check
+	self.health = SCRAG_HEALTH;
+	if ( monster_spawnsetup( monster_wizard_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_wizard_spawn();
 };

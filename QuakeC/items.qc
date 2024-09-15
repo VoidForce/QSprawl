@@ -16,11 +16,11 @@
 
     See file, 'COPYING', for details.
 */
-void() W_SetCurrentAmmo;
+
 /* ALL LIGHTS SHOULD BE 0 1 0 IN COLOR ALL OTHER ITEMS SHOULD
 BE .8 .3 .4 IN COLOR */
 
-
+/* Copper
 void() SUB_regen =
 {
 	self.model = self.mdl;		// restore original model
@@ -28,7 +28,7 @@ void() SUB_regen =
 	sound (self, CHAN_VOICE, "items/itembk2.wav", 1, ATTN_NORM);	// play respawn sound
 	setorigin (self, self.origin);
 };
-
+*/
 
 
 /*QUAKED noclass (0 0 0) (-8 -8 -8) (8 8 8)
@@ -49,6 +49,7 @@ PlaceItem
 
 plants the object on the floor
 ============*/
+/*
 void() PlaceItem =
 {
 	local float	oldz;
@@ -70,7 +71,7 @@ void() PlaceItem =
 	self.origin_z = self.origin_z + 6;
 	oldz = self.origin_z;
 
-	if (!droptofloor())
+	if (!droptofloor(0,0))
 	{
 		dprint ("Bonus item fell out of level at ");
 		dprint (vtos(self.origin));
@@ -80,18 +81,19 @@ void() PlaceItem =
 		return;
 	}
 };
-
+*/
 /*============
 StartItem
 
 Sets the clipping size and plants the object on the floor
 ============*/
+/*
 void() StartItem =
 {
 	self.nextthink = time + 0.2;	// items start after other solids
 	self.think = PlaceItem;
 };
-
+*/
 /*=========================================================================
 
 HEALTH BOX
@@ -144,12 +146,18 @@ void() item_health =
 		precache_sound("items/health1.wav");
 		setmodel(self, "progs/health_b.mdl");
 		self.noise = "items/health1.wav";
-		self.healamount = 30;
+		self.fB = self.healamount = 30;
 		self.heallimit = 100;
 		self.touch = health_touch;
 	}
 
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
+	
+	if (deathmatch == 1 || deathmatch == 3)
+		self.wait = 20;
+	
 	StartItem ();
 };
 //
@@ -168,10 +176,9 @@ void (entity e, float healamount, float limit) T_Heal =
 
 void() megahealth_touch =
 {
-	if (other.classname != "player")
+	if (!CheckValidTouch())
 		return;
-	if (other.health < 1)
-		return;
+	
 	if (other.health >= self.heallimit)
 		return;
 	
@@ -182,47 +189,32 @@ void() megahealth_touch =
 	// health touch sound
 	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
 	stuffcmd (other, "bfh\n");
-	self.model = string_null;
-	self.solid = SOLID_NOT;
 
-	other.items = other.items | IT_SUPERHEALTH;
-	self.nextthink = time + 5;
-	self.think = item_megahealth_rot;
-	self.owner = other;
-
-	activator = other;
-	SUB_UseTargets(); // fire all targets / killtargets
+	ItemTouched();
 };
 
 void() regenhealth_touch =
 {
-	if (other.classname != "player")
+	if (!CheckValidTouch())
 		return;
-	if (other.health < 1)
-		return;
+	
 	if (other.health >= self.heallimit) // Megahealth?  Ignore max_health...
 		return;
 
-	self.think = item_slowheal;
-	self.nextthink = time + 0.5;
-	self.owner = other;
-
+	entity healer;
+	healer = spawn();
+	healer.think = item_slowheal;
+	healer.nextthink = time + 0.5;
+	healer.healamount = self.healamount;
+	healer.owner = other;
+	setorigin(healer, self.origin);
 	sprint(other, "You receive \b40\b health \bregen\b\n");
 	
 	// health touch sound
 	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
 	stuffcmd (other, "bfh\n");
-	self.model = string_null;
-	self.solid = SOLID_NOT;
 
-	if (deathmatch)
-	{
-		self.nextthink = time + 20;
-		self.think = SUB_regen;
-	}
-	
-	activator = other;
-	SUB_UseTargets(); // fire all targets / killtargets
+	ItemTouched();
 };
 
 void() health_touch =
@@ -230,10 +222,9 @@ void() health_touch =
 	float spent;
 	float deficit;
 	
-	if (other.classname != "player")
+	if (!CheckValidTouch())
 		return;
-	if (other.health < 1)
-		return;
+	
 	if (other.health >= self.heallimit)
 		return;
 	
@@ -253,8 +244,8 @@ void() health_touch =
 		self.healamount = floor(self.healamount);
 		
 		self.touch = SUB_Null;
-		self.nextthink = time + 1;
-		self.think = restoreTouch_health;
+		self.nextthinkA = time + 1;
+		self.thinkA = restoreTouch_health;
 	}
 		
 	sprint(other, "You receive ");
@@ -264,24 +255,45 @@ void() health_touch =
 	// health touch sound
 	sound(other, CHAN_ITEM, self.noise, 1, ATTN_NORM);
 	stuffcmd (other, "bfh\n");
-	if (self.healamount < 1)
-	{
-		self.model = string_null;
-		self.solid = SOLID_NOT;
-	}
 
-	if (deathmatch)
-	{
-		self.nextthink = time + 20;
-		self.think = SUB_regen;
-	}
-	
 	if (!(self.sprawlflags & SFLI_TARGETSFIRED))
 	{
 		self.sprawlflags |= SFLI_TARGETSFIRED;
 		activator = other;
 		SUB_UseTargets(); // fire all targets / killtargets
 	}
+	
+	// wait > 0 == item respawns, either from deathmatch rules or entity keyvalue
+	if (self.wait > 0)
+	{
+		if (self.healamount < 1)
+		{
+			self.alpha = 0.2;
+			self.solid = SOLID_NOT;
+		}
+		
+		self.sprawlflags |= SFLI_SETHEALTH;
+		self.think = ItemPrespawn;
+		self.attack_finished = time + self.wait;
+		self.nextthink = self.attack_finished - FLICK_TIME;
+	}
+	// wait -1 == respawn every time the item is triggered
+	else if (self.wait < 0 || self.use == SUB_regen)	// maintain old respawn hacks
+	{
+		self.model = string_null;
+		self.solid = SOLID_NOT;
+		if (self.use != SUB_regen)
+			self.use = ItemUse;
+	}
+	else if (self.healamount < 1)
+		SUB_RemoveSoon();
+
+	playercount_convert(count);
+	if (self.count > 0)		// only respawn 'count' more times
+		self.count = self.count - 1;
+
+	if (self.count < 1)
+		SUB_RemoveSoon();	// can't remove during c touch/movement code
 };	
 
 void() restoreTouch_health =
@@ -289,36 +301,13 @@ void() restoreTouch_health =
 	self.touch = health_touch;
 };
 
-void() item_megahealth_rot =
-{
-	other = self.owner;
-	
-	if (other.health > other.max_health)
-	{
-		other.health = other.health - 1;
-		self.nextthink = time + 1.5;
-
-		return;
-	}
-
-	// it is possible for a player to die and respawn between rots, so don't
-	// just blindly subtract the flag off
-	other.items = other.items - (other.items & IT_SUPERHEALTH);
-	
-	if (deathmatch == 1)	// deathmatch 2 is silly old rules
-	{
-		self.nextthink = time + 20;
-		self.think = SUB_regen;
-	}
-};
-
 void() item_slowheal =
 {
-	if (self.owner.deadflag)
+	if (self.owner.deadflag || self.healamount < 1)
+	{
+		remove(self);
 		return;
-	
-	if (self.healamount < 1)
-		return;
+	}
 	
 	if (self.owner.health < self.owner.max_health)
 		self.owner.health++;
@@ -336,9 +325,10 @@ ARMOR
 
 void() armor_touch =
 {
-	local	float	type, value;
-	local string str;
+	float type, value;
+	string str;
 
+	if ( !CheckValidTouch() ) return;
 	type = 1;
 	value = 100;
 	
@@ -388,14 +378,6 @@ void() armor_touch =
 	else other.armorvalue = value;
 	other.items |= IT_ARMOR;
 
-	self.solid = SOLID_NOT;
-	self.model = string_null;
-
-	if (deathmatch == 1)
-		self.nextthink = time + 20;
-
-	self.think = SUB_regen;
-
 	//sprint(other, "You got armor\n");
 	sprint(other, str);
 	// armor touch sound
@@ -405,8 +387,7 @@ void() armor_touch =
 		sound(other, CHAN_ITEM, "items/armorvest2.wav", 1, ATTN_NORM);
 	stuffcmd (other, "bfar\n");
 	
-	activator = other;
-	SUB_UseTargets();				// fire all targets / killtargets
+	ItemTouched();
 };
 
 
@@ -453,23 +434,27 @@ WEAPONS
 
 ===============================================================================
 */
+void(entity who)bound_ammo =
+{
+	if (who.ammo_shells > MAX_SHELLS)
+		who.ammo_shells = MAX_SHELLS;
+
+	if (who.ammo_nails > MAX_NAILS)
+		who.ammo_nails = MAX_NAILS;
+
+	if (who.ammo_rockets > MAX_ROCKETS)
+		who.ammo_rockets = MAX_ROCKETS;		
+
+	if (who.ammo_cells > MAX_CELLS)
+		who.ammo_cells = MAX_CELLS;
+	
+	if (who.ammo_bullets > MAX_BULLETS)
+		who.ammo_bullets = MAX_BULLETS;
+};
 
 void() bound_other_ammo =
 {
-	if (other.ammo_shells > MAX_SHELLS)
-		other.ammo_shells = MAX_SHELLS;
-
-	if (other.ammo_nails > MAX_NAILS)
-		other.ammo_nails = MAX_NAILS;
-
-	if (other.ammo_rockets > MAX_ROCKETS)
-		other.ammo_rockets = MAX_ROCKETS;		
-
-	if (other.ammo_cells > MAX_CELLS)
-		other.ammo_cells = MAX_CELLS;
-	
-	if (other.ammo_bullets > MAX_BULLETS)
-		other.ammo_bullets = MAX_BULLETS;
+	bound_ammo(other);
 };
 
 
@@ -545,7 +530,7 @@ float() W_BestWeapon;
 
 void() weapon_touch =
 {
-	local	float	hadammo, new, old;
+	local	float	new, old;
 	local	float	leave;
 
 	new = other.items;
@@ -564,9 +549,8 @@ void() weapon_touch =
 		if (leave && (other.items & IT_SMGS) )
 			return;
 
-		hadammo = other.ammo_nails;			
 		new = IT_SMGS;
-		other.ammo_nails = other.ammo_nails + 30;
+		other.ammo_nails = other.ammo_nails + 100;
 	}
 
 	else if (self.classname == "weapon_supernailgun")
@@ -574,17 +558,25 @@ void() weapon_touch =
 		if (leave && (other.items & IT_CHAINGUN) )
 			return;
 
-		hadammo = other.ammo_rockets;			
 		new = IT_CHAINGUN;
-		other.ammo_bullets = other.ammo_bullets + 21;
+		other.ammo_bullets = other.ammo_bullets + 50;
 	}
+	
+	else if (self.classname == "weapon_shotgun")
+	{
+		if (leave && (other.items & IT_PISTOL) )
+			return;
 
+		new = IT_PISTOL | IT_SUPER_SHOTGUN;
+		other.ammo_shells = other.ammo_shells + 10;
+		other.ammo_nails = other.ammo_nails + 50;
+	}
+	
 	else if (self.classname == "weapon_supershotgun")
 	{
 		if (leave && (other.items & IT_SUPER_SHOTGUN) )
 			return;
 
-		hadammo = other.ammo_rockets;			
 		new = IT_SUPER_SHOTGUN;
 		other.ammo_shells = other.ammo_shells + 10;
 	}
@@ -594,7 +586,6 @@ void() weapon_touch =
 		if (leave && (other.items & IT_GAUSS) )
 			return;
 
-		hadammo = other.ammo_rockets;			
 		new = IT_GAUSS;
 		other.ammo_cells = other.ammo_cells + 10;
 	}
@@ -604,7 +595,6 @@ void() weapon_touch =
 		if (leave && (other.items & IT_GRENADE_LAUNCHER) )
 			return;
 
-		hadammo = other.ammo_rockets;			
 		new = IT_GRENADE_LAUNCHER;
 		other.ammo_rockets = other.ammo_rockets + 6;
 	}
@@ -614,7 +604,6 @@ void() weapon_touch =
 		if (leave && (other.items & IT_SHOCK) )
 			return;
 
-		hadammo = other.ammo_rockets;			
 		new = IT_SHOCK;
 		other.ammo_cells = other.ammo_cells + 16;
 	}
@@ -653,6 +642,16 @@ void() weapon_touch =
 
 
 /*QUAKED weapon_supershotgun (0 .5 .8) (-16 -16 0) (16 16 32)*/
+void() weapon_shotgun =
+{
+	precache_model ("progs/g_shotgun.mdl");
+	setmodel (self, "progs/g_shotgun.mdl");
+	self.weapon = IT_SUPER_SHOTGUN | IT_PISTOL;
+	self.netname = "Megatech A8";
+	self.touch = weapon_touch;
+	setsize (self, '-16 -16 0', '16 16 56');
+	StartItem ();
+};
 
 void() weapon_supershotgun =
 {
@@ -808,13 +807,12 @@ void (entity who, float number)printgoldnum =
 void() ammo_touch =
 {
 	float deficit;
-	if (!(other.flags & FL_CLIENT))
-		return;
-
-	if (other.health <= 0)
+	
+	if (!CheckValidTouch())
 		return;
 	
-	if (self.fA > time) // just took from the box, wait a bit
+// we just took some ammo from this box already, wait a bit to try again
+	if (self.fA > time) 
 		return;
 
 // shotgun
@@ -937,36 +935,64 @@ void() ammo_touch =
 
 	// if changed current ammo, update it
 	setAmmo(other);
-	
+		
+// we took ammo, set frame, now we need to fire targets and queue the respan
+// if all the ammo was taken we have to make entity untouchable
+
+//----------------- ItemTouched() expanded ---------------------------------
 	if (!(self.sprawlflags & SFLI_TARGETSFIRED))
 	{
-	// fire all targets / killtargets
-		activator = other;
-		SUB_UseTargets();				
 		self.sprawlflags |= SFLI_TARGETSFIRED;
+		activator = other;
+		SUB_UseTargets(); // fire all targets / killtargets
 	}
-	
-	if (self.aflag > 0)
+// launch respawn logic
+	if (self.wait > 0)
 	{
-		// next time we can touch this
-		self.effects |= EF_NOLERP;
-		self.fA = time + 0.5;
+	// no ammo left, become transparent
+		if (self.aflag < 1)
+		{
+			self.frame = self.fC; // reset frame right away
+			self.alpha = 0.2;
+			self.solid = SOLID_NOT;
+		}
+	// setup respawn
+		self.sprawlflags |= SFLI_SETAMMO;
+		self.attack_finished = time + self.wait;
+		self.think = ItemPrespawn;
+		self.nextthink = self.attack_finished - FLICK_TIME;
+	}
+// wait -1 == respawn every time the item is triggered
+	else if (self.wait < 0 || self.use == SUB_regen)	// maintain old respawn hacks
+	{
+		self.model = string_null;
+		self.solid = SOLID_NOT;
+		
+		if (self.use != SUB_regen)
+			self.use = ItemUse;
+	}
+// no ammo left, remove
+	else if (self.aflag < 1)
+		SUB_RemoveSoon();
+	
+// extra count for coop
+	playercount_convert(count);
+// decrease
+	if (self.count > 0)		// only respawn 'count' more times
+		self.count = self.count - 1;
+// OUT OF CHARGES REMOVE	
+	if (self.count < 1)
+	{
+		self.touch = SUB_Null;
+		SUB_RemoveSoon();	// can't remove during c touch/movement code
 		return;
 	}
-		
-	// remove it in single player, or setup for respawning in deathmatch
-	self.model = string_null;
-	self.solid = SOLID_NOT;
 
-	if (deathmatch == 1)
+// pause touch for a bit
+	if (self.aflag > 0)
 	{
-		self.nextthink = time + 30;
-		self.think = SUB_regen;
-	}
-	else
-	{
-		self.nextthink = time + 0.1;
-		self.think = SUB_Remove;
+		self.effects |= EF_NOLERP; // change frame without interpolation
+		self.fA = time + 0.5; // next time we can touch this
 	}
 };
 
@@ -1014,19 +1040,21 @@ void() item_shells =
 	
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		self.aflag = 16;
-		self.frame = 0; // 16 - 0
+		self.fB = self.aflag = 16;
+		self.fC = self.frame = 0; // 16 - 0
 	}
 
 	else
 	{
-		self.aflag = 8;
-		self.frame = 8; // 16 - 8
+		self.fB = self.aflag = 8;
+		self.fC = self.frame = 8; // 16 - 8
 	}
 
 	self.weapon = 1;
 	self.netname = "shotgun shells";
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
 	StartItem ();
 };
 
@@ -1041,18 +1069,20 @@ void() item_spikes =
 	if (self.spawnflags & WEAPON_BIG2)
 	{
 		setmodel (self, "progs/ammo/nails_big.mdl");
-		self.aflag = 100;
+		self.fB = self.aflag = 100;
 	}
 
 	else
 	{
 		setmodel (self, "progs/ammo/nails.mdl");
-		self.aflag = 50;
+		self.fB = self.aflag = 50;
 	}
-
+	
 	self.weapon = 2;
 	self.netname = "pistol rounds";
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
 	StartItem ();
 };
 
@@ -1067,18 +1097,20 @@ void() item_rockets =
 	
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		self.aflag = 6;
-		self.frame = 0; // 6 - 0
+		self.fB = self.aflag = 6;
+		self.fC = self.frame = 0; // 6 - 0
 	}
 	else
 	{
-		self.aflag = 2;
-		self.frame = 4; // 6 - 4
+		self.fB = self.aflag = 2;
+		self.fC = self.frame = 4; // 6 - 4
 	}
 
 	self.weapon = 3;
 	self.netname = "grenades";
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
 	StartItem ();
 };
 
@@ -1092,19 +1124,21 @@ void() item_cells =
 	setmodel (self, "progs/ammo/cells.mdl");
 	if (self.spawnflags & WEAPON_BIG2)
 	{
-		self.aflag = 9; // cells provide x3 charges per battery
-		self.frame = 0; // 3 - 0
+		self.fB = self.aflag = 9; // cells provide x3 charges per battery
+		self.fC = self.frame = 0; // 3 - 0
 	}
 
 	else
 	{
-		self.aflag = 3;
-		self.frame = 2; // 3 - 2
+		self.fB = self.aflag = 3;
+		self.fC = self.frame = 2; // 3 - 2
 	}
 
 	self.weapon = 4;
 	self.netname = "energy cells";
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
 	StartItem ();
 };
 
@@ -1118,13 +1152,15 @@ void() item_bullets =
 	setmodel (self, "progs/ammo/bullets.mdl");
 	
 	if (self.spawnflags & WEAPON_BIG2)
-		self.aflag = 40;
+		self.fB = self.aflag = 60;
 	else
-		self.aflag = 20;
+		self.fB = self.aflag = 30;
 
 	self.weapon = 5;
 	self.netname = "high-caiber rounds";
 	setsize (self, '0 0 0', '32 32 56');
+	self.extra_mins = '0 0 0';
+	self.extra_maxs = '32 32 56';
 	StartItem ();
 };
 
@@ -1184,7 +1220,7 @@ KEYS
 
 ===============================================================================
 */
-
+/*
 void() key_touch =
 {
 	if (other.classname != "player")
@@ -1235,7 +1271,7 @@ void() key_setsounds =
 		self.noise = "misc/basekey.wav";
 	}
 };
-
+*/
 /*QUAKED item_key1 (0 .5 .8) (-16 -16 -24) (16 16 32)
 SILVER key
 In order for keys to work
@@ -1245,7 +1281,7 @@ following:
 0: medieval
 1: metal
 2: base*/
-
+/*
 void() item_key1 =
 {
 	if (world.worldtype == 0)
@@ -1275,7 +1311,7 @@ void() item_key1 =
 	setsize (self, '-16 -16 -24', '16 16 32');
 	StartItem ();
 };
-
+*/
 /*QUAKED item_key2 (0 .5 .8) (-16 -16 -24) (16 16 32)
 GOLD key
 In order for keys to work
@@ -1285,7 +1321,7 @@ following:
 0: medieval
 1: metal
 2: base*/
-
+/*
 void() item_key2 =
 {
 	if (world.worldtype == 0)
@@ -1317,7 +1353,7 @@ void() item_key2 =
 };
 
 
-
+*/
 /*
 ===============================================================================
 
@@ -1325,7 +1361,7 @@ END OF LEVEL RUNES
 
 ===============================================================================
 */
-
+/*
 void() sigil_touch =
 {
 
@@ -1348,11 +1384,11 @@ void() sigil_touch =
 	SUB_UseTargets();				// fire all targets / killtargets
 };
 
-
+*/
 /*QUAKED item_sigil (0 .5 .8) (-16 -16 -24) (16 16 32) E1 E2 E3 E4
 End of level sigil, pick up to end episode and return to jrstart.
 */
-
+/*
 void() item_sigil =
 {
 	if (!self.spawnflags)
@@ -1389,7 +1425,7 @@ void() item_sigil =
 	setsize (self, '-16 -16 -24', '16 16 32');
 	StartItem ();
 };
-
+*/
 /*
 ===============================================================================
 
@@ -1398,17 +1434,9 @@ POWERUPS
 ===============================================================================
 */
 
-void() powerup_touch;
-
-
 void() powerup_touch =
 {
-
-	if (other.classname != "player")
-		return;
-
-	if (other.health <= 0)
-		return;
+	if ( !CheckValidTouch() ) return;
 
 	sprint (other, "You got the ");
 	sprint (other, self.netname);
@@ -1428,9 +1456,7 @@ void() powerup_touch =
 
 	sound (other, CHAN_AUTO, self.noise, 1, ATTN_NONE);
 	stuffcmd (other, "bf\n");
-	self.solid = SOLID_NOT;
 	other.items = other.items | self.items;
-	self.model = string_null;
 
 	// do the apropriate action
 	if (self.classname == "item_artifact_envirosuit")
@@ -1438,27 +1464,23 @@ void() powerup_touch =
 		other.rad_time = 1;
 		other.radsuit_finished = time + 30;
 	}
-	
-	if (self.classname == "item_artifact_invulnerability")
+	else if (self.classname == "item_artifact_invulnerability")
 	{
 		other.invincible_time = 1;
 		other.invincible_finished = time + 30;
 	}
-	
-	if (self.classname == "item_artifact_invisibility")
+	else if (self.classname == "item_artifact_invisibility")
 	{
 		other.invisible_time = 1;
 		other.invisible_finished = time + 30;
 	}
-
-	if (self.classname == "item_artifact_super_damage")
+	else if (self.classname == "item_artifact_super_damage")
 	{
 		other.super_time = 1;
 		other.super_damage_finished = time + 30;
 	}	
 
-	activator = other;
-	SUB_UseTargets();				// fire all targets / killtargets
+	ItemTouched();
 };
 
 
@@ -1545,7 +1567,7 @@ PLAYER BACKPACKS
 
 ===============================================================================
 */
-
+/* b b b b b b b b b b b b b b b b b b b b b b b b (my cat sends this)
 //the entirety of BackpackTouch
 //copypasta'd directly from gpl'd qw source on github.
 void() BackpackTouch =
@@ -1574,14 +1596,6 @@ void() BackpackTouch =
 			sprint (other, self.netname);
 		}
  	}
-
-/*
-	// if the player was using his best weapon, change up to the new one if better  
-	stemp = self;
-	self = other;
-	best = W_BestWeapon();
-	self = stemp;
-*/
 
 	// change weapons
 	other.ammo_shells = other.ammo_shells + self.ammo_shells;
@@ -1650,29 +1664,14 @@ void() BackpackTouch =
 	remove(self);
 	self = other;
 	
-	// change to the weapon
-	/*
-		if (self.flags & FL_INWATER)
-		{
-			if (new != IT_SHOCK)
-			{
-				Deathmatch_Weapon (old, new);
-			}
-		}
-
-		else
-		{                
-			Deathmatch_Weapon (old, new);
-		}
-	*/
 	//W_SetCurrentAmmo ();
 
 };
 
 
-/*===============
-DropBackpack
-===============*/
+//===============
+//DropBackpack
+//===============
 void() DropBackpack =
 {
 	local entity    item;
@@ -1707,7 +1706,7 @@ void() DropBackpack =
 	item.nextthink = time + 120;    // remove after 2 minutes
 	item.think = SUB_Remove;
 };
-
+*/
 #define DROP_SHELLS 1
 #define DROP_NAILS 2
 #define DROP_ROCKETS 3

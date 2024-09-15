@@ -183,8 +183,9 @@ void(float losthead = 0) OgreFireGrenade =
 	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
 	
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.sprawlflags = SFLP_OGRE; // used when player shoots it
-	missile.isgrenade = 1; // mark as target for grenade shooting
+	//missile.isgrenade = 1; // mark as target for grenade shooting
 	appendToList(missile);
 	
 	missile.owner = self;
@@ -224,13 +225,14 @@ void() OgreFirePain =
 	
 	makevectors2(self.angles);
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
 	missile.touch = OgreGrenadeTouch;
 	missile.nextthink = time + 0.5 + random() * 2;
 	missile.think = OgreGrenadeExplode;
-	missile.isgrenade = 1;
+	//missile.isgrenade = 1;
 	appendToList(missile);
 	setmodel (missile, "progs/grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');
@@ -809,48 +811,20 @@ void() ogre_die =
 /*QUAKED monster_ogre (1 0 0) (-32 -32 -24) (32 32 64) Ambush
 
 */
-void() monster_ogre =
+void() monster_ogre_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-
-	precache_model ("progs/ogre.mdl");
-	precache_model ("progs/h_ogre.mdl");
-	precache_model ("progs/ogre_headless.mdl");
-	precache_model ("progs/ogre_noweapon.mdl");
-	precache_model ("progs/ogre_strip.mdl");
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_ogre";
 	
-	precache_model ("progs/ogre_gib_hand.mdl");
-	precache_model ("progs/ogre_gib_leg.mdl");
-	precache_model ("progs/ogre_gib_plate.mdl");
-
-	precache_model ("progs/grenade.mdl");
-	precache_model ("progs/p_grenade.mdl");
-	precache_sound ("weapons/pl_explode.wav");
-
-	precache_sound ("ogre/ogdrag.wav");
-	precache_sound ("ogre/ogdth.wav");
-	precache_sound ("ogre/ogidle.wav");
-	precache_sound ("ogre/ogidle2.wav");
-	precache_sound ("ogre/ogpain1.wav");
-	precache_sound ("ogre/ogsawatk.wav");
-	precache_sound ("ogre/ogwake.wav");
-
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/ogre.mdl");
+	setsize (self, '-32 -32 -24', '32 32 48');
 
-	//gnounc
 	self.noise = "ogre/ogwake.wav";	//gnounc
 	self.netname = "Ogre";
-	//self.info_name = "Light Mech o.h.G.r.";
 	self.killstring = " was destroyed by the OhGr\n";
-
-	setsize (self, '-32 -32 -24', '32 32 48');
 	self.head_offset = '3 2 45';
 	self.head_size = 16;
 	self.health = OGRE_HEALTH;
@@ -863,7 +837,6 @@ void() monster_ogre =
 	self.state = OGRE_SNIPER;
 	self.yaw_speed = 15;
 	self.skinchange = 1;
-	
 	self.th_stand = ogre_stand1;
 	self.th_walk = ogre_walk1;
 	self.th_run = ogre_run;
@@ -875,9 +848,50 @@ void() monster_ogre =
 	walkmonster_start();
 };
 
+void() monster_ogre_spawner = 
+{
+	mon_spawner_use(monster_ogre_spawn);
+}
+
+void() monster_ogre =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/ogre.mdl");
+	precache_model ("progs/h_ogre.mdl");
+	precache_model ("progs/ogre_headless.mdl");
+	precache_model ("progs/ogre_noweapon.mdl");
+	precache_model ("progs/ogre_strip.mdl");
+	precache_model ("progs/ogre_gib_hand.mdl");
+	precache_model ("progs/ogre_gib_leg.mdl");
+	precache_model ("progs/ogre_gib_plate.mdl");
+	precache_model ("progs/grenade.mdl");
+	precache_model ("progs/p_grenade.mdl");
+	precache_sound ("weapons/pl_explode.wav");
+	precache_sound ("ogre/ogdrag.wav");
+	precache_sound ("ogre/ogdth.wav");
+	precache_sound ("ogre/ogidle.wav");
+	precache_sound ("ogre/ogidle2.wav");
+	precache_sound ("ogre/ogpain1.wav");
+	precache_sound ("ogre/ogsawatk.wav");
+	precache_sound ("ogre/ogwake.wav");
+
+	setsize (self, '-32 -32 -24', '32 32 48'); // set for telefrag check
+	self.health = OGRE_HEALTH;
+	if ( monster_spawnsetup( monster_ogre_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_ogre_spawn();
+};
+
 void() monster_ogre_marksman =
 {
 	monster_ogre ();
 };
-
-

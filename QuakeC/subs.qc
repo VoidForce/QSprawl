@@ -27,6 +27,7 @@ void() SUB_Remove = {remove(self);};
 
 /*QuakeEd only writes a single float for angles (bad idea), so up and down are
 just constant angles.*/
+/* copper
 void() SetMovedir =
 {
 	if (self.angles == '0 -1 0')
@@ -43,12 +44,13 @@ void() SetMovedir =
 	
 	self.angles = '0 0 0';
 };
-
+*/
 /*
 ================
 InitTrigger
 ================
 */
+/* copper
 void() InitTrigger =
 {
 	// trigger angles are used for one-way touches.  An angle of 0 is assumed
@@ -62,7 +64,7 @@ void() InitTrigger =
 	self.modelindex = 0;
 	self.model = string_null;
 };
-
+*/
 /*
 =============
 SUB_CalcMove
@@ -149,6 +151,7 @@ self.angles rotating
 The calling function should make sure self.think is valid
 ===============
 */
+/* used copper ones
 void(entity ent, vector destangle, float tspeed, void() func) SUB_CalcAngleMoveEnt =
 {
 	local entity		stemp;
@@ -185,12 +188,13 @@ void(vector destangle, float tspeed, void() func) SUB_CalcAngleMove =
 	self.finalangle = destangle;
 	self.think = SUB_CalcAngleMoveDone;
 };
-
+*/
 /*
 ============
 After rotating, set angle to exact final angle
 ============
 */
+/*
 void() SUB_CalcAngleMoveDone =
 {
 	self.angles = self.finalangle;
@@ -200,17 +204,17 @@ void() SUB_CalcAngleMoveDone =
 	if (self.think1)
 		self.think1();
 };
-
+*/
 
 //=============================================================================
-
+/*
 void() DelayThink =
 {
 	activator = self.enemy;
 	SUB_UseTargets ();
 	remove(self);
 };
-
+*/
 /*
 ==============================
 SUB_UseTargets
@@ -230,6 +234,7 @@ match (string)self.target and call their .use function
 
 ==============================
 */
+/*
 void() SUB_UseTargets =
 {
 	local entity t, act, stemp, otemp;
@@ -315,7 +320,7 @@ void() SUB_UseTargets =
 	}	
 
 };
-
+*/
 /*in nightmare mode, all attack_finished times become 0
 some monsters refire twice automatically*/
 
@@ -371,8 +376,8 @@ string getNetname(float item_number) =
 		//	return "Combat Armor";
 		//case IT_ARMOR3:
 		//	return "Assault Armor";
-		case IT_SUPERHEALTH:
-			return "Mega Health";
+		//case IT_SUPERHEALTH:
+		//	return "Mega Health";
 		case IT_KEY1:
 		{	if (world.worldtype == 0)
 				return "Silver key";
@@ -517,7 +522,7 @@ float getAmmotypeByWeapon(float it_num)
 			return IT_SHELLS;
 	}
 };
-
+/*
 string getModelByNum(float it_num)
 {
 	switch(it_num)
@@ -588,7 +593,7 @@ string getModelByNum(float it_num)
 			return string_null;
 	}
 };
-
+*/
 // copper mod's code for easier dprints (by Lunaran)
 void(string s, string ss) dprint2 = 
 	{ dprint(s); dprint(ss); }
@@ -720,7 +725,7 @@ void weaponThink(void() thinkfunc, float timer) =
 	self.nextthink = time + timer;
 };
 
-void runAsSelf(entity who, .void() what) =
+void runAsSelfField(entity who, .void() what) =
 {
 	local entity oldself;
 	
@@ -730,6 +735,15 @@ void runAsSelf(entity who, .void() what) =
 	self = oldself;
 };
 
+void runAsSelf(entity who, void() what) =
+{
+	local entity oldself;
+	
+	oldself = self;
+	self = who;
+	what();
+	self = oldself;
+};
 
 vector(float dm) VelocityForDamage =
 {
@@ -1010,3 +1024,23 @@ void(float angle, float dist, float step = 4) walkmove_step =
 	}
 }
 */
+
+void(float count = 1) addMonsters =
+{
+	count = max(count, 1);
+	total_monsters = total_monsters + count;
+	
+	WriteByte (MSG_ALL, SVC_UPDATESTAT);
+	WriteByte (MSG_ALL, STAT_TOTALMONSTERS);
+	WriteLong (MSG_ALL, total_monsters);
+};
+
+void(float count = 1) removeMonsters =
+{
+	count = max(count, 1);
+	total_monsters = total_monsters + count;
+	
+	WriteByte (MSG_ALL, SVC_UPDATESTAT);
+	WriteByte (MSG_ALL, STAT_TOTALMONSTERS);
+	WriteLong (MSG_ALL, total_monsters);
+};

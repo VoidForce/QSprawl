@@ -1,0 +1,1 @@
+float		trig_cdtrack;		// Trigger changed CD track

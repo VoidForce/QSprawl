@@ -392,86 +392,20 @@ void() worldspawn =
 
 void() StartFrame =
 {
-	//teamplay = cvar("teamplay"); // qSprawl is single player only, don't bother to updated
+	if (cleanUpClientShit)
+		cleanUpClientShit -= 1;
+	else if (!gamestarted && framecount > 2)
+	{
+		if (framecount != 3)
+			cleanUpClientShit += 2;
+		
+		gamestarted = TRUE;
+	}
+	
 	skill = cvar("skill");
+	teamplay = cvar("teamplay");
 	framecount = framecount + 1;
-	
-	//SlowMotionLogic();
 };
-
-/*
-	SLOWMO_VALUE = 0.4; 		// 40% time speed
-	SLOWMO_FADE_TIME = 0.25;	// transition will take quarter of a second
-	SLOWMO_FADE_HELPER = 4;		// is 1/SLOWMO_FADE_TIME
-
-enumflags SLOWMOSTATE {
-	SLOWMO_OFF = 0,
-	SLOWMO_ON = 1,
-	SLOWMO_DESIRE_ON,
-	SLOWMO_DESIRE_OFF,
-	SLOWMO_FORCE_OFF,
-};
-
-float	slowmotion;		// flags based?
-float	slowmotion_time;
-float	slowmotion_event_time;
-float	slowmotion_cooldown;
-*/
-
-/*
-	Moved here from player's frame logic, so now it's not dependant on a single client.
-	In addition to that it allows us to play slowmotion events for the whole server, random or deliberate
-*/
-/*
-void() SlowMotionLogic =
-{
-	
-	float value;
-	
-// nothing to do here really
-	if (!slowmotion_flags)
-		return;
-	
-// intermission/death shuts any slow motion immediately
-	if (slowmotion_flags & SLOWMO_FORCE_OFF && slowmotion)
-	{
-		slowmotion = SLOWMO_OFF;
-		slowmotion_transition_time = 0;
-		slowmotion_event_time = 0;
-		slowmotion_cooldown = 99999; // no events fun allowed until next map
-		changeSkinsSlowmo(SKIN_DEFAULT);
-		change_timescale(0);
-		return;
-	}
-
-// during events we don't care about player's actions at all
-	if (slowmotion_event_time > time)
-	{
-	// first time after flag was set, events have no fadein transition and is instant
-	// remember that player's desire sets slowmotion to ON state during fade in transition
-		if (!slowmotion)
-		{
-			slowmotion = SLOWMO_ON;
-			slowmotion_transition_time = 0;
-			change_timescale(SLOWMO_VALUE); // immediate set, no fade in transition
-			changeSkinsSlowmo(SKIN_GLOW); 	// make crit spots (heads) glow
-			return;
-		}
-	// event is over, and player doesn't want to continue
-		else if (slowmotion_event_time < time && !(slowmotion & SLOWMO_DESIRE_ON))
-		{
-			slowmotion |= SLOWMO_TRANSITION;
-			slowmotion_event_time = 0;
-			slowmotion_transition_time = time + SLOWMO_FADE_TIME;
-			value = lerp(1.0, SLOWMO_VALUE, (slowmotion_transition_time - time) * SLOWMO_FADE_HELPER);
-			change_timescale(value);
-		// strip event flag immediately, because we want to catch player's inputs during fade out transition, in the next frame
-			removeflag(slowmotion, SLOWMO_EVENT);
-			return;
-		}
-	}
-	
-};*/
 
 void(float targetskin) changeSkinsSlowmo =
 {

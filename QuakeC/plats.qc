@@ -18,14 +18,8 @@
 */
 
 
-void() plat_center_touch;
-void() plat_outside_touch;
-void() plat_trigger_use;
-void() plat_go_up;
-void() plat_go_down;
-void() plat_crush;
 float PLAT_LOW_TRIGGER = 1;
-
+/*
 void() plat_spawn_inside_trigger =
 {
 	local entity	trigger;
@@ -155,7 +149,7 @@ void() plat_use =
 	plat_go_down();
 };
 
-
+*/
 /*QUAKED func_plat (0 .5 .8) ? PLAT_LOW_TRIGGER
 speed	default 150
 
@@ -169,7 +163,7 @@ Set "sounds" to one of the following:
 2) chain slow
 */
 
-
+/*
 void() func_plat =
 {
 	if (!self.t_length)
@@ -313,7 +307,7 @@ void() func_train_find =
 		self.think = train_next;
 	}
 };
-
+*/
 /*QUAKED func_train (0 .5 .8) ?
 Trains are moving platforms that players can ride.
 The targets origin specifies the min point of the train at each corner.
@@ -325,6 +319,7 @@ sounds
 1) ratchet metal
 
 */
+/*
 void() func_train =
 {	
 	if (!self.speed)
@@ -369,10 +364,11 @@ void() func_train =
 	self.nextthink = self.ltime + 0.1;
 	self.think = func_train_find;
 };
-
+*/
 /*QUAKED misc_teleporttrain (0 .5 .8) (-8 -8 -8) (8 8 8)
 This is used for the final bos
 */
+/*
 void() misc_teleporttrain =
 {	
 	if (!self.speed)
@@ -403,4 +399,4 @@ void() misc_teleporttrain =
 	self.nextthink = self.ltime + 0.1;
 	self.think = func_train_find;
 };
-
+*/

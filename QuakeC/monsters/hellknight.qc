@@ -468,42 +468,20 @@ void() hknight_die =
 };
 
 /*QUAKED monster_hell_knight (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
-void() monster_hell_knight =
+void() monster_hell_knight_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-
-	precache_model2 ("progs/hknight.mdl");
-	precache_model2 ("progs/hknight_trail.mdl");
-	precache_model2 ("progs/hknight_headless.mdl"); 
-	precache_model2 ("progs/h_hellkn.mdl");
-
-	precache_sound2 ("hknight/attack1.wav");
-	precache_sound2 ("hknight/death1.wav");
-	precache_sound2 ("hknight/pain1.wav");
-	precache_sound2 ("hknight/sight1.wav");
-	precache_sound ("hknight/hit.wav");		// used by C code, so don't sound2
-	precache_sound2 ("hknight/idle.wav");
-	precache_sound2 ("hknight/grunt.wav");
-
-	precache_sound ("knight/sword1.wav");
-	precache_sound ("knight/sword2.wav");
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_hell_knight";
 	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/hknight.mdl");
-
-	//gnounc
+	setsize (self, '-16 -16 -24', '16 16 40');
+	
 	self.noise = "hknight/sight1.wav";	//gnounc
 	self.netname = "Hell Knight";
-	//self.info_name = " Oni Elite Cyborg";
 	self.killstring = " was slashed to death by Heavy Cyborg\n";
-
-	setsize (self, '-16 -16 -24', '16 16 40'); //40
 	self.head_offset = '9 2 32';
 	self.head_size = 12;
 	self.health = HELLKNIGHT_HEALTH;
@@ -514,7 +492,6 @@ void() monster_hell_knight =
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT | MFL_SYNTH;
 	self.monstertype = TYPE_HELLKNIGHT;
 	self.skinchange = 1;
-
 	self.th_stand = hknight_stand1;
 	self.th_walk = hknight_walk1;
 	self.th_run = hknight_run1;
@@ -524,4 +501,42 @@ void() monster_hell_knight =
 	self.th_die = hknight_die;
 		
 	walkmonster_start ();
+};
+
+void() monster_hell_knight_spawner = 
+{
+	mon_spawner_use(monster_hell_knight_spawn);
+};
+
+void() monster_hell_knight =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model2 ("progs/hknight.mdl");
+	precache_model2 ("progs/hknight_trail.mdl");
+	precache_model2 ("progs/hknight_headless.mdl"); 
+	precache_model2 ("progs/h_hellkn.mdl");
+	precache_sound2 ("hknight/attack1.wav");
+	precache_sound2 ("hknight/death1.wav");
+	precache_sound2 ("hknight/pain1.wav");
+	precache_sound2 ("hknight/sight1.wav");
+	precache_sound2 ("hknight/idle.wav");
+	precache_sound2 ("hknight/grunt.wav");
+	precache_sound ("hknight/hit.wav");		// used by C code, so don't sound2
+	precache_sound ("knight/sword1.wav");
+	precache_sound ("knight/sword2.wav");
+	
+	setsize (self, '-16 -16 -24', '16 16 40'); // set for telefrag check
+	self.health = HELLKNIGHT_HEALTH;
+	if ( monster_spawnsetup( monster_hell_knight_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_hell_knight_spawn();
 };

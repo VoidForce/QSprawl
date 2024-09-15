@@ -10,6 +10,7 @@ fight.qc
 ai.qc
 combat.qc
 items.qc
+items_replacements.qc	// dwell
 weapons.qc
 world.qc
 client.qc
@@ -21,6 +22,38 @@ triggers.qc
 plats.qc
 misc.qc
 
+//copper by Lunaran
+copper/defsnconsts.qc
+copper/buttons.qc
+copper/doors.qc
+copper/fog.qc
+copper/fx.qc
+copper/item_keys_runes.qc
+copper/item_backpack.qc
+copper/items.qc
+copper/lights.qc
+copper/maths.qc
+copper/monsters.qc
+copper/misc.qc 
+copper/plats.qc
+copper/projectiles.qc
+copper/shooters.qc
+copper/sound.qc
+copper/subs.qc
+copper/subs_move.qc
+copper/subs_tgt.qc
+copper/t_ctrl.qc
+copper/t_level.qc
+copper/t_tele.qc
+copper/t_void.qc
+copper/triggers.qc
+copper/utility.qc
+copper/walls.qc
+
+//ad by Sock
+ad/ad_defs.qc
+ad/ad_code.qc
+
 monsters/ogre.qc
 monsters/fiend.qc
 monsters/shambler.qc
@@ -31,11 +64,12 @@ monsters/rottweiler.qc
 monsters/zombie.qc
 monsters/chthon.qc
 
-monsters/spawn.qc			// registered
+//monsters/spawn.qc			// registered
 monsters/hellknight.qc		// registered
-monsters/rotfish.qc			// registered
+//monsters/rotfish.qc			// registered
 monsters/vore.qc			// registered
 monsters/enforcer.qc		// registered
 monsters/shub.qc			// registered
 
 monsters/_removed_declarations.qc	// in case of maphacks using some of these
+monsters/_monster_replacements.qc	// vanilla, dwell

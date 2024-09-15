@@ -80,6 +80,7 @@ void(vector org, vector dir) launchShrapnel =
 	local entity shrapnel;
 
 	shrapnel = spawn();
+	shrapnel.clip = CLIP_PROJECTILE;
 	shrapnel.owner = self;
 	shrapnel.movetype = MOVETYPE_FLYMISSILE;
 	shrapnel.solid = SOLID_BBOX;
@@ -352,47 +353,23 @@ void() enf_die =
 
 /*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
 
-void() monster_enforcer =
+void() monster_enforcer_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-	
-	precache_model2 ("progs/enforcer.mdl");
-	precache_model2 ("progs/enforcer_headless.mdl");
-	
-	precache_model2 ("progs/h_enf.mdl");
-	//precache_model2 ("progs/laser.mdl");
-	precache_sound ("soldier/sattck1.wav");
-
-	precache_sound2 ("enforcer/death1.wav");
-	//precache_sound2 ("enforcer/enfire.wav");
-	//precache_sound2 ("enforcer/enfstop.wav");
-	precache_sound2 ("enforcer/idle1.wav");
-	precache_sound2 ("enforcer/pain1.wav");
-	precache_sound2 ("enforcer/pain2.wav");
-	precache_sound2 ("enforcer/sight1.wav");
-	precache_sound2 ("enforcer/sight2.wav");
-	precache_sound2 ("enforcer/sight3.wav");
-	precache_sound2 ("enforcer/sight4.wav");
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_enforcer";
 	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/enforcer.mdl");
-
-	//gnounc
+	setsize (self, '-16 -16 -24', '16 16 36');//40
+	
 	self.netname = "enforcer";
-	//self.info_name = "     Oni Squad";
 	self.killstring = " was terminated by Oni Squad\n";
 	self.noise = "enforcer/sight1.wav";	//gnounc
 	self.noise1 = "enforcer/sight2.wav";	//gnounc
 	self.noise2 = "enforcer/sight3.wav";	//gnounc
 	self.noise3 = "enforcer/sight4.wav";	//gnounc
-
-	setsize (self, '-16 -16 -24', '16 16 36');//40
 	self.head_offset = '-4 2 29';//'-4 2 29';
 	self.head_size = 12;
 	self.health = ENFORCER_HEALTH;
@@ -403,8 +380,7 @@ void() monster_enforcer =
 	self.monstertype = TYPE_ENFORCER;
 	self.monster_ammo = 6;
 	self.gib_threshold = 75;
-	self.skinchange = 1;
-
+	self.skinchange = 1; // why this is not a flag tho? // Because it's used by findfloat
 	self.th_stand = enf_stand1;
 	self.th_walk = enf_walk1;
 	self.th_run = enf_run1;
@@ -413,4 +389,41 @@ void() monster_enforcer =
 	self.th_missile = enf_atk1;
 		
 	walkmonster_start();
+};
+
+void() monster_enforcer_spawner = 
+{
+	mon_spawner_use(monster_enforcer_spawn);
+};
+
+void() monster_enforcer =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model2 ("progs/enforcer.mdl");
+	precache_model2 ("progs/enforcer_headless.mdl");
+	precache_model2 ("progs/h_enf.mdl");
+	precache_sound ("soldier/sattck1.wav");
+	precache_sound2 ("enforcer/death1.wav");
+	precache_sound2 ("enforcer/idle1.wav");
+	precache_sound2 ("enforcer/pain1.wav");
+	precache_sound2 ("enforcer/pain2.wav");
+	precache_sound2 ("enforcer/sight1.wav");
+	precache_sound2 ("enforcer/sight2.wav");
+	precache_sound2 ("enforcer/sight3.wav");
+	precache_sound2 ("enforcer/sight4.wav");
+
+	setsize (self, '-16 -16 -24', '16 16 36'); // set for telefrag check
+	self.health = ENFORCER_HEALTH;
+	if ( monster_spawnsetup( monster_enforcer_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_enforcer_spawn();
 };

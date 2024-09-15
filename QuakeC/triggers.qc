@@ -17,20 +17,19 @@
     See file, 'COPYING', for details.
 */
 
-entity s;
-
-
+/*
 void() trigger_reactivate =
 {
 	self.solid = SOLID_TRIGGER;
 };
-
+*/
 //=============================================================================
 
 float	SPAWNFLAG_NOMESSAGE = 1;
 float	SPAWNFLAG_NOTOUCH = 1;
 
 // the wait time has passed, so set back up for another activation
+/*
 void() multi_wait =
 {
 	if (self.max_health)
@@ -113,7 +112,7 @@ void() multi_touch =
 	self.enemy = other;
 	multi_trigger ();
 };
-
+*/
 /*QUAKED trigger_multiple (.5 .5 .5) ? notouch
 Variable sized repeatable trigger.  Must be targeted at one or more entities.  If "health" is set, the trigger must be killed to activate each time.
 If "delay" is set, the trigger waits some time after activating before firing.
@@ -127,6 +126,7 @@ sounds
 4)
 set "message" to text string
 */
+/*
 void() trigger_multiple =
 {
 	if (self.sounds == 1)
@@ -173,7 +173,7 @@ void() trigger_multiple =
 		}
 	}
 };
-
+*/
 
 /*QUAKED trigger_once (.5 .5 .5) ? notouch
 Variable sized trigger. Triggers once, then removes itself.  You must set the key "target" to the name of another object in the level that has a matching
@@ -188,22 +188,24 @@ sounds
 4)
 set "message" to text string
 */
+/*
 void() trigger_once =
 {
 	self.wait = -1;
 	trigger_multiple();
 };
-
+*/
 //=============================================================================
 
 /*QUAKED trigger_relay (.5 .5 .5) (-8 -8 -8) (8 8 8)
 This fixed size trigger cannot be touched, it can only be fired by other events.  It can contain killtargets, targets, delays, and messages.
 */
+/* replaced with copper implementation
 void() trigger_relay =
 {
 	self.use = SUB_UseTargets;
 };
-
+*/
 
 //=============================================================================
 
@@ -216,6 +218,7 @@ sounds
 4)
 set "message" to text string
 */
+/*
 void() trigger_secret =
 {
 	total_secrets = total_secrets + 1;
@@ -240,10 +243,10 @@ void() trigger_secret =
 
 	trigger_multiple ();
 };
-
+*/
 //=============================================================================
 
-
+/* copper
 void() counter_use =
 {
 	self.count = self.count - 1;
@@ -277,7 +280,7 @@ void() counter_use =
 	self.enemy = activator;
 	multi_trigger ();
 };
-
+*/
 /*QUAKED trigger_counter (.5 .5 .5) ? nomessage
 Acts as an intermediary for an action that takes multiple inputs.
 
@@ -285,6 +288,7 @@ If nomessage is not set, t will print "1 more.. " etc when triggered and "sequen
 
 After the counter has been triggered "count" times (default 2), it will fire all of it's targets and remove itself.
 */
+/*
 void() trigger_counter =
 {
 	self.wait = -1;
@@ -294,6 +298,7 @@ void() trigger_counter =
 
 	self.use = counter_use;
 };
+*/
 
 
 /*
@@ -347,7 +352,8 @@ void(vector org) spawn_tfog =
 	WriteCoord (MSG_BROADCAST, org_z);
 };
 
-
+//trigger spawn teledeath end
+/*
 void() tdeath_touch =
 {
 	if (other == self.owner)
@@ -372,8 +378,8 @@ void() tdeath_touch =
 		T_Damage (other, self, self, 50000, DF_INSTAGIB);
 	}
 };
-
-
+*/
+/* replaced with copper
 void(vector org, entity death_owner) spawn_tdeath =
 {
 	local entity	death;
@@ -392,7 +398,8 @@ void(vector org, entity death_owner) spawn_tdeath =
 	
 	force_retouch = 2;		// make sure even still objects get hit
 };
-
+*/
+/*
 void() teleport_touch =
 {
 	local entity	t;
@@ -457,10 +464,11 @@ void() teleport_touch =
 
 	other.flags = other.flags - other.flags & FL_ONGROUND;
 };
-
+*/
 /*QUAKED info_teleport_destination (.5 .5 .5) (-8 -8 -8) (8 8 32)
 This is the destination marker for a teleporter.  It should have a "targetname" field with the same value as a teleporter's "target" field.
 */
+/* copper
 void() info_teleport_destination =
 {
 	// this does nothing, just serves as a target spot
@@ -472,19 +480,21 @@ void() info_teleport_destination =
 	if (!self.targetname)
 		objerror ("no targetname");
 };
-
+*/
+/*
 void() teleport_use =
 {
 	self.nextthink = time + 0.2;
 	force_retouch = 2;		// make sure even still objects get hit
 	self.think = SUB_Null;
 };
-
+*/
 /*QUAKED trigger_teleport (.5 .5 .5) ? PLAYER_ONLY SILENT
 Any object touching this will be transported to the corresponding info_teleport_destination entity. You must set the "target" field, and create an object with a "targetname" field that matches.
 
 If the trigger_teleport has a targetname, it will only teleport entities when it has been fired.
 */
+/*
 void() trigger_teleport =
 {
 	local vector o;
@@ -504,7 +514,7 @@ void() trigger_teleport =
 		ambientsound (o, "ambience/hum1.wav",0.5 , ATTN_STATIC);
 	}
 };
-
+*/
 /*
 ==============================================================================
 
@@ -512,7 +522,7 @@ trigger_setskill
 
 ==============================================================================
 */
-
+/*
 void() trigger_skill_touch =
 {
 	if (other.classname != "player")
@@ -520,17 +530,18 @@ void() trigger_skill_touch =
 		
 	cvar_set ("skill", self.message);
 };
-
+*/
 /*QUAKED trigger_setskill (.5 .5 .5) ?
 sets skill level to the value of "message".
 Only used on start map.
 */
+/*
 void() trigger_setskill =
 {
 	InitTrigger ();
 	self.touch = trigger_skill_touch;
 };
-
+*/
 
 /*
 ==============================================================================
@@ -539,7 +550,7 @@ ONLY REGISTERED TRIGGERS
 
 ==============================================================================
 */
-
+/*
 void() trigger_onlyregistered_touch =
 {
 	if (other.classname != "player")
@@ -565,19 +576,20 @@ void() trigger_onlyregistered_touch =
 		}
 	}
 };
-
+*/
 /*QUAKED trigger_onlyregistered (.5 .5 .5) ?
 Only fires if playing the registered version, otherwise prints the message
 */
+/*
 void() trigger_onlyregistered =
 {
 	precache_sound ("misc/talk.wav");
 	InitTrigger ();
 	self.touch = trigger_onlyregistered_touch;
 };
-
+*/
 //============================================================================
-
+/*
 void() hurt_on =
 {
 	self.solid = SOLID_TRIGGER;
@@ -596,12 +608,13 @@ void() hurt_touch =
 
 	return;
 };
-
+*/
 /*QUAKED trigger_hurt (.5 .5 .5) ?
 Any object touching this will be hurt
 set dmg to damage amount
 defalt dmg = 5
 */
+/*
 void() trigger_hurt =
 {
 	InitTrigger ();
@@ -610,11 +623,11 @@ void() trigger_hurt =
 	if (!self.dmg)
 		self.dmg = 5;
 };
-
+*/
 //============================================================================
 
 float PUSH_ONCE = 1;
-
+/*
 void() trigger_push_touch =
 {
 	if (other.classname == "grenade")
@@ -637,11 +650,12 @@ void() trigger_push_touch =
 	if (self.spawnflags & PUSH_ONCE)
 		remove(self);
 };
-
+*/
 
 /*QUAKED trigger_push (.5 .5 .5) ? PUSH_ONCE
 Pushes the player
 */
+/*
 void() trigger_push =
 {
 	InitTrigger ();
@@ -651,9 +665,9 @@ void() trigger_push =
 	if (!self.speed)
 		self.speed = 1000;
 };
-
+*/
 //============================================================================
-
+/*
 void() trigger_monsterjump_touch =
 {
 	if ( other.flags & (FL_MONSTER | FL_FLY | FL_SWIM) != FL_MONSTER )
@@ -670,12 +684,13 @@ void() trigger_monsterjump_touch =
 
 	other.velocity_z = self.height;
 };
-
+*/
 /*QUAKED trigger_monsterjump (.5 .5 .5) ?
 Walking monsters that touch this will jump in the direction of the trigger's angle
 "speed" default to 200, the speed thrown forward
 "height" default to 200, the speed thrown upwards
 */
+/*
 void() trigger_monsterjump =
 {
 	if (!self.speed)
@@ -690,4 +705,123 @@ void() trigger_monsterjump =
 	InitTrigger ();
 	self.touch = trigger_monsterjump_touch;
 };
+*/
+//------------------------------------------------------------------------------------------------------------------------
+//trigger spawn teledeath start
+/*
+void() tsdeath_touch =
+{
+	if (other == self.owner)
+		return;
+// frag anyone who teleports in on top of an invincible player
+	if (other.flags & FL_CLIENT)
+	{
+		if (other.invincible_finished > time) //mark for pentragram obituary, pentagram is stronger
+			self.classname = "teledeath2";
+		
+		if (self.owner.flags != FL_CLIENT) // idk why do we check this, it's monster spawn procedure, test this later
+		{	
+		// other monsters explode themselves
+			T_Damage (self.owner, self, self, 50000, DF_INSTAGIB);
+			return;
+		}
+	}
 
+	if (other.health)
+	{
+		if (other.health <= self.owner.health) 
+		{
+		// kill the monsters that is currently in this position, cause it's weaker
+			T_Damage (other, self, self, 50000, DF_INSTAGIB);
+		}
+		else 
+		{
+		// kill monster that wants to spawn, cause it's weaker
+			T_Damage (self.owner, self, self, 50000, DF_INSTAGIB);
+		}
+	}
+};
+
+void(vector org, entity death_owner) spawn_tsdeath =
+{
+	spawn_tfog(org);
+	
+	entity	death;
+	death = spawn();
+	death.classname = "triggerspawndeath";
+	death.movetype = MOVETYPE_NONE;
+	death.solid = SOLID_TRIGGER;
+	death.angles = '0 0 0';
+	setsize (death, death_owner.mins - '1 1 1', death_owner.maxs + '1 1 1');
+	setorigin (death, org);
+	death.touch = tsdeath_touch;
+	death.nextthink = time + 0.2;
+	death.think = SUB_Remove;
+	death.owner = death_owner;
+	
+	force_retouch = 2;		// make sure even still objects get hit
+};
+
+void() teleportIn =
+{
+	spawn_tsdeath(self.origin, self);
+	self.thinkB = SUB_Null;
+	self.nextthinkB = -1;
+};
+
+void() triggerspawn =
+{
+	if (self.think != self.th_spawn) // don't override wait delay timer
+	{
+		self.wait = max(self.wait, 0.2);
+		self.think = self.th_spawn;
+		self.nextthink = time + self.wait;
+		self.thinkB = teleportIn;
+		self.nextthinkB = time + (self.wait - 0.2);
+	}
+};
+
+void() spawnDuplicate =
+{
+//TODO: figure out Delay/Wait without creating a new entity 
+	entity ent_new;
+	
+	ent_new = spawn();//spawncopy(self);
+	ent_new.count = 0;
+	ent_new.health = self.health;
+	ent_new.th_spawn = self.th_spawn;
+	ent_new.mins = self.mins;
+	ent_new.maxs = self.maxs;
+	ent_new.use = SUB_Null; // important!!! this avoids feedback loop that causes edicts flood
+	setorigin(ent_new, self.origin);
+	runAsSelf(ent_new, triggerspawn);
+	//spawn_tfog(self.origin);
+	self.count--;
+	if (self.count < 1)
+		remove(self);
+};
+
+void() initTriggerSpawn = 
+{
+	if (!(self.spawnflags & (SPAWN_TRIGGERSPAWN | SPAWN_TRIGGERSPAWN2))) 
+	{
+		self.th_spawn();
+		return;
+	}
+	
+	if (self.targetname == string_null)
+	{
+		dprint5("WARNING: removed triggered-spawn ", self.classname," with no targetname at ", vtos(self.origin), "\n");
+		remove(self);
+		return;
+	}
+	
+	if (self.count > 0)
+	{
+		self.use = spawnDuplicate;
+		self.copperflags |= CFL_SPAWNER;
+	}
+	else
+		self.use = triggerspawn;
+};
+*/

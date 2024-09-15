@@ -347,7 +347,19 @@ void(float side)	Demon_Melee =
 		
     sound (self, CHAN_WEAPON, "demon/dhit2.wav", 1, ATTN_NORM);
 	T_Damage (self.enemy, self, self, 5 + random() * 3, 0);	
-	T_Push (self.enemy, self, 600, 150);
+	
+	float skillmod;
+	
+	if (skill < 2)
+	{
+		if (skill)
+			skillmod = 0.5;
+		else
+			skillmod = 0.25;
+	}
+	else
+		skillmod = 1;
+	T_Push (self.enemy, self, 600*skillmod, 150*skillmod);
 	addShakeEnt(crandom() * skill * 60, side * (random() + 0.5), side * random(), self.enemy);
 
 	makevectors2 (self.angles);
@@ -357,7 +369,18 @@ void(float side)	Demon_Melee =
 void() Demon_PushTouch =
 {
 	T_Damage (other, self, self, 5, NOFLAGS); 	
-	T_Push (other, self, 600, 150);
+	
+	float skillmod;
+	if (skill < 2)
+	{
+		if (skill)
+			skillmod = 0.5;
+		else
+			skillmod = 0.25;
+	}
+	else
+		skillmod = 1;
+	T_Push (other, self, 600*skillmod, 150*skillmod);
 };
 
 void()	Demon_JumpTouch =
@@ -405,44 +428,27 @@ void()	Demon_JumpTouch =
 };
 
 /*QUAKED monster_demon1 (1 0 0) (-32 -32 -24) (32 32 64) Ambush*/
-void() monster_demon1 =
+void() monster_demon1_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-	precache_model ("progs/demon.mdl");
-	precache_model ("progs/h_demon.mdl");
-	precache_model ("progs/demon_gib_claw.mdl");
-	precache_model ("progs/demon_gib_leg.mdl");
-	precache_model ("progs/demon_gib_ass.mdl");
-
-	precache_sound ("demon/ddeath.wav");
-	precache_sound ("demon/dhit2.wav");
-	precache_sound ("demon/djump.wav");
-	precache_sound ("demon/dpain1.wav");
-	precache_sound ("demon/idle1.wav");
-	precache_sound ("demon/sight2.wav");
-
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_demon1";
+	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
-	//gnounc
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/demon.mdl");
+	setsize (self, '-32 -32 -24', '32 32 50'); // must be set after model is set
+	
 	self.noise = "demon/sight2.wav";
 	self.killstring = " was eviscerated by a robot\n";
-
-	setsize (self, '-32 -32 -24', '32 32 50');
-	//self.info_name = " Megatech Fiend v4";
 	self.head_offset = '19 3 6';
 	self.head_size = 12;
-	self.health = FIEND_HEALTH;
 	self.max_health = FIEND_HEALTH;
 	self.health_head = FIEND_HEAD;
 	self.health_head_max = FIEND_HEAD;
 	self.gib_threshold = 180;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT | MFL_PUSH_RESISTENT;
+	self.copperflags |= CFL_MELEEONLY;
 	self.monstertype = TYPE_FIEND;
 	self.th_stand = demon1_stand1;
 	self.th_walk = demon1_walk1;
@@ -453,4 +459,40 @@ void() monster_demon1 =
 	self.th_pain = demon1_pain;
 		
 	walkmonster_start();
+};
+
+void() monster_demon_spawner = 
+{
+	mon_spawner_use(monster_demon1_spawn);
+};
+
+void() monster_demon1 =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/demon.mdl");
+	precache_model ("progs/h_demon.mdl");
+	precache_model ("progs/demon_gib_claw.mdl");
+	precache_model ("progs/demon_gib_leg.mdl");
+	precache_model ("progs/demon_gib_ass.mdl");
+	precache_sound ("demon/ddeath.wav");
+	precache_sound ("demon/dhit2.wav");
+	precache_sound ("demon/djump.wav");
+	precache_sound ("demon/dpain1.wav");
+	precache_sound ("demon/idle1.wav");
+	precache_sound ("demon/sight2.wav");
+
+	setsize (self, '-32 -32 -24', '32 32 50'); // set for telefrag check
+	self.health = FIEND_HEALTH;
+	if ( monster_spawnsetup( monster_demon_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_demon1_spawn();
 };

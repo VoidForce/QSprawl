@@ -235,6 +235,7 @@ void(vector org, vector vec) LaunchLaser =
 	vec = normalize(vec);
 	
 	newmis = spawn();
+	newmis.clip = CLIP_PROJECTILE;
 	newmis.classname = "army_laser";	//gnounc
 	newmis.owner = self;
 	newmis.movetype = MOVETYPE_FLY;
@@ -401,48 +402,20 @@ void() army_die =
 
 
 /*QUAKED monster_army (1 0 0) (-16 -16 -24) (16 16 40) Ambush*/
-void() monster_army =
+void() monster_army_spawn =
 {	
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_army";
 	
-	precache_sound2 ("enforcer/enfire.wav");
-	precache_sound2 ("enforcer/enfstop.wav");
-	precache_model2 ("progs/laser.mdl");
-	
-	precache_model ("progs/soldier.mdl");
-	precache_model ("progs/soldier_headless.mdl");
-	
-	precache_model ("progs/h_guard.mdl");
-	precache_model ("progs/gib1.mdl");
-	precache_model ("progs/gib2.mdl");
-	precache_model ("progs/gib3.mdl");
-
-	precache_sound ("soldier/death1.wav");
-	precache_sound ("soldier/idle.wav");
-	precache_sound ("soldier/pain1.wav");
-	precache_sound ("soldier/pain2.wav");
-	precache_sound ("soldier/sattck1.wav");
-	precache_sound ("soldier/sight1.wav");
-
-	precache_sound ("player/udeath.wav");		// gib death
-
-
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/soldier.mdl");
-
-	//gnounc
+	setsize (self, '-16 -16 -24', '16 16 32');//40
+	
 	self.noise = "soldier/sight1.wav";	//gnounc
 	self.netname = "Grunt";
-	//self.info_name = "  Military Police";
 	self.killstring = " was shot by Junta's MP\n";
-
-	setsize (self, '-16 -16 -24', '16 16 32');//40
 	self.head_offset = '7 0 20';
 	self.head_size = 12;
 	self.health = SOLDIER_HEALTH;
@@ -461,15 +434,46 @@ void() monster_army =
 	self.th_pain = army_pain;
 	self.th_die = army_die;
 	
-	/*
-	precache_model2 ("progs/sphere.mdl");
-	self.headmodel = spawn();
-	setsize (self.headmodel, '0 0 0', '0 0 0'); 
-	makevectors2(self.angles);
-	setorigin (self.headmodel, self.origin + self.head_offset_x * v_forward + self.head_offset_y * v_right + self.head_offset_z * v_up);
-	setmodel (self.headmodel, "progs/sphere.mdl");
-	self.headmodel.alpha = 0.5;
-	*/
-	
 	walkmonster_start ();
+};
+
+void() monster_army_spawner = 
+{
+	mon_spawner_use(monster_army_spawn);
+};
+
+void() monster_army =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+
+	precache_sound2 ("enforcer/enfire.wav");
+	precache_sound2 ("enforcer/enfstop.wav");
+	precache_model2 ("progs/laser.mdl");
+	precache_model ("progs/soldier.mdl");
+	precache_model ("progs/soldier_headless.mdl");
+	precache_model ("progs/h_guard.mdl");
+	precache_model ("progs/gib1.mdl");
+	precache_model ("progs/gib2.mdl");
+	precache_model ("progs/gib3.mdl");
+	precache_sound ("soldier/death1.wav");
+	precache_sound ("soldier/idle.wav");
+	precache_sound ("soldier/pain1.wav");
+	precache_sound ("soldier/pain2.wav");
+	precache_sound ("soldier/sattck1.wav");
+	precache_sound ("soldier/sight1.wav");
+	precache_sound ("player/udeath.wav");		// gib death
+	
+	setsize (self, '-16 -16 -24', '16 16 32');
+	self.health = SOLDIER_HEALTH;
+	if ( monster_spawnsetup( monster_army_spawner ) )
+		return;
+	
+	addmonster(1);
+	monster_army_spawn();
 };

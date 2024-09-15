@@ -355,7 +355,7 @@ const float	RANGE_FAR				= 3;
 const float	DEAD_NO					= 0;
 const float	DEAD_DYING				= 1;
 const float	DEAD_DEAD				= 2;
-const float	DEAD_RESPAWNABLE		= 3;
+const float	DEAD_SPECTATING			= 3; // copper rename
 
 // takedamage values
 
@@ -380,7 +380,7 @@ const float	IT_CELLS				= 2048;
 const float	IT_ARMOR				= 8192;
 //			= 16384;
 //			= 32768;
-const float	IT_SUPERHEALTH			= 65536;
+//const float	IT_SUPERHEALTH			= 65536;
 const float	IT_KEY1					= 131072;
 const float	IT_KEY2					= 262144;
 const float	IT_INVISIBILITY			= 524288;
@@ -418,6 +418,7 @@ const vector	VEC_HULL2_MIN = '-32 -32 -24';
 const vector	VEC_HULL2_MAX = '32 32 64';
 
 // protocol bytes
+const float	SVC_UPDATESTAT		= 3;
 const float	SVC_TEMPENTITY		= 23;
 const float	SVC_KILLEDMONSTER	= 27;
 const float	SVC_FOUNDSECRET		= 28;
@@ -490,7 +491,30 @@ const float	MSG_ONE			= 1;		// reliable to one (msg_entity)
 const float	MSG_ALL			= 2;		// reliable to all
 const float	MSG_INIT		= 3;		// write to the init string
 
+// svc updatestat byte types - from copper by Lunaran
+const float	STAT_HEALTH			= 0;
+const float	STAT_FRAGS			= 1;
+const float	STAT_WEAPON			= 2;
+const float	STAT_AMMO			= 3;
+const float	STAT_ARMOR			= 4;
+const float	STAT_WEAPONFRAME	= 5;
+const float	STAT_SHELLS			= 6;
+const float	STAT_NAILS			= 7;
+const float	STAT_ROCKETS		= 8;
+const float	STAT_CELLS			= 9;
+const float	STAT_ACTIVEWEAPON	= 10;
+const float	STAT_TOTALSECRETS	= 11;	// hmmm ...
+const float	STAT_TOTALMONSTERS	= 12;	// must send this if new monsters are spawned after the map starts
+const float	STAT_SECRETS		= 13;	// bumped on client side by svc_foundsecret
+const float	STAT_MONSTERS		= 14;	// bumped by svc_killedmonster
 
+const float SPAWN_TRIGGERSPAWN2	= 8; //smp?
+const float SPAWN_TRIGGERSPAWN	= 16; //copper
+const float	SPAWN_NO_TFOG		= 32;
+const float	SPAWN_NO_TFRAG		= 64;
+const float	SPAWN_INSTAWAKE		= 128;
+
+#define FLICK_TIME	2.45
 //================================================
 
 //
@@ -548,7 +572,11 @@ entity	multi_head;
 .vector	multi_damage; // x = body, y = head, z = hits count for shotgun
 .entity multi_chain;
 .float 		alpha;
+.string		target2;
+.string		target3;
+.string		target4;
 
+.float		armortype;		// save this fraction of incoming damage
 .float blackhole_timer; // shambler's attack
 
 //================================================
@@ -569,6 +597,7 @@ entity	multi_head;
 //
 .float		light_lev;		// not used by game, but parsed by light util
 .float		style;
+.float		oldstyle; // copper field
 .float		gravity;
 .float		scale;
 
@@ -582,6 +611,7 @@ entity	multi_head;
 .void()		th_melee;
 .void(entity attacker, float damage)		th_pain;
 .void()		th_die;
+.void()		th_spawn; // new for triggerspawn
 
 .entity		oldenemy;		// mad at this player before taking damage
 
@@ -612,10 +642,11 @@ const float	AS_MISSILE		= 4;
 #define MAX_NAILS 250
 #define MAX_ROCKETS 6
 #define MAX_CELLS 16
-#define MAX_BULLETS 50
+#define MAX_BULLETS 96
 						//1		2		3		4		5		6		7		8		9		10		11		12		13		14
 const float SSGX[14] = {0.3200, 0.0000,-0.3200, 0.4000, 0.2400, 0.0800,-0.0800,-0.2400,-0.4000, 0.3200, 0.1600, 0.0000,-0.1600,-0.3200}; //rearranged for easier fx messages checks
 const float SSGY[14] = {0.0000, 0.0000, 0.0000, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500, 0.0500,-0.0500,-0.0500,-0.0500,-0.0500,-0.0500};
+
 const float CIRCLEX[16] = {0.000, 0.382, 0.707, 0.923, 1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382};
 const float CIRCLEY[16] = {1.000, 0.923, 0.707, 0.382, 0.000,-0.382,-0.707,-0.923,-1.000,-0.923,-0.707,-0.382, 0.000, 0.382, 0.707, 0.923};
 
@@ -663,7 +694,7 @@ const float	MF_GRENADE = 6;
 const float	MF_LG = 7;
 
 //monsterflags, should be only set on monsters
-const float MFL_NOTMONSTER = 1; // should be always set by default to every monster
+const float MFL_NOTMONSTER = 1; // obsolete? meant for explobox i think
 const float MFL_HASHEAD = 2; // recieve head damage, additional logic when head is gone
 const float MFL_HEADKILLS = 4; // set this if you want healh_health < 0 to kill target
 const float MFL_PAIN_HEADSHOT = 8; // play special pain animation
@@ -679,6 +710,7 @@ const float MFL_PUSH_RESISTENT = 4096;
 const float MFL_FIENDTOUCH = 8192; // fiend only
 const float MFL_LOSTWEAPON = 8192; // ogre only
 const float MFL_SHAM_EXPLODE = 8192; // shambler only
+
 //const float MFL_HASDRONE = 8192; // vore only
 
 const float TYPE_GENERAL = 0;
@@ -714,6 +746,8 @@ const float SFLI_TARGETSFIRED = 1;
 const float SFLI_MODELSET = 2; // ammo nails change model only once when < 51
 const float SFLI_REGEN = 4;
 const float SFLI_MEGA = 8;
+const float SFLI_SETAMMO = 16; // value need to be set on respawn 
+const float SFLI_SETHEALTH = 32; // value need to be set on respawn 
 
 // movement inputs
 const float MOVE_FORWARD = 1;
@@ -755,13 +789,16 @@ enum monstertypes:int {
 #define SHOTGUN_DAMAGE			20
 #define SHOTGUN_PENETRATION		-0.5
 #define CHAINGUN_DAMAGE			120
-#define CHAINGUN_PENETRATION	-0.3
+#define CHAINGUN_PENETRATION	-0.7
 #define GRENADE_EXPLOSION		200
 #define GRENADE_CUMULATIVE		170
 #define GRENADE_PENETRATION 	0.9
 #define GAUSS_DAMAGE			190
 #define SHOCK_DAMAGE_MIN		15
 #define SHOCK_DAMAGE_MAX		40
+
+#define EXTRA_PENETRATION_EASY		0.8
+#define EXTRA_PENETRATION_NORMAL	0.4
 
 typedef struct {
 	float body_resistance; // percent of damage to decline
@@ -777,14 +814,14 @@ const armor_t A_NULL 		= {0, 0,		0, 0,		0};
 const armor_t A_SOLDIER		= {0.1, 0,		0, 0,		0};
 const armor_t A_KNIGHT		= {0.25, 0,		0, 0,		0};
 const armor_t A_ENFORCER	= {0.3, 1,		0.15, 3,	0};
-const armor_t A_DOG			= {0.4, 1,		0, 0,		0.2};
-const armor_t A_SCRAG		= {0.0, 0,		0, 0,		0.2};
-const armor_t A_ZOMBIE		= {0.3, 2,		0.2, 1,		0.2};
-const armor_t A_OGRE		= {0.5, 4,		0.2, 1,		0.8};
-const armor_t A_HELLKNIGHT	= {0.5, 5,		0.3, 5,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
-const armor_t A_FIEND		= {0.6, 2,		0.8, 30,	0.8};
-const armor_t A_VORE		= {0.4, 5,		0, 0,		0.8};
-const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
+const armor_t A_DOG			= {0.3, 1,		0, 0,		0.4};
+const armor_t A_SCRAG		= {0.0, 0,		0, 0,		0.0};
+const armor_t A_ZOMBIE		= {0.3, 2,		0.2, 1,		0.0};
+const armor_t A_OGRE		= {0.5, 4,		0.2, 1,		0.5};
+const armor_t A_HELLKNIGHT	= {0.6, 2,		0.3, 2,		0.2}; // the guy is a synth, so he his body can resist a lot of damage
+const armor_t A_FIEND		= {0.6, 2,		0.8, 30,	0.5};
+const armor_t A_VORE		= {0.4, 5,		0, 0,		0.5};
+const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.75};
 
 #define SOLDIER_HEALTH 		100
 #define SOLDIER_HEAD 		20
@@ -802,7 +839,7 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 #define OGRE_HEALTH_FAST	350		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
-#define HELLKNIGHT_HEALTH	380
+#define HELLKNIGHT_HEALTH	300
 #define HELLKNIGHT_HEAD		80
 #define FIEND_HEALTH		300
 #define FIEND_HEAD			50
@@ -825,6 +862,7 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.95};
 .float		counter;
 .float		sprawlflags;
 .float		movementflags;
+.float		overheal_decay;
 .float		katana_finished;
 .float		katanasound_finished;
 .float		pistol_finished;
@@ -950,7 +988,7 @@ entity		grenade_handler; // global
 
 .vector		oldorigin;		// only used by secret door
 
-.float		t_length, t_width;
+//.float		t_length, t_width; // copper
 
 
 //
@@ -1063,7 +1101,8 @@ void() traceoff						= #30;
 void(entity e) eprint				= #31;		// prints an entire edict
 float(float yaw, float dist) walkmove	= #32;	// returns TRUE or FALSE
 // #33 was removed
-float() droptofloor= #34;	// TRUE if landed on floor
+//float() droptofloor= #34;	// TRUE if landed on floor
+float(float yaw, float dist) droptofloor = #34;	// TRUE if landed on floor // copper have different prototype, hm
 void(float style, string value) lightstyle = #35;
 float(float v) rint					= #36;		// round to nearest int
 float(float v) floor				= #37;		// largest integer <= v
@@ -1149,3 +1188,5 @@ void(vector A, vector onto, float multiplier) reflectVector = #705; //default mu
 float(vector v) vlen2 = #706;  // non sqrt distance / 10000, returns 0 if it's < 16 before division
 entity(vector org, float rad) findradius_damage = #707;
 float(float bitmask, float shift) bithshift = #708;
+entity(entity copyfrom) spawncopy = #709;
+void(entity copyfrom, entity copyto) copyedict = #710; 

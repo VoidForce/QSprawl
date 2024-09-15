@@ -133,6 +133,7 @@ void(vector offset) ShalGrenade =
 	dir = normalize((end - start) );
 
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.classname = "plasma";
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
@@ -146,7 +147,7 @@ void(vector offset) ShalGrenade =
 	setmodel (missile, "progs/p_grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, start);
-	missile.isgrenade = 1;
+	//missile.isgrenade = 1;
 	appendToList(missile);
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	//sound (self, CHAN_WEAPON, "shalrath/attack.wav", 1, ATTN_NORM);
@@ -162,6 +163,7 @@ void(vector offset, float trail) ShalMissile =
 	self.effects = self.effects | EF_MUZZLEFLASH;
 	//sound (self, CHAN_WEAPON, "shalrath/attack2.wav", 1, ATTN_NORM);
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.classname = "vore_ball";	//gnounc
 	missile.owner = self;
 
@@ -516,56 +518,20 @@ void() shalrath_die =
 
 /*QUAKED monster_shalrath (1 0 0) (-32 -32 -24) (32 32 48) Ambush
 */
-void() monster_shalrath =
+void() monster_shalrath_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_shalrath";
 
-	precache_model2 ("progs/shalrath.mdl");
-	precache_model2 ("progs/shalrath_shield.mdl");
-	precache_model2 ("progs/h_shal.mdl");
-	precache_model ("progs/missle.mdl");
-	precache_model ("progs/p_grenade.mdl");
-	
-	precache_model2 ("progs/missle_notrail.mdl");
-	precache_model2 ("progs/shalrath_gib_leg.mdl");
-	
-	precache_sound2 ("shalrath/attack.wav");
-	precache_sound2 ("shalrath/attack2.wav");
-	precache_sound2 ("shalrath/death.wav");
-	precache_sound2 ("shalrath/idle.wav");
-	precache_sound2 ("shalrath/pain.wav");
-	precache_sound2 ("shalrath/sight.wav");
-	precache_sound ("weapons/pl_explode.wav");
-	precache_sound ("weapons/f_grenade.wav");
-	
-	// drone
-	/*
-	precache_model ("progs/drone.mdl");
-	precache_model ("progs/h_wizard.mdl");
-	precache_sound ("wizard/hit.wav");		// used by c code
-	precache_sound ("wizard/wattack.wav");
-	precache_sound ("wizard/wdeath.wav");
-	precache_sound ("wizard/widle1.wav");
-	precache_sound ("wizard/widle2.wav");
-	precache_sound ("wizard/wpain.wav");
-	precache_sound ("wizard/wsight.wav");*/
-	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-	
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/shalrath.mdl");
-
-	//gnounc
+	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);
+	
 	self.noise = "shalrath/sight.wav";	//gnounc
 	self.netname = "Vore";
-	//self.info_name = " Artillery Drone";
 	self.killstring = " couldn't survive the artillery strike\n";
-
-	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD);
 	self.health = VORE_HEALTH;
 	self.max_health = VORE_HEALTH;
 	self.monsterflags |= MFL_ROBOT | MFL_SHIELD;
@@ -576,7 +542,7 @@ void() monster_shalrath =
 	self.th_die = shalrath_die;
 	self.th_pain = shalrath_pain;
 	self.th_missile = shal_attack;
-
+	
 	self.think = walkmonster_start;
 	self.nextthink = time + 0.1 + random ()*0.1;	
 	
@@ -592,6 +558,45 @@ void() monster_shalrath =
 	self.eA.alpha = 0.1;
 	self.eA.think = updateShieldPosition;
 	self.eA.nextthink = time + 0.1;
+};
+
+void() monster_shalrath_spawner = 
+{
+	mon_spawner_use(monster_shalrath_spawn);
+};
+
+void() monster_shalrath =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model2 ("progs/shalrath.mdl");
+	precache_model2 ("progs/shalrath_shield.mdl");
+	precache_model2 ("progs/h_shal.mdl");
+	precache_model ("progs/missle.mdl");
+	precache_model ("progs/p_grenade.mdl");
+	precache_model2 ("progs/missle_notrail.mdl");
+	precache_model2 ("progs/shalrath_gib_leg.mdl");
+	precache_sound2 ("shalrath/attack.wav");
+	precache_sound2 ("shalrath/attack2.wav");
+	precache_sound2 ("shalrath/death.wav");
+	precache_sound2 ("shalrath/idle.wav");
+	precache_sound2 ("shalrath/pain.wav");
+	precache_sound2 ("shalrath/sight.wav");
+	precache_sound ("weapons/pl_explode.wav");
+	precache_sound ("weapons/f_grenade.wav");
+
+	setsize (self, VEC_HULL2_MIN, SIZE_SHIELD); // set for telefrag check
+	self.health = VORE_HEALTH;
+	if ( monster_spawnsetup( monster_shalrath_spawner ) ) return;
+	
+	addmonster(1);
+	monster_shalrath_spawn();
 };
 
 void() updateShieldPosition =
@@ -631,64 +636,3 @@ void() pushAway =
 	T_Damage (other, self, self, (skill + 1) * 10, 0);
 	other.pushback_time = time + 0.3;
 }
-
-/*
-void() drone_die =
-{
-	self.owner.sprawlflags -= self.owner.sprawlflags & MFL_HASDRONE;
-	self.touch = SUB_Null;
-	sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
-	T_RadiusDamage (self, self, 40, world);
-	ThrowHead("progs/h_wizard.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_02.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
-	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
-	SUB_Remove();
-};
-
-void(vector lorigin) spawn_drone =
-{
-	entity oldself;
-
-	spawn_tfog (lorigin);
-	//spawn_tdeath(lorigin, self);
-	self.sprawlflags |= MFL_HASDRONE;
-	oldself = self;
-	self = spawn();
-	self.owner = oldself;
-	
-	self.solid = SOLID_SLIDEBOX;
-	self.movetype = MOVETYPE_STEP;
-	setorigin (self, lorigin);
-	setmodel (self, "progs/drone.mdl");
-
-	//gnounc
-	self.noise = "wizard/wsight.wav";	//gnounc
-	self.netname = "Drone";
-	self.killstring = " couldn't handle this air superiority\n";
-
-	setsize (self, '-16 -16 0', '16 16 24');// 24 48
-	//self.head_offset = '0 0 28';
-	self.head_size = 0;
-	self.health = 40;
-	self.max_health = 40;
-	self.gib_threshold = 40;
-	self.monstertype = TYPE_SCRAG;
-	self.fA = 2; // amoung of rockets to fire, will be depleted fully
-	self.angles_y = vectoyaw(oldself.enemy.origin - oldself.origin);
-	
-	self.th_stand = wiz_stand1;
-	self.th_walk = wiz_walk1;
-	self.th_run = wiz_run1;
-	self.th_missile = wiz_fast1;//Wiz_Missile;
-	self.th_pain = Wiz_Pain;
-	self.th_die = drone_die;
-	self.yaw_speed = 75;
-	self.sprawlflags |= MFL_NOTMONSTER;
-		
-	flymonster_start ();
-	self = oldself;
-};
-*/

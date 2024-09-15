@@ -63,7 +63,7 @@ void makevectors2(vector ang) =
 	ang_x *= -1;
 	makevectors(ang);
 };
-
+/*
 float(float v) anglemod =
 {
 	while (v >= 360)
@@ -72,7 +72,7 @@ float(float v) anglemod =
 		v = v + 360;
 	return v;
 };
-
+*/
 /*
 ==============================================================================
 
@@ -332,13 +332,13 @@ float() FindTarget =
 
 	if (r == RANGE_NEAR)
 	{
-		if (client.show_hostile < time && !infront (client))
+		if ((client.show_hostile < time) && !infront (client))
 			return FALSE;
 	}
 
 	else if (r == RANGE_MID)
 	{
-		if ( /* client.show_hostile < time || */ !infront (client))
+		if ((client.show_hostile < time) && !infront (client))
 			return FALSE;
 	}
 	
@@ -512,26 +512,27 @@ float() FacingIdeal =
 
 //=============================================================================
 
-float()	WizardCheckAttack;
-float()	DogCheckAttack;
-
 float() CheckAnyAttack =
 {
 	if (!enemy_vis)
 		return FALSE;
-	if (self.classname == "monster_army")
-		return SoldierCheckAttack ();
-	if (self.classname == "monster_ogre")
-		return OgreCheckAttack ();
-	if (self.classname == "monster_shambler")
-		return ShamCheckAttack ();
-	if (self.classname == "monster_demon1")
-		return DemonCheckAttack ();
-	if (self.classname == "monster_dog")
-		return DogCheckAttack ();
-	if (self.classname == "monster_wizard")
-		return WizardCheckAttack ();
-	return CheckAttack ();
+	switch (self.monstertype)
+	{
+		case TYPE_SOLDIER:
+			return SoldierCheckAttack ();
+		case TYPE_OGRE:
+			return OgreCheckAttack ();
+		case TYPE_SHAMBLER:
+			return ShamCheckAttack ();
+		case TYPE_FIEND:
+			return DemonCheckAttack ();
+		case TYPE_DOG:
+			return DogCheckAttack ();
+		case TYPE_SCRAG:
+			return WizardCheckAttack ();
+		default:
+			return CheckAttack ();
+	}
 };
 
 

@@ -18,9 +18,7 @@
 */
 // button and multiple button
 
-void() button_wait;
-void() button_return;
-
+/*
 void() button_wait =
 {
 	self.state = STATE_TOP;
@@ -87,7 +85,7 @@ void() button_killed =
 	button_fire ();
 };
 
-
+*/
 /*QUAKED func_button (0 .5 .8) ?
 When a button is touched, it moves some distance in the direction of it's angle, triggers all of it's targets, waits some time, then returns to it's original position where it can be triggered again.
 
@@ -102,6 +100,7 @@ When a button is touched, it moves some distance in the direction of it's angle,
 1) wooden clunk
 2) metallic click
 3) in-out*/
+/*
 void() func_button =
 {
 	if (self.sounds == 0)
@@ -163,3 +162,4 @@ void() func_button =
 	self.pos2 = self.pos1 + self.movedir*(fabs(self.movedir*self.size) - self.lip);
 };
 
+*/

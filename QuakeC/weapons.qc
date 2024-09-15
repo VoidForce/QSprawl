@@ -204,31 +204,82 @@ void(float gun) deployGun =
 	}
 };*/
 
-// insert to the beggining, works with 0 objects in the list
+// insert to the begining, works with 0 objects in the list
 void(entity new) appendToList =
 {
-	new.list_previous = world; // be sure to erase any info here
+	if (!new)
+	{
+		dprint("\n WORLD in Append\n");
+		return;
+	}
+
+	/*
+	dprint("\n Append to the list \n");
+	float i;
+	entity head;
+	head = grenade_handler;
+	while (head)
+	{
+		i++;
+		dprint3("Ent ",ftos(i),":\n");
+		dprint3("head is: ",head.classname,"\n");
+		dprint3("previous: ",head.list_previous.classname,"\n");
+		dprint3("next: ",head.list_next.classname,"\n");
+		head = head.list_next;
+	}
+	*/
+	
 	if (grenade_handler.list_next)
+	{
+		new.list_next = grenade_handler.list_next; // ->
 		grenade_handler.list_next.list_previous = new; // <-
-	new.list_next = grenade_handler.list_next; // ->
+	}
 	grenade_handler.list_next = new; // new became head
+	new.list_previous = grenade_handler;
+	if (new == new.list_next || new == new.list_previous)
+	{
+		dprint("appendToList: New loops to itself\n");
+		new.list_next = world;
+		new.list_previous = world;
+	}
 };
 
 void(entity who) removeFromList =
 {
-	if (!who.isgrenade)
+	if (!who)
+	{
+		dprint("\n WORLD in REMOVE\n");
 		return;
+	}
+	
+	if (who == who.list_next || who == who.list_previous)
+	{
+		dprint("removeFromList: who loops to itself\n");
+	}
+	/*
+	dprint("\n Remove from the list \n");
+	float i;
+	entity head;
+	head = grenade_handler;
 
+	while (head)
+	{
+		i++;
+		dprint3("Ent ",ftos(i),":\n");
+		dprint3("head is: ",head.classname,"\n");
+		dprint3("previous: ",head.list_previous.classname,"\n");
+		dprint3("next: ",head.list_next.classname,"\n");
+		head = head.list_next;
+	}
+	*/
 	if (who.list_previous)
 		who.list_previous.list_next = who.list_next; // connect -> // works with null too
-	else
-		grenade_handler.list_next = who.list_next; // ok we were the very first item in the list, update handler
+
 	if (who.list_next)
 		who.list_next.list_previous = who.list_previous; // connect <- // works with null
 	
 	who.list_next = world;
 	who.list_previous = world;
-	who.isgrenade = 0; // don't let it back again with list init search
 };
 
 void(vector direction, float hitdistance) checkGrenadeCollision
@@ -237,14 +288,17 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 	entity next;
 	float distance;
 	vector gunpoint;
+	float i;
 	
 	if (!grenade_handler.list_next)
 		return;
 
 	gunpoint = getGunPoint(self);
 	head = grenade_handler.list_next;
+	i = 0;
 	while (head)
 	{
+		i++;
 		distance = distancetoray(gunpoint, direction, head.origin);
 		next = head.list_next;// we will remove head in case of success so, keep the chain
 		if (distance < hitdistance)
@@ -252,7 +306,6 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 			traceline(gunpoint, gunpoint + direction * vlen(head.origin - gunpoint), FALSE, self);
 			if (trace_fraction > 0.95)
 			{
-				removeFromList(head);
 				if (head.owner.flags & FL_CLIENT)
 					head.think = GrenadeExplode;
 				else if (head.sprawlflags & SFLP_OGRE)
@@ -262,9 +315,16 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 
 				head.nextthink = time;
 				head.owner = self;
+				return;
 			}
 		}
+		
 		head = next;
+		if (i > 1024)
+		{
+			dprint("i > 1024, Loop runaway in checkGrenadeCollision\n");
+			return;
+		}
 	}
 };
 
@@ -276,6 +336,7 @@ vector(entity who) getGunPoint =
 void(vector porigin, vector poffset, float ptype) launchCasing =
 {
 	newmis = spawn ();
+	newmis.clip = CLIP_PROJECTILE;
 	newmis.owner = self;
 	newmis.movetype = MOVETYPE_BOUNCE;
 	newmis.solid = SOLID_NOT;
@@ -323,6 +384,7 @@ void(vector org, vector vel, entity targ) SpawnMeatSpray =
 	entity gib;
 
 	gib = spawn ();
+	gib.clip = CLIP_PROJECTILE;
 	gib.owner = self;
 	gib.movetype = MOVETYPE_BOUNCE;
 	gib.solid = SOLID_NOT;
@@ -711,7 +773,7 @@ void() W_FireSuperShotgun =
 		if (i > 2)
 			lflag |= FBA_IMPACT | FBA_NOSHIELD_IMPACT;
 
-		FireBulletAim (dir, SSGX[i]*0.2, SSGY[i]*0.2, SHOTGUN_DAMAGE, SHOTGUN_PENETRATION, lflag); 
+		FireBulletAim (dir, SSGX[i]*0.2, SSGY[i]*0.4, SHOTGUN_DAMAGE, SHOTGUN_PENETRATION, lflag); 
 		if (i < 3)
 		{
 			sendMessageVecVecFlag(start, trace_endpos, MF_SHOTGUN, TE_BULLETTRACE); // 3 messages in total, have to be done after trace ofc
@@ -1091,6 +1153,7 @@ void() W_FireGrenade =
 	sound (self, CHAN_WEAPON, "weapons/f_grenade.wav", 1, ATTN_NORM);
 
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
 	missile.solid = SOLID_BBOX;
@@ -1119,7 +1182,7 @@ void() W_FireGrenade =
 	setmodel (missile, "progs/grenade.mdl");
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, offsetWeapon(15,8,4)); // fixed grenades spawned inside walls
-	missile.isgrenade = 1;
+	//missile.isgrenade = 1;
 	appendToList(missile);
 	makePunch([6, 0, 0], [0, 0, 0], [0, 0, 0]);
 	addPunchVelocity(-40,-20 + random()*20,0);
@@ -1314,6 +1377,7 @@ void() W_FireLightning =
 void(vector org, vector dir) launch_spike =
 {
 	newmis = spawn ();
+	newmis.clip = CLIP_PROJECTILE;
 	newmis.owner = self;
 	newmis.movetype = MOVETYPE_FLYMISSILE;
 	newmis.solid = SOLID_BBOX;

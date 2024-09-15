@@ -36,6 +36,7 @@ monster_use
 Using a monster makes it angry at the current activator
 ================
 */
+/*
 void() monster_use =
 {
 	if (self.enemy)
@@ -58,7 +59,7 @@ void() monster_use =
 	self.nextthink = time + 0.1;
 	self.think = FoundTarget;
 };
-
+*/
 /*
 ================
 monster_death_use
@@ -67,6 +68,7 @@ When a mosnter dies, it fires all of its targets with the current
 enemy as activator.
 ================
 */
+/*
 void() monster_death_use =
 {
 	// fall to ground
@@ -76,9 +78,9 @@ void() monster_death_use =
 	if (self.flags & FL_SWIM)
 		self.flags = self.flags - FL_SWIM;
 
-	if (!self.target)
+	if (!self.target && !self.target2 && !self.target3 && !self.target4 && !self.killtarget)
 		return;
-
+	
 	activator = self.enemy;
 	SUB_UseTargets ();
 };
@@ -89,9 +91,9 @@ void() monster_death_use =
 void() walkmonster_start_go =
 {
 	self.origin_z = self.origin_z + 1;	// raise off floor a bit
-	droptofloor();
+	droptofloor(0,0);
 	
-	if (!walkmove(0,0))
+	if (!walkmove(0,0) && self.health > 0)
 	{
 		dprint ("walkmonster in wall at: ");
 		dprint (vtos(self.origin));
@@ -147,7 +149,7 @@ void() walkmonster_start =
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + 0.01 + random()*0.5;
 	self.think = walkmonster_start_go;
-	total_monsters = total_monsters + 1;
+	//total_monsters = total_monsters + 1;// trigger spawn
 };
 
 
@@ -205,8 +207,8 @@ void() flymonster_start =
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + 0.01 + random()*0.5;
 	self.think = flymonster_start_go;
-	if (!(self.sprawlflags & MFL_NOTMONSTER))
-		total_monsters = total_monsters + 1;
+	//if (!(self.sprawlflags & MFL_NOTMONSTER))
+	//total_monsters = total_monsters + 1; // trigger spawn
 };
 
 
@@ -262,7 +264,7 @@ void() swimmonster_start =
 	// spread think times so they don't all happen at same time
 	self.nextthink = self.nextthink + 0.01 + random()*0.5;
 	self.think = swimmonster_start_go;
-	total_monsters = total_monsters + 1;
+	//total_monsters = total_monsters + 1; // trigger spawn
 };
 
-
+*/

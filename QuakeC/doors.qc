@@ -40,8 +40,7 @@ THINK FUNCTIONS
 =============================================================================
 */
 
-void() door_go_down;
-void() door_go_up;
+/*
 
 void() door_blocked =
 {
@@ -110,7 +109,7 @@ void() door_go_up =
 	SUB_UseTargets();
 };
 
-
+*/
 /*
 =============================================================================
 
@@ -118,7 +117,7 @@ ACTIVATION FUNCTIONS
 
 =============================================================================
 */
-
+/*
 void() door_fire =
 {
 	local entity 	oself;
@@ -205,12 +204,13 @@ void() door_killed =
 	self = oself;
 };
 
-
+*/
 /*================
 door_touch
 
 Prints messages and opens key doors
 ================*/
+/*
 void() door_touch =
 {
 	if (other.classname != "player")
@@ -287,7 +287,7 @@ void() door_touch =
 
 	door_use ();
 };
-
+*/
 /*
 =============================================================================
 
@@ -296,7 +296,7 @@ SPAWNING FUNCTIONS
 =============================================================================
 */
 
-
+/*
 entity(vector fmins, vector fmaxs) spawn_field =
 {
 	local entity	trigger;
@@ -339,10 +339,11 @@ float (entity e1, entity e2) EntitiesTouching =
 	return TRUE;
 };
 
-
+*/
 /*=============
 LinkDoors
 =============*/
+/*
 void() LinkDoors =
 {
 	local entity	t, starte;
@@ -429,7 +430,7 @@ void() LinkDoors =
 
 };
 
-
+*/
 /*QUAKED func_door (0 .5 .8) ? START_OPEN x DOOR_DONT_LINK GOLD_KEY SILVER_KEY TOGGLE
 if two doors touch, they are assumed to be connected and operate as a unit.
 
@@ -453,7 +454,7 @@ Key doors are allways wait -1.
 2)	base
 3)	stone chain
 4)	screechy metal*/
-
+/*
 void() func_door =
 {
 	if (world.worldtype == 0)
@@ -586,20 +587,12 @@ void() func_door =
 	self.think = LinkDoors;
 	self.nextthink = self.ltime + 0.1;
 };
-
+*/
 /*=============================================================================
 
 SECRET DOORS
 
 =============================================================================*/
-
-void() fd_secret_move1;
-void() fd_secret_move2;
-void() fd_secret_move3;
-void() fd_secret_move4;
-void() fd_secret_move5;
-void() fd_secret_move6;
-void() fd_secret_done;
 
 float SECRET_OPEN_ONCE = 1;		// stays open
 float SECRET_1ST_LEFT = 2;		// 1st move is left of arrow
@@ -607,7 +600,7 @@ float SECRET_1ST_DOWN = 4;		// 1st move is down from arrow
 float SECRET_NO_SHOOT = 8;		// only opened by trigger
 float SECRET_YES_SHOOT = 16;	// shootable even if targeted
 
-
+/*
 void () fd_secret_use =
 {
 	local float temp;
@@ -735,12 +728,13 @@ void () secret_blocked =
 	self.attack_finished = time + 0.5;
 	T_Damage (other, self, self, self.dmg, 0);
 };
-
+*/
 /*================
 secret_touch
 
 Prints messages
 ================*/
+/*
 void() secret_touch =
 {
 	if (other.classname != "player")
@@ -757,7 +751,7 @@ void() secret_touch =
 		sound (other, CHAN_BODY, "misc/talk.wav", 1, ATTN_NORM);
 	}
 };
-
+*/
 
 /*QUAKED func_door_secret (0 .5 .8) ? open_once 1st_left 1st_down no_shoot always_shoot
 Basic secret door. Slides back, then to the side. Angle determines direction.
@@ -774,7 +768,7 @@ If a secret door has a targetname, it will only be opened by it's botton or trig
 1) medieval
 2) metal
 3) base*/
-
+/*
 void () func_door_secret =
 {
 	if (self.sounds == 0)
@@ -837,3 +831,4 @@ void () func_door_secret =
 	if (!self.wait)
 		self.wait = 5;		// 5 seconds before closing
 };
+*/

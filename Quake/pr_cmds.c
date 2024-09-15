@@ -727,6 +727,8 @@ Traces are blocked by bbox and exact bsp entityes, and also slide box entities
 if the tryents flag is set.
 
 traceline (vector1, vector2, tryents)
+
+TODO: extra option for .clip field, to ignore copper style notrace entities
 =================
 */
 static void PF_traceline (void)
@@ -1168,6 +1170,56 @@ static void PF_Remove (void)
 	ED_Free (ed);
 }
 
+static void PF_SpawnCopy (void)
+{
+	edict_t *ednew, *edcopyfrom;
+
+	edcopyfrom = G_EDICT(OFS_PARM0);
+	ednew = ED_Alloc();
+
+	if (edcopyfrom->free)
+	{
+		Con_SafePrintf("TRYING TO COPY FREE ENT\n");
+		RETURN_EDICT(ednew);
+		return;
+	}
+	if (edcopyfrom == qcvm->edicts)
+	{
+		Con_SafePrintf("TRYING TO COPY WORLD\n");
+		RETURN_EDICT(ednew);
+		return;
+	}
+	memcpy(ednew, edcopyfrom, qcvm->edict_size);
+
+	RETURN_EDICT(ednew);
+}
+
+static void PF_CopyEdict(void)
+{
+	edict_t* ed_to, * ed_from;
+	int a, b;
+	ed_from = G_EDICT(OFS_PARM0);
+	ed_to = G_EDICT(OFS_PARM1);
+
+	if (ed_from->free || ed_to->free)
+	{
+		Con_SafePrintf("ERROR: TRYING TO COPY TO/FROM FREE ENT\n");
+		return;
+	}
+	a = (int) ed_from->v.flags;
+	b = (int) ed_to->v.flags;
+	if (a & FL_CLIENT || b & FL_CLIENT)
+	{
+		Con_SafePrintf("ERROR: TRYING TO COPY CLIENT\n");
+		return;
+	}
+	if (ed_from == qcvm->edicts || ed_to == qcvm->edicts)
+	{
+		Con_SafePrintf("ERROR: TRYING TO COPY TO/FROM WORLD\n");
+		return;
+	}
+	memcpy(ed_to, ed_from, qcvm->edict_size);
+}
 
 // entity (entity start, .string field, string match) find = #5;
 static void PF_Find (void)
@@ -1200,7 +1252,42 @@ static void PF_Find (void)
 
 	RETURN_EDICT(qcvm->edicts);
 }
+/*
+static void PF_FindTargets(void)
+{
+	int		e;
+	int		f;
+	const char * s1,* s2, * s3, * s4, * t;
+	edict_t* ed;
 
+	//e = G_EDICTNUM(OFS_PARM0); // world
+	//f = G_INT(OFS_PARM1); // targetname
+	s1 = G_STRING(OFS_PARM0);
+	s2 = G_STRING(OFS_PARM1);
+	s3 = G_STRING(OFS_PARM2);
+	s4 = G_STRING(OFS_PARM3);
+
+	if (!s1 || !s2 || !s3 || !s4)
+		PR_RunError("PF_Find: bad search string");
+
+	for (e = 1; e < qcvm->num_edicts; e++)
+	{
+		ed = EDICT_NUM(e);
+		if (ed->free)
+			continue;
+		t = E_STRING(ed, qcvm->edicts->v.targetname);
+		if (!t)
+			continue;
+		if (!strcmp(t, s))
+		{
+			RETURN_EDICT(ed);
+			return;
+		}
+	}
+
+	RETURN_EDICT(qcvm->edicts);
+}
+*/
 // entity (.string field, float match) findfloat = #700;
 static void PF_FindFloat(void)
 {
@@ -3839,8 +3926,9 @@ builtindef_t pr_builtindefs[] =
 	{ "reflectVector",			PF_BOTH(PF_Reflect),			705 },
 	{ "vlen2",					PF_BOTH(PF_vlen2),				706 },	// float(vector v) vlen2			= #706
 	{ "findradius_damage",		PF_SSQC(PF_findradius_takedamage),	707 },
-	{ "bitshift",				PF_BOTH(PF_bitshift), 708 },	
-		
+	{ "bitshift",				PF_BOTH(PF_bitshift), 708 },
+	{ "spawncopy",				PF_SSQC(PF_SpawnCopy), 709 },
+	{ "copyedict",				PF_SSQC(PF_CopyEdict), 710 },
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

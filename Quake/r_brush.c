@@ -68,7 +68,7 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 	if (!base->anim_total)
 		return base;
 
-	relative = (int)(cl.time*10) % base->anim_total;
+	relative = (int)(cl.time*24) % base->anim_total; // animate at faster cinematic rate
 
 	count = 0;
 	while (base->anim_min > relative || base->anim_max <= relative)

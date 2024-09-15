@@ -75,6 +75,74 @@ float(entity targ, entity inflictor) CanDamage =
 	return FALSE;
 };
 
+/*
+============
+DamageCanKill
+
+test for a would-kill condition while respecting armor and special flags
+============
+*/
+float DamageCanKill(entity targ, float damage)
+{
+	if (damage <= 0) return FALSE;
+	
+	if (!targ.takedamage ||
+		targ.copperflags & CFL_UNDYING ||
+		targ.flags & FL_GODMODE ||
+		targ.items & IT_INVULNERABILITY )
+		return FALSE;
+	
+	return (ArmorSave(targ, damage) + targ.health <= damage);
+}
+/*
+============
+ArmorSave
+
+save damage based on the target's armor level.
+is separate from T_Damage and duplicates a few checks so that func_voids can check
+	if they would kill the player before they actually try
+============
+*/
+float ArmorSave(entity targ, float damage, float dmgtype = 0)
+{
+	if (!damage) return 0;
+	if (!targ.takedamage)
+		return 0;
+	if (targ.flags & FL_GODMODE || has_invuln(targ) )
+		return 0;
+
+	float save, savefrac;
+	
+	// armor doesn't protect against things like drowning or target_items health adjustments
+	if (targ.armorvalue <= 0) // todo: make water penetrate armor?
+		return 0;
+
+	savefrac = damage;
+
+	if (targ.classname == "player")
+	{
+		/* ========		
+		lots of tiny damages (like ai_melee or crushy movers) will always round to armor
+		when yellow or red, stripping it away too fast, and always round to health when
+		green, defeating the purpose of armor.
+		
+		instead we randomly apply the last fractional point to either armor or health so 
+		that it's statistically balanced (... over geologic timescales)
+		======== */
+		save = floor(savefrac);
+		savefrac -= save;
+		if ( random() < savefrac ) save += 1;
+	}
+	else
+	{
+		// maintain old round-up behavior for everything else because mappers will use
+		// QC hacks to do just about anything
+		save = ceil(savefrac);
+	}
+	save = min(save, targ.armorvalue);
+	
+	return save;
+}
 
 /*============
 Killed
@@ -248,11 +316,10 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	if (attacker.super_damage_finished > time)
 	{
 		damage = damage * 3;
-		if (penetration < 1)
-			penetration = 1;
+		penetration += 0.8;
 	}
 	
-	if (targ.entity_type == TYPE_PLAYER)
+	if (targ.flags & FL_CLIENT)
 	{
 		float armortype;
 		armortype = 1;
@@ -308,7 +375,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		
 	// player does more damage when shooting from behind
 	// we do this by increasing penetration power by 80% (addition, not multiplication)
-		if (attacker.entity_type == TYPE_PLAYER)
+		if (attacker.flags & FL_CLIENT)
 		{
 		// i'm gonna use res here for angles difference, it's ugly but who cares
 			res = anglemod(targ.angles_y - attacker.angles_y); //
@@ -317,7 +384,7 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 				if (res < 75 || res > 285)
 				{
 				// hit back
-					penetration += 0.8;
+					penetration += 1;
 					sound (attacker, CHAN_AUTO, "weapons/hitmarker.wav", 1, ATTN_NORM);
 				// mark as critical hit 
 					attacker.engineflags |= ENF_HITHEAD;
@@ -326,15 +393,15 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 						damage *= 2;
 				}
 				else if (res < 90 || res > 270)
-					penetration += 0.3;
+					penetration += 0.5;
 			}
 			res = 0;
 		}
 		
 		if (skill == 1)
-			penetration += 0.2;
+			penetration += EXTRA_PENETRATION_NORMAL;
 		else if (skill == 0)
-			penetration += 0.4;
+			penetration += EXTRA_PENETRATION_EASY;
 		
 		penetration = 1 - penetration;
 	// no extra damage for overpenetration

@@ -351,43 +351,27 @@ float()	DogCheckAttack =
 //===========================================================================
 
 /*QUAKED monster_dog (1 0 0) (-32 -32 -24) (32 32 40) Ambush*/
-void() monster_dog =
+void() monster_dog_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-	precache_model ("progs/h_dog.mdl");
-	precache_model ("progs/dog.mdl");
-
-	precache_sound ("dog/dattack1.wav");
-	precache_sound ("dog/ddeath.wav");
-	precache_sound ("dog/dpain1.wav");
-	precache_sound ("dog/dsight.wav");
-	precache_sound ("dog/idle.wav");
-
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_dog";
+	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/dog.mdl");
+	setsize (self, '-32 -32 -24', '32 32 20');
 
-	//gnounc
 	self.noise = "dog/dsight.wav";	
 	self.netname = "Rottweiler";
-	//self.info_name = "Combat Drone Okami";
 	self.killstring = " was pacified by combat drone Okami\n";
-
-	setsize (self, '-32 -32 -24', '32 32 20');//40
 	self.head_offset = '0 0 0';
 	self.head_size = 0;
 	self.health = DOG_HEALTH;
 	self.max_health = DOG_HEALTH;
-	//self.armorclass_body = 5;
 	self.monstertype = TYPE_DOG;
 	self.monsterflags |= MFL_ROBOT;
 	self.gib_threshold = 75;
-
 	self.th_stand = dog_stand1;
 	self.th_walk = dog_walk1;
 	self.th_run = dog_run1;
@@ -397,4 +381,36 @@ void() monster_dog =
 	self.th_missile = dog_leap1;
 
 	walkmonster_start();
+};
+
+void() monster_dog_spawner = 
+{
+	mon_spawner_use(monster_dog_spawn);
+};
+
+void() monster_dog =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/h_dog.mdl");
+	precache_model ("progs/dog.mdl");
+	precache_sound ("dog/dattack1.wav");
+	precache_sound ("dog/ddeath.wav");
+	precache_sound ("dog/dpain1.wav");
+	precache_sound ("dog/dsight.wav");
+	precache_sound ("dog/idle.wav");
+
+	setsize (self, '-32 -32 -24', '32 32 20');// set for telefrag check
+	self.health = DOG_HEALTH;
+	if ( monster_spawnsetup( monster_dog_spawner ) ) 
+		return;
+
+	addmonster(1);
+	monster_dog_spawn();
 };

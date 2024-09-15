@@ -243,6 +243,7 @@ void() sham_melee =
 
 void() sham_suck =
 {
+	self.enemy.blackhole_timer = time + (10 - skill * 2);
 	float distance;
 	
 	StopAcceleration(0.4, self.enemy); // change_client
@@ -410,9 +411,9 @@ Returns FALSE if movement should continue
 
 float() ShamCheckAttack =
 {
-	local vector	spot1, spot2;	
-	local entity	targ;
-
+	vector	spot1, spot2;	
+	entity	targ;
+	
 	if (enemy_range == RANGE_MELEE)
 	{
 		if (CanDamage (self.enemy, self))
@@ -424,12 +425,11 @@ float() ShamCheckAttack =
 
 	if (time < self.attack_finished)
 		return FALSE;
-	
+
 	if (!enemy_vis)
 		return FALSE;
 		
 	targ = self.enemy;
-	
 	// see if any entities are in the way of the shot
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
@@ -438,46 +438,86 @@ float() ShamCheckAttack =
 		return FALSE;
 
 	traceline (spot1, spot2, FALSE, self);
-
 	if (trace_inopen && trace_inwater)
 		return FALSE;			// sight line crossed contents
 
 	if (trace_ent != targ)
-	{
 		return FALSE;	// don't have a clear shot
-	}
 
 	// missile attack
 	if (enemy_range == RANGE_FAR)
 		return FALSE;
-	
+
 	if (self.enemy.blackhole_timer > time)
 		return FALSE;
-		
+
+// don't let another monster to do blackhole attack for a second
+// when attack will be launched successfully we will set this time for a longer delay
+	self.enemy.blackhole_timer = time + 1; 
 	self.attack_state = AS_MISSILE;
 	SUB_AttackFinished (2 + 2*random());
-	self.enemy.blackhole_timer = time + (10 - skill * 2);
 
 	return TRUE;
 };
 
 /*QUAKED monster_shambler (1 0 0) (-32 -32 -24) (32 32 64) Ambush
 */
+void() monster_shambler_spawn =
+{
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_shambler";
+	
+	self.solid = SOLID_SLIDEBOX;
+	self.movetype = MOVETYPE_STEP;
+	self.clip = CLIP_MONSTER;
+	setmodel (self, "progs/shambler.mdl");
+	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
+	
+	self.noise = "shambler/ssight.wav";	//gnounc
+	self.netname = "Shambler";
+	self.killstring = " was obliterated by the Berzerker\n";
+	self.head_offset = '16 2 43';
+	self.head_size = 16;
+	self.health_head = SHAMBLER_HEAD;
+	self.health_head_max = SHAMBLER_HEAD;
+	self.health = SHAMBLER_HEALTH;
+	self.max_health = SHAMBLER_HEALTH;
+	self.gib_threshold = 300;
+	self.monstertype = TYPE_SHAMBLER;
+	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT| MFL_PUSH_RESISTENT;
+	self.yaw_speed = 15;
+	self.th_stand = sham_stand1;
+	self.th_walk = sham_walk1;
+	self.th_run = sham_run1;
+	self.th_die = sham_die;
+	self.th_melee = sham_melee;
+	self.th_missile = sham_magic1;
+	self.th_pain = sham_pain;
+	
+	walkmonster_start();
+};
+
+void() monster_shambler_spawner = 
+{
+	mon_spawner_use(monster_shambler_spawn);
+};
+
 void() monster_shambler =
 {
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
 	if (deathmatch)
 	{
 		remove(self);
 		return;
 	}
-
+	
 	precache_model ("progs/shambler.mdl");
 	precache_model ("progs/s_light.mdl");
 	precache_model ("progs/h_shams.mdl");
 	precache_model ("progs/shambler_gib_leg_up.mdl");
 	precache_model ("progs/shambler_gib_leg_bottom.mdl");
 	precache_model ("progs/shambler_gib_shield.mdl");
-	
 	precache_sound ("shambler/buildup.wav");
 	precache_sound ("shambler/explosion.wav");
 	precache_sound ("shambler/sattck1.wav");
@@ -492,36 +532,12 @@ void() monster_shambler =
 	precache_sound ("shambler/footsteps1.wav");
 	precache_sound ("shambler/footsteps2.wav");
 	precache_sound ("shambler/footsteps3.wav");
-
-	self.solid = SOLID_SLIDEBOX;
-	self.movetype = MOVETYPE_STEP;
-	setmodel (self, "progs/shambler.mdl");
 	
-	//gnounc
-	self.noise = "shambler/ssight.wav";	//gnounc
-	self.netname = "Shambler";
-	//self.info_name = "    BERZERKER"; // empty spaces are for aligning
-	self.killstring = " was obliterated by the Berzerker\n";
-
-	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);
-	self.head_offset = '16 2 43';
-	self.head_size = 16;
-	self.health_head = SHAMBLER_HEAD;
-	self.health_head_max = SHAMBLER_HEAD;
+	setsize (self, VEC_HULL2_MIN, VEC_HULL2_MAX);// set for telefrag check
 	self.health = SHAMBLER_HEALTH;
-	self.max_health = SHAMBLER_HEALTH;
-	self.gib_threshold = 300;
-	self.monstertype = TYPE_SHAMBLER;
-	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS | MFL_ROBOT| MFL_PUSH_RESISTENT;
-	self.yaw_speed = 15;
-
-	self.th_stand = sham_stand1;
-	self.th_walk = sham_walk1;
-	self.th_run = sham_run1;
-	self.th_die = sham_die;
-	self.th_melee = sham_melee;
-	self.th_missile = sham_magic1;
-	self.th_pain = sham_pain;
+	if ( monster_spawnsetup( monster_shambler_spawner ) )
+		return;
 	
-	walkmonster_start();
+	addmonster(1);
+	monster_shambler_spawn();
 };

@@ -194,6 +194,7 @@ void(vector st, float lflag) ZombieFireHead =
 	zombie_paine1 ();
 
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.classname = "zombie_head";	//gnounc
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
@@ -214,6 +215,8 @@ void(vector st, float lflag) ZombieFireHead =
 	}
 	
 	missile.nextthink = time + 2.5;
+	missile.sprawlflags |= SFLP_OGRE; // mark explosion type
+	appendToList(missile);
 	missile.touch = OgreGrenadeExplode;
 	missile.avelocity = '300 100 200';
 	missile.think = SUB_Remove;
@@ -236,6 +239,7 @@ void(vector st) ZombieFireGrenade =
 		return;
 	}
 	missile = spawn ();
+	missile.clip = CLIP_PROJECTILE;
 	missile.classname = "zombie_grenade";	//gnounc
 	missile.owner = self;
 	missile.movetype = MOVETYPE_BOUNCE;
@@ -458,9 +462,6 @@ void() zombie_die =
 	ThrowGib ("progs/m_gib_03.mdl", self.lasthit_damage);
 	ThrowGib ("progs/m_gib_04.mdl", self.lasthit_damage);
 	ThrowGib ("progs/m_gib_05.mdl", self.lasthit_damage);
-
-	self.think = SUB_Null;
-	self.nextthink = -1;
 };
 
 /*
@@ -544,42 +545,20 @@ void(entity attacker, float take) zombie_pain =
 
 If crucified, stick the bounding box 12 pixels back into a wall to look right.
 */
-void() monster_zombie =
+void() monster_zombie_spawn =
 {
-	if (deathmatch)
-	{
-		remove(self);
-		return;
-	}
-
-	precache_model ("progs/zombie.mdl");
-	precache_model ("progs/zombie_headless.mdl");
-	precache_model ("progs/h_zombie.mdl");
-	precache_model ("progs/zom_gib.mdl");
-
-	precache_sound ("zombie/z_idle.wav");
-	precache_sound ("zombie/z_idle1.wav");
-	precache_sound ("zombie/z_shot1.wav");
-	precache_sound ("zombie/z_gib.wav");
-	precache_sound ("zombie/z_pain.wav");
-	precache_sound ("zombie/z_pain1.wav");
-	precache_sound ("zombie/z_fall.wav");
-	precache_sound ("zombie/z_miss.wav");
-	precache_sound ("zombie/z_hit.wav");
-	precache_sound ("zombie/idle_w2.wav");
-
+	self.skin = 0; // custom mods skin reset
+	self.classname = "monster_zombie";
+	
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
-
+	self.clip = CLIP_MONSTER;
 	setmodel (self, "progs/zombie.mdl");
-
-	//gnounc
+	setsize (self, '-16 -16 -24', '16 16 28');
+	
 	self.noise = "zombie/z_idle.wav";	//gnounc
 	self.netname = "zombie";
-	//self.info_name = "   Obsolete Bot";
 	self.killstring = " joins the Zombies\n";
-
-	setsize (self, '-16 -16 -24', '16 16 28'); //40
 	self.head_offset = '-2 -1 23';
 	self.head_size = 8;
 	self.health = ZOMBIE_HEALTH;
@@ -587,10 +566,8 @@ void() monster_zombie =
 	self.health_head = ZOMBIE_HEAD;
 	self.health_head_max = ZOMBIE_HEAD;
 	self.skinchange = 1;
-
 	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT;
 	self.monstertype = TYPE_ZOMBIE;
-	
 	self.th_stand = zombie_stand1;
 	self.th_walk = zombie_walk1;
 	self.th_run = zombie_run1;
@@ -606,4 +583,46 @@ void() monster_zombie =
 	}
 	else
 		walkmonster_start();
+};
+
+void() monster_zombie_spawner = 
+{
+	mon_spawner_use(monster_zombie_spawn);
+};
+
+void() monster_zombie =
+{
+	if (!SUB_ShouldSpawn()) return;
+	if (nomonster()) return;
+	if (deathmatch)
+	{
+		remove(self);
+		return;
+	}
+	
+	precache_model ("progs/zombie.mdl");
+	precache_model ("progs/zombie_headless.mdl");
+	precache_model ("progs/h_zombie.mdl");
+	precache_model ("progs/zom_gib.mdl");
+	precache_sound ("zombie/z_idle.wav");
+	precache_sound ("zombie/z_idle1.wav");
+	precache_sound ("zombie/z_shot1.wav");
+	precache_sound ("zombie/z_gib.wav");
+	precache_sound ("zombie/z_pain.wav");
+	precache_sound ("zombie/z_pain1.wav");
+	precache_sound ("zombie/z_fall.wav");
+	precache_sound ("zombie/z_miss.wav");
+	precache_sound ("zombie/z_hit.wav");
+	precache_sound ("zombie/idle_w2.wav");
+	
+	setsize (self, '-16 -16 -24', '16 16 28');
+	self.health = ZOMBIE_HEALTH;
+	if ( !(self.spawnflags & SPAWN_CRUCIFIED) )
+	{
+		if ( monster_spawnsetup( monster_zombie_spawner ) ) 
+			return;
+		
+		addmonster(1);
+	}
+	monster_zombie_spawn();
 };
