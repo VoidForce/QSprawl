@@ -1,4 +1,9 @@
 // copper stuff
+
+const string version_s = "Copper Quake 1.30 - 31 October 2023";
+const float version_f = 1.30;
+.float version = worldtype;
+
 entity s;
 string	keyType;
 

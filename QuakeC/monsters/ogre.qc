@@ -202,7 +202,10 @@ void(float losthead = 0) OgreFireGrenade =
 		missile.classname = "plasma";
 	}
 	else
+	{
 		setmodel (missile, "progs/grenade.mdl");
+		missile.classname = "grenade";
+	}
 	setsize (missile, '0 0 0', '0 0 0');
 	setorigin (missile, self.origin + base_forward * 31 + '0 0 37'); // gun offset
 	

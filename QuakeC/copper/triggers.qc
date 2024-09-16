@@ -912,15 +912,12 @@ void() hurt_touch =
 		if (time < self.attack_finished)
 			return;
 	
-	/*
-	i have no idea what this all about
 	if (self.spawnflags & 1)
 	{
-		T_Damage (other, self, self, other.health + min(other.armorvalue, other.health / other.armortype) + 5);
+		T_Damage (other, self, self, other.health + min(other.armorvalue, other.health) + 5, NOFLAGS);
 	}
 	else
-	*/
-	T_Damage (other, self, self, self.dmg, NOFLAGS);
+		T_Damage (other, self, self, self.dmg, NOFLAGS);
 	
 	self.dmgtime = time;
 	self.attack_finished = time + self.delay;

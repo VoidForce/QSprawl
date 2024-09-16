@@ -183,9 +183,9 @@ void(float gun) deployGun =
 	W_SetCurrentAmmo ();
 };
 
-/*void() initGrenadeList =
+void() initGrenadeList =
 {
-	local entity head;
+	entity head;
 
 // this shouldn't suppose to happen but we play safe
 	if (!grenade_handler)
@@ -194,6 +194,8 @@ void(float gun) deployGun =
 	grenade_handler.list_previous = world; //reset 
 	
 	head = findfloat(isgrenade, 1);
+	if (!(head))
+		return;
 	grenade_handler.list_next = head;
 	while (head)
 	{
@@ -202,7 +204,7 @@ void(float gun) deployGun =
 			head.chain.list_previous = head;
 		head = head.chain;
 	}
-};*/
+};
 
 // insert to the begining, works with 0 objects in the list
 void(entity new) appendToList =
@@ -212,6 +214,7 @@ void(entity new) appendToList =
 		dprint("\n WORLD in Append\n");
 		return;
 	}
+	new.isgrenade = 1;
 
 	/*
 	dprint("\n Append to the list \n");
@@ -232,7 +235,7 @@ void(entity new) appendToList =
 	if (grenade_handler.list_next)
 	{
 		new.list_next = grenade_handler.list_next; // ->
-		grenade_handler.list_next.list_previous = new; // <-
+		new.list_next.list_previous = new;// <-
 	}
 	grenade_handler.list_next = new; // new became head
 	new.list_previous = grenade_handler;
@@ -246,16 +249,13 @@ void(entity new) appendToList =
 
 void(entity who) removeFromList =
 {
-	if (!who)
+	if (!who || who == who.list_next || who == who.list_previous || !who.isgrenade)
 	{
-		dprint("\n WORLD in REMOVE\n");
+		dprint("\n Wrong grenade list remove, rebuilding\n");
+		initGrenadeList();
 		return;
 	}
-	
-	if (who == who.list_next || who == who.list_previous)
-	{
-		dprint("removeFromList: who loops to itself\n");
-	}
+
 	/*
 	dprint("\n Remove from the list \n");
 	float i;
@@ -280,6 +280,7 @@ void(entity who) removeFromList =
 	
 	who.list_next = world;
 	who.list_previous = world;
+	who.isgrenade = 0;
 };
 
 void(vector direction, float hitdistance) checkGrenadeCollision
@@ -299,23 +300,41 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 	while (head)
 	{
 		i++;
-		distance = distancetoray(gunpoint, direction, head.origin);
+	
 		next = head.list_next;// we will remove head in case of success so, keep the chain
-		if (distance < hitdistance)
+		if (head.isgrenade) //safety check
 		{
-			traceline(gunpoint, gunpoint + direction * vlen(head.origin - gunpoint), FALSE, self);
-			if (trace_fraction > 0.95)
+			distance = distancetoray(gunpoint, direction, head.origin);
+			if (distance < hitdistance)
 			{
-				if (head.owner.flags & FL_CLIENT)
-					head.think = GrenadeExplode;
-				else if (head.sprawlflags & SFLP_OGRE)
-					head.think = OgreGrenadeExplode;
-				else
-					head.think = ShalGrenadeExplode;
-
-				head.nextthink = time;
-				head.owner = self;
-				return;
+				traceline(gunpoint, gunpoint + direction * vlen(head.origin - gunpoint), FALSE, self);
+				if (trace_fraction > 0.95)
+				{
+					if (head.owner.flags & FL_CLIENT)
+					{
+						head.think = GrenadeExplode;
+						head.nextthink = time;
+					}
+					else if (head.sprawlflags & SFLP_OGRE)
+					{
+						head.think = OgreGrenadeExplode;
+						head.nextthink = time;
+					}
+					else if (head.classname == "plasma")
+					{
+						head.think = ShalGrenadeExplode;
+						head.nextthink = time;
+					}
+					else
+					{
+						dprint("\n\n Non-grenade entity in the list \n\n");
+						head.list_next = world;
+						head.list_previous = world;
+						head.isgrenade = 0;
+						initGrenadeList();
+						return;
+					}
+				}
 			}
 		}
 		
@@ -323,6 +342,7 @@ void(vector direction, float hitdistance) checkGrenadeCollision
 		if (i > 1024)
 		{
 			dprint("i > 1024, Loop runaway in checkGrenadeCollision\n");
+			initGrenadeList();
 			return;
 		}
 	}
@@ -1705,7 +1725,7 @@ void() W_ChangeWeapon =
 	{
 		fl = IT_SUPER_SHOTGUN;
 
-		if (self.ammo_shells < 2)
+		if (self.ammo_shells < 1)
 			am = 1;
 	}		
 
@@ -1833,7 +1853,7 @@ void() CycleWeaponCommand =
 		{
 			w = IT_SUPER_SHOTGUN;
 
-			if (self.ammo_shells < 2)
+			if (self.ammo_shells < 1)
 				am = 1;
 		}		
 
@@ -1936,7 +1956,7 @@ void() CycleWeaponReverseCommand =
 		{
 			w = IT_SUPER_SHOTGUN;
 
-			if (self.ammo_shells < 2)
+			if (self.ammo_shells < 1)
 			am = 1;
 		}
 

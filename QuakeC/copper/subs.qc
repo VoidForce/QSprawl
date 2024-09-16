@@ -113,13 +113,13 @@ float() SUB_ShouldSpawn =
 {
 	// do a minimum-version check so cheeky mappers can place surprise 
 	// trigger_hurts to frag people who don't upgrade
-	/*
+	
 	if (self.version && self.version <= version_f)
 	{
 		remove(self);
 		return FALSE;
 	}
-	*/
+	
 	// check coop spawn flags, because we invented them and the exe only 
 	// checks skill/dm flags
 

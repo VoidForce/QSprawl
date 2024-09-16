@@ -216,6 +216,7 @@ void(vector st, float lflag) ZombieFireHead =
 	
 	missile.nextthink = time + 2.5;
 	missile.sprawlflags |= SFLP_OGRE; // mark explosion type
+	//missile.isgrenade = 1;
 	appendToList(missile);
 	missile.touch = OgreGrenadeExplode;
 	missile.avelocity = '300 100 200';

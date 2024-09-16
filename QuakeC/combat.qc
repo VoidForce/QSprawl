@@ -483,8 +483,10 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 	
 	if (dflags & DF_INSTAGIB)
 	{
-		targ.health = -1;
+		targ.health = -50;
 		targ.lasthit_damage = 1000;
+		Killed (targ, attacker);
+		return;
 	}
 	else
 	{
