@@ -1033,6 +1033,7 @@ void() W_FireGauss =
 void() W_FireChaingun =
 {
 	vector dir;
+	vector new_vel;
 	
 	SuperDamageSound ();
 	self.show_hostile = time + 1;	// wake monsters up	
@@ -1051,10 +1052,14 @@ void() W_FireChaingun =
 	sendMessageVecVecFlag(offsetWeapon(48,4,-10), trace_endpos, MF_CHAINGUN, TE_BULLETTRACE);
 	checkGrenadeCollision(dir, 8);
 
+	new_vel = VEC_ORIGIN;
 	if (self.wallrun) 
-		self.velocity += v_forward * (-50);
+		new_vel += v_forward * (-50);
 	else
-		self.velocity += v_forward * (-75);
+		new_vel += v_forward * (-75);
+	new_vel_z *= 0.5;
+	self.velocity += new_vel;
+	
 	makePunch([0, 0, 2], [0, 0, 0], [0, 0, 0]);
 	//makePunch([2+random()*2, 0.5, 0], [crandom(), 0, 0], [0, 0, 0]); //crandom() * crandom() * 4
 	addPunchVelocity(crandom()*5,crandom()*5,0);
