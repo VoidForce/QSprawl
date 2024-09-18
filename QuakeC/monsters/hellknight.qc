@@ -166,7 +166,6 @@ void()	hknight_walk20	=[	$walk20,	hknight_walk1	] {setHead('9 2 31');ai_walk(2);
 //===========================================================================
 
 void()	hknight_run1	=[	$run1,		hknight_run2	]{Think(0.075);setHead('11 1 29');  // 30 run
-	hk_idle_sound();
 	ai_run (18); 
 	CheckForCharge (); 
 };
@@ -371,7 +370,7 @@ void()	hknight_watk22	=[	$w_attack22,hknight_run1	] {ai_charge_side(); setHead('
 
 void() hk_idle_sound =
 {
-	if (random() < 0.2)
+	if (random() < 0.05)
 		sound (self, CHAN_VOICE, "hknight/idle.wav", 1, ATTN_NORM);
 };
 
