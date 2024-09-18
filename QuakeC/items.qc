@@ -292,7 +292,7 @@ void() health_touch =
 	if (self.count > 0)		// only respawn 'count' more times
 		self.count = self.count - 1;
 
-	if (self.count < 1)
+	if (self.wait > 0 && self.count < 1)
 		SUB_RemoveSoon();	// can't remove during c touch/movement code
 };	
 
@@ -981,7 +981,7 @@ void() ammo_touch =
 	if (self.count > 0)		// only respawn 'count' more times
 		self.count = self.count - 1;
 // OUT OF CHARGES REMOVE	
-	if (self.count < 1)
+	if (self.wait > 0 && self.count < 1)
 	{
 		self.touch = SUB_Null;
 		SUB_RemoveSoon();	// can't remove during c touch/movement code
