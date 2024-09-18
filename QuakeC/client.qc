@@ -955,7 +955,7 @@ void() PlayerJump =
 		addShake(-50,crandom()*50, 0);
 		self.velocity_z = self.velocity_z + 270;
 		self.jump_timer = time;
-		self.flags = self.flags - FL_ONGROUND;	// don't stairwalk
+		self.flags = self.flags - (self.flags & FL_ONGROUND);
 		// player jumping sound
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 	}
