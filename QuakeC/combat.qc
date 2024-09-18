@@ -187,28 +187,23 @@ void(entity targ, entity attacker) Killed =
 	self = oself;
 };
 
-void(entity targ, entity attacker, float force, float verticalForce, optional float vert_offset) T_Push =
+void(entity targ, entity attacker, float force, float verticalForce) T_Push =
 {
+// fixed, NAN velocity with (optional) parameter + removing the onground flag causes game to crash
 	vector direction;
-	float modifiedForce;
 	
 	if (targ.pushback_time > time) // vore shield only
 		return;
 	if (targ.monsterflags & MFL_SHIELD)
 		return;
 	
-	modifiedForce = force;
-	
 	if ( targ.movetype == MOVETYPE_WALK )
 	{
-		direction = targ.origin - ((attacker.absmin + attacker.absmax) * 0.5 + [0,0,vert_offset]);
+		direction = targ.origin - attacker.origin;
 		direction = normalize(direction);
 
-		targ.velocity = targ.velocity + (direction * modifiedForce);
+		targ.velocity = targ.velocity + (direction * force);
 		targ.velocity_z = targ.velocity_z + verticalForce;
-		
-		if (targ.flags & FL_ONGROUND)
-			targ.flags = targ.flags - FL_ONGROUND;
 	}
 };
 
@@ -659,12 +654,17 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 		else
 		{
 			fall = radius - epicenter;
+			if (fall == 0) // extra paranoid 
+				fall = 1;
 			distoutepicenter = distancetotarget - epicenter;
 			fallfraction = 1 - ( distoutepicenter / fall);
 			
 		// bug: fix for that stupid bug that heals monster for 1000 hp	
 			if (fallfraction < 0) 
+			{
 				fallfraction = 0; 
+				continue; // do we even care?
+			}
 			points = damage * fallfraction;
 		}
 
@@ -675,9 +675,12 @@ void(entity inflictor, entity attacker, float damage, entity ignore, float radiu
 			else if (head.flags & FL_MONSTER && !(attacker.flags & FL_CLIENT))
 				points *= 3;
 			T_Damage (head, inflictor, attacker, points, dflags);
-
+			
 			if (pushaway != 0 && head.flags & FL_CLIENT) // divide by zero check here
 			{
+				if (damage == 0) // extra paranoid 
+					damage = 1;
+
 				magnitude = points/damage;
 				T_Push (head, inflictor, lerp(200/pushaway, 500/pushaway, magnitude), 100);
 				addShakeEnt(crandom() * skill * 40 * magnitude, crandom() * skill * 40 * magnitude, crandom() * skill * 40 * magnitude, head);
