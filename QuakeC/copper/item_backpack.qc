@@ -177,7 +177,7 @@ void() BackpackAutoTouch =
 			
 			self.ammo_rockets = 2;
 			self.ammo_cells = 3;
-			self.skin = 2;
+			//self.skin = 2;
 		}
 		self.armorvalue = 0;
 	}
@@ -209,11 +209,12 @@ Keys:
 void() item_backpack =
 {
 	if (!SUB_ShouldSpawn()) return;
+	self.skin = 0; // we don't use new model for it, so this shuts up the error message
 	precache_model_safe("progs/backpack.mdl");
 
 	setmodel (self, "progs/backpack.mdl");
 	setsize (self, '-16 -16 0', '16 16 56');
-	self.skin = 1;
+	//self.skin = 1;
 	
 	self.ammo_shells = floor(3 * random() + 6);
 	self.ammo_nails = floor(5 * random() + 12);
@@ -224,7 +225,7 @@ void() item_backpack =
 		
 		self.ammo_rockets = 2;
 		self.ammo_cells = 3;
-		self.skin = 2;
+		//self.skin = 2;
 	}
 	
 	self.touch = BackpackAutoTouch;
@@ -298,7 +299,7 @@ void() DropBackpack =
 	if (self.flags & FL_CLIENT)
 	{	// apply player's colormap to his backpack, although currently this only works in software
 		item.colormap = self.colormap;
-		item.skin = 3;
+		//item.skin = 3;
 		
 		if (coop == 1)
 		{	// players can only pick up their own backpacks, which never despawn (body run rules)

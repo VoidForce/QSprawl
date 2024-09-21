@@ -24,6 +24,7 @@ misc.qc
 
 //copper by Lunaran
 copper/defsnconsts.qc
+copper/ai.qc
 copper/buttons.qc
 copper/doors.qc
 copper/fog.qc
@@ -33,6 +34,7 @@ copper/item_backpack.qc
 copper/items.qc
 copper/lights.qc
 copper/maths.qc
+copper/meat.qc
 copper/monsters.qc
 copper/misc.qc 
 copper/plats.qc

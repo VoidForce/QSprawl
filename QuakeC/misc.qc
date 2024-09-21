@@ -262,9 +262,10 @@ void() barrel_explode =
 	}
 	self.classname = "explo_box";
 	// did say self.owner..i believe it meant to say enemy. now properly tracks who shot the barrel	--gnounc
-	T_RadiusDamage (self, self.enemy, 160, world);
+	T_RadiusDamagePlayer(self, self.enemy, 200, world, 320, 96);
+	//T_RadiusDamage (self, self.enemy, 160, world);
 	sound (self, CHAN_VOICE, "weapons/r_exp3.wav", 1, ATTN_NORM);
-	sendMessageVec(self.origin, TE_EXPLOSION);
+	sendMessageVec(self.origin + '0 0 32', TE_EXPLOSION);
 
 	self.origin_z = self.origin_z + 32;
 	BecomeExplosion ();

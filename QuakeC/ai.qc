@@ -107,11 +107,12 @@ void() movetarget_f =
 /*QUAKED path_corner (0.5 0.3 0) (-8 -8 -8) (8 8 8)
 Monsters will continue walking towards the next target corner.
 */
+/* copper
 void() path_corner =
 {
 	movetarget_f ();
 };
-
+*/
 
 /*
 =============
@@ -414,6 +415,7 @@ The monster is walking it's beat
 */
 void(float dist) ai_walk =
 {	
+	if (!ai_check_liquid()) return;
 	movedist = dist;
 	
 	// check for noticing a player
@@ -433,6 +435,8 @@ The monster is staying in one place for a while, with slight angle turns
 */
 void() ai_stand =
 {
+	if (!ai_check_liquid()) return;
+	
 	if (FindTarget ())
 		return;
 	
@@ -611,6 +615,7 @@ The monster has an enemy it is trying to kill
 */
 void(float dist) ai_run =
 {
+	if (!ai_check_liquid()) return;
 	movedist = dist;
 // see if the enemy is dead
 	if (self.enemy.health <= 0)

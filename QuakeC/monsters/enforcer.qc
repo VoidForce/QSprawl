@@ -65,8 +65,8 @@ void (void() thinkst) Enforcer_CheckRefire =
 {
 	if (self.monster_ammo < 1)
 	{
-		self.monster_ammo = 6;
-		self.attack_finished = time + 4;
+		self.monster_ammo = 2;
+		self.attack_finished = time + 1.5;
 		return;
 	}
 	if (!visible (self.enemy))
@@ -378,7 +378,7 @@ void() monster_enforcer_spawn =
 	self.health_head_max = ENFORCER_HEAD;
 	self.monsterflags |= MFL_HASHEAD | MFL_HEADKILLS;
 	self.monstertype = TYPE_ENFORCER;
-	self.monster_ammo = 6;
+	self.monster_ammo = 2;
 	self.gib_threshold = 75;
 	self.skinchange = 1; // why this is not a flag tho? // Because it's used by findfloat
 	self.th_stand = enf_stand1;

@@ -376,9 +376,7 @@ void(entity t) target_kill_remove =
 
 	// 'murder' spawnflag: actually kill monsters instead of removing them
 	if ((t.flags & FL_MONSTER) && (t.deadflag == DEAD_NO))
-	{
-		T_Damage(t, activator, self, t.health + 20, DMGTYPE_SCRIPT);
-	}
+		T_Damage(t, activator, self, t.health + 20, NOFLAGS);
 	else if (t.copperflags & CFL_SPAWNER)
 	{
 		while (t.count > 0)
@@ -635,7 +633,7 @@ void() lavaball_touch =
 	if (other.takedamage)
 	{
 		sound (self, CHAN_WEAPON, "zombie/z_hit.wav", 1, ATTN_IDLE);
-		T_Damage (other, self, self, self.dmg, DMGTYPE_LAVA);
+		T_Damage (other, self, self, self.dmg, NOFLAGS);
 	}
 	remove(self);
 }

@@ -88,20 +88,6 @@ const float	SVFL_RESPAWNING		= 2097152;	// to notify target_autosave that we jus
 
 const float	DEAD_SPECTATING			= 3;
 
-// type parameters for damage functions
-//const float DMGTYPE_EXPLOSION		= 1;	// half to shamblers
-//const float DMGTYPE_ZKILL			= 2;	// death to zombies (direct EXPLOSION always kills zombies but splash doesn't)
-//const float DMGTYPE_NOARMOR			= 4;	// bypass armor
-//const float DMGTYPE_MELEE			= 8;	// inflictor == attacker
-const float DMGTYPE_TELEFRAG		= 16;
-//const float DMGTYPE_LIGHTNING		= 32;
-//const float DMGTYPE_DROWNING		= 64;
-//const float DMGTYPE_FALLING			= 128;	// everyone's favorite
-const float DMGTYPE_LAVA			= 256;
-const float DMGTYPE_SLIME			= 512;
-//const float DMGTYPE_CRUSH			= 1024;
-const float DMGTYPE_SCRIPT			= 2048;	// target_items, invoke, etc
-
 const float	SPAWN_NOTEASY		= 256;
 const float	SPAWN_NOTNORMAL		= 512;
 const float	SPAWN_NOTHARD		= 1024;

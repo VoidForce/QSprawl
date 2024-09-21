@@ -552,9 +552,9 @@ enumflags SLOWMOSTATE {
 	SLOWMO_NEEDSCHANGE,
 };*/
 
-float	slowmotion;		// flags based?
+nosave float	slowmotion;		// flags based?
 //float 	slowmotion_flags;
-float	slowmotion_time;
+nosave float	slowmotion_time;
 //float	slowmotion_event_time;
 //float	slowmotion_cooldown;
 #define SKIN_DEFAULT 0
@@ -907,7 +907,7 @@ entity		grenade_handler; // global
 .float		chaingun_speed;
 .float		chaingun_count;
 
-.float		cshift_value;
+nosave .float		cshift_value;
 
 .float		forcedslide_timer; // no friction until timer ends
 .float		noairacceleration_timer; // same for air acceleration

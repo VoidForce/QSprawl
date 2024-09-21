@@ -145,7 +145,7 @@ void() sham_smash10    =[      $smash10,      sham_smash11   ] {Think(0.05);setH
 	shakeViewRadius(self.origin, 768, [amplitude, amplitude * 0.4 * crandom(), amplitude * crandom()]);
 	sendMessageVecFlag(self.origin + '0 0 -20', 600, TE_SHOCKWAVE);
 	T_RadiusDamagePlayer(self, self, 40, self, 512, 64);
-	T_Push(self.enemy, self, amplitude * 1.5, 270, -32);
+	T_Push(self.enemy, self, amplitude * 1.5, 270);
 
 	if (delta > 100)
 		return;
@@ -208,7 +208,7 @@ void() sham_swingl7 =[      $swingl7,      sham_swingl8   ] {Think(0.06);ai_char
 void() sham_swingl8 =[      $swingl8,      sham_swingl9   ] {Think(0.06);ai_charge_side(); setHead('12 15 36');ai_charge(4);}; // 64
 void() sham_swingl9 =[      $swingl9,      sham_run1  ] {setHead('20 7 38'); // 65
 	ai_charge(8);
-	if (random()<0.5)
+	if (random()<0.3)
 		self.think = sham_swingr1;
 };
 
@@ -224,9 +224,8 @@ void() sham_swingr6 =[      $swingr6,      sham_swingr7   ] {Think(0.06);ai_char
 void() sham_swingr7 =[      $swingr7,      sham_swingr8   ] {Think(0.06);ai_charge_side(); setHead('5 -17 36');ai_charge(6); ShamClaw(-250);}; // 54
 void() sham_swingr8 =[      $swingr8,      sham_swingr9   ] {Think(0.06);ai_charge_side(); setHead('10 -14 37');ai_charge(3);}; // 55
 void() sham_swingr9 =[      $swingr9,      sham_run1  ] {setHead('14 -4 39'); // 56
-	ai_charge(1);
 	ai_charge(10);
-	if (random()<0.5)
+	if (random()<0.3)
 		self.think = sham_swingl1;
 };
 
@@ -255,7 +254,7 @@ void() sham_suck =
 	distance += 600;
 	if (distance > 1990)
 		distance = 1990;
-	T_Push(self.enemy, self, -distance, 270, -32);
+	T_Push(self.enemy, self, -distance, 270);
 	
 	sendMessageVecFlag(self.origin + '0 0 -20', -200, TE_SHOCKWAVE);
 };

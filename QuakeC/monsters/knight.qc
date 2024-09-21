@@ -65,7 +65,10 @@ void() knight_trail =
 	
 	trail.solid = SOLID_NOT;
 	trail.movetype = MOVETYPE_NONE;
-	setmodel (trail, "progs/knight_trail.mdl");
+	if (skill > 1)
+		setmodel (trail, "progs/knight.mdl");// less noticable
+	else
+		setmodel (trail, "progs/knight_trail.mdl");//
 	setsize (trail, '-16 -16 -24', '16 16 32'); //28
 	setorigin(trail, self.origin);
 	trail.angles = self.angles;

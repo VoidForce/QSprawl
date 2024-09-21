@@ -426,6 +426,11 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 			{
 				res = armorstats.explosives_resistance;
 				mit = 0;
+				if (skill > 2)
+				{
+					res += 0.2;
+					res = min(0.9, res);
+				}
 			}
 		}
 
