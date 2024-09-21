@@ -481,6 +481,7 @@ void() quickMeleeStart =
 	self.sprawlflags |= SFL_INQUICKMELEE | SFL_STOPMELEE;
 	self.sprawlflags -= self.sprawlflags & SFL_HOLD;
 	self.engineflags |= ENF_CHANGESKIN;
+	self.weapon_skin = 0; // no skin fix
 	self.weaponmodel = "progs/v_katana.mdl";
 	
 	sound (self, CHAN_AUTO, "weapons/f_katana.wav", 1, ATTN_NORM);
