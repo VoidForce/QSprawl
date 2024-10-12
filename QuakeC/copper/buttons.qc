@@ -228,6 +228,8 @@ Alt Target Pattern: 'target' when touched, 'target2' when fully depressed, 'targ
 void() func_button =
 {
 	if (!SUB_ShouldSpawn()) return;
+	self.sprawlflags |= SFL_MOVINGSOLID;
+	
 	button_sounds();
 	SetMovedir ();
 

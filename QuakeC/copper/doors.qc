@@ -807,6 +807,7 @@ Alt Target Pattern: 'target' when starting to open, 'target2' when opened, 'targ
 void() func_door =
 {
 	if (!SUB_ShouldSpawn()) return;
+	self.sprawlflags |= SFL_MOVINGSOLID;
 	
 	SetMovedir ();
 
@@ -1246,6 +1247,8 @@ Activating this door with a trigger while it is opening will have no effect. Act
 void () func_door_secret =
 {
 	if (!SUB_ShouldSpawn()) return;
+	self.sprawlflags |= SFL_MOVINGSOLID;
+	
 	self.sounds = zeroconvertdefault(self.sounds, 3);
 	
 	if (self.sounds == 1)

@@ -275,7 +275,7 @@ void() barrel_explode =
 
 /*QUAKED misc_explobox (0 .5 .8) (0 0 0) (32 32 64)
 TESTING THING*/
-
+/*
 void() misc_explobox =
 {
 	local float	oldz;
@@ -309,12 +309,12 @@ void() misc_explobox =
 	}
 };
 
-
+*/
 
 
 /*QUAKED misc_explobox2 (0 .5 .8) (0 0 0) (32 32 64)
 Smaller exploding box, REGISTERED ONLY*/
-
+/*
 void() misc_explobox2 =
 {
 	local float	oldz;
@@ -345,7 +345,7 @@ void() misc_explobox2 =
 		remove(self);
 	}
 };
-
+*/
 //============================================================================
 
 float SPAWNFLAG_SUPERSPIKE	= 1;

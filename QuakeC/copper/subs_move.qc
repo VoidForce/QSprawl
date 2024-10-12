@@ -47,7 +47,7 @@ void() SetMovedir =
 SUB_CalcMoveDone
 ===============
 */
-/*
+
 void()  SUB_CalcMoveDone =
 {
 // After moving, set origin to exact final destination
@@ -57,7 +57,6 @@ void()  SUB_CalcMoveDone =
 	if (self.think1)
 		self.think1();
 }
-*/
 
 /*
 =============
@@ -67,7 +66,7 @@ calculate self.velocity and self.nextthink to reach dest from
 self.origin traveling at speed
 ===============
 */
-/*
+
 void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 {
 	vector	vdestdelta;
@@ -110,13 +109,13 @@ void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 // scale the destdelta vector by the time spent traveling to get velocity
 	self.velocity = vdestdelta * (1/traveltime);	// qcc won't take vec/float
 }
-*/
+
 /*
 =============
 SUB_CalcMoveEnt
 ===============
 */
-/*
+
 void(entity ent, vector tdest, float tspeed, void() func) SUB_CalcMoveEnt =
 {
 	local entity stemp;
@@ -126,7 +125,6 @@ void(entity ent, vector tdest, float tspeed, void() func) SUB_CalcMoveEnt =
 	SUB_CalcMove (tdest, tspeed, func);
 	self = stemp;
 }
-*/
 
 // ================================================================
 

@@ -1,4 +1,4 @@
-C:/QSprawl/Sprawl/progs.dat
+C:/QSprawl/Sprawl/sprawl.dat
 
 #pragma autoproto
 #pragma warning disable Q208
@@ -27,6 +27,7 @@ copper/defsnconsts.qc
 copper/ai.qc
 copper/buttons.qc
 copper/doors.qc
+copper/explobox.qc
 copper/fog.qc
 copper/fx.qc
 copper/item_keys_runes.qc
@@ -36,6 +37,7 @@ copper/lights.qc
 copper/maths.qc
 copper/meat.qc
 copper/monsters.qc
+copper/m_oldone.qc
 copper/misc.qc 
 copper/plats.qc
 copper/projectiles.qc
@@ -71,7 +73,7 @@ monsters/hellknight.qc		// registered
 //monsters/rotfish.qc			// registered
 monsters/vore.qc			// registered
 monsters/enforcer.qc		// registered
-monsters/shub.qc			// registered
+//monsters/shub.qc			// registered
 
 monsters/_removed_declarations.qc	// in case of maphacks using some of these
 monsters/_monster_replacements.qc	// vanilla, dwell

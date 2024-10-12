@@ -336,6 +336,7 @@ Alt Target Pattern: 'target' upon rising, 'target2' upon reaching top, 'target3'
 void() func_plat =
 {
 	if (!SUB_ShouldSpawn()) return;
+	self.sprawlflags |= SFL_MOVINGSOLID;
 
 	precache_model_safe(self.model);
 
@@ -988,6 +989,7 @@ void() func_train =
 {	
 	if (!SUB_ShouldSpawn()) return;
 	func_train_setup();
+	self.sprawlflags |= SFL_MOVINGSOLID;
 	
 	self.th_stand = train_wait;
 	

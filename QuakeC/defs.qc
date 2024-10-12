@@ -781,7 +781,7 @@ enum monstertypes:int {
 	TYPE_VORE
 };
 
-#define KATANA_DAMAGE			30
+#define KATANA_DAMAGE			40
 #define PISTOL_DAMAGE			70
 #define PISTOL_PENETRATION		-0.4
 #define SMG_DAMAGE				15

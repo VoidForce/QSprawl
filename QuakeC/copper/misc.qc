@@ -963,3 +963,45 @@ void(entity attacker, float damage) boss_pain =
 	else if (p == 0)
 		boss_shockc1();
 }
+
+void() killed_monster =
+{
+	killed_monsters = killed_monsters + 1;
+	WriteByte (MSG_ALL, SVC_KILLEDMONSTER);
+}
+
+void() Cheat_Genocide =
+{
+	entity t;
+	
+	t = nextent(world);	
+	while(t != world)
+	{
+		// these monsters haven't spawned yet, turn them into relays so their 
+		// deathtargets fire as soon as they're triggered and their absence doesn't
+		// break the level
+		if(t.copperflags & CFL_SPAWNER || t.spawnflags & SPAWN_TRIGGERED)
+		{
+			t.classname = "trigger_relay";
+			t.count = 0;
+			t.use = trigger_relay_use;
+			t.spawnflags = 0;
+		}
+		t = nextent(t);
+	}
+	// kill existing monsters second, so that any monsters triggered by other monsters
+	// are already de-monsterized
+	t = nextent(world);
+	while(t != world)
+	{
+		if(t.flags & FL_MONSTER)
+		{
+			// don't forget monsters on the verge of spawning
+			if (t.think == mon_spawner_tryspawn || t.modelindex == 0 || t.classname == string_null )
+				remove(t);
+			else
+				T_Damage(t, self, self, t.health, NOFLAGS);		// waurgh
+		}
+		t = nextent(t);
+	}
+}
