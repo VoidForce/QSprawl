@@ -625,8 +625,14 @@ void(entity attacker, float damage)	ogre_pain =
 		ThrowHeadGib ("progs/m_gib_04.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		ThrowHeadGib ("progs/m_gib_05.mdl", self.lasthit_direction * (300 + random()*100) + [crandom()* 200,crandom()* 200,random()* 200], 0);
 		sendMessageVec(findHeadPosition(self), TE_ROBOTHEAD_EXPLOSION); // particle effect
-		if (self.health > OGRE_HEALTH * 0.5)
-			self.health = OGRE_HEALTH * 0.5;
+		
+		if (self.health > OGRE_MINHP)
+		{
+			self.health -= OGRE_HEAD_EXPLOSION_DAMAGE;
+			if (self.health < OGRE_MINHP)
+				self.health = OGRE_MINHP;
+		}
+		
 		self.pain_finished = time + 8;
 		ogre_paind1();
 		return;
@@ -834,7 +840,7 @@ void() monster_ogre_spawn =
 	self.max_health = OGRE_HEALTH;
 	self.health_head = OGRE_HEAD;
 	self.health_head_max = OGRE_HEAD;
-	self.gib_threshold = 180;
+	self.gib_threshold = 120;
 	self.monsterflags |= MFL_HASHEAD | MFL_ROBOT | MFL_PUSH_RESISTENT;
 	self.monstertype = TYPE_OGRE;
 	self.state = OGRE_SNIPER;

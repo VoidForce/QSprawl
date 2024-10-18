@@ -231,11 +231,11 @@ void()	wiz_walk8	=[ $hover8, wiz_walk1 ] {ai_walk(8);};
 void()	wiz_side1	=[ $hover1, wiz_side2 ] {ai_run(16); Wiz_idlesound();};
 void()	wiz_side2	=[ $hover2, wiz_side3 ] {ai_run(16);};
 void()	wiz_side3	=[ $hover3, wiz_side4 ] {ai_run(16);};
-void()	wiz_side4	=[ $hover4, wiz_side5 ] {ai_run(16);};
-void()	wiz_side5	=[ $hover5, wiz_side6 ] {ai_run(16);};
-void()	wiz_side6	=[ $hover6, wiz_side7 ] {ai_run(16);};
-void()	wiz_side7	=[ $hover7, wiz_side8 ] {ai_run(16);};
-void()	wiz_side8	=[ $hover8, wiz_side1 ] {ai_run(16);};
+void()	wiz_side4	=[ $hover4, wiz_side1 ] {ai_run(16);};
+//void()	wiz_side5	=[ $hover5, wiz_side6 ] {ai_run(16);};
+//void()	wiz_side6	=[ $hover6, wiz_side7 ] {ai_run(16);};
+//void()	wiz_side7	=[ $hover7, wiz_side8 ] {ai_run(16);};
+//void()	wiz_side8	=[ $hover8, wiz_side1 ] {ai_run(16);};
 
 void()	wiz_run1	=[ $hover1, wiz_run2 ] {ai_run(20); Wiz_idlesound();};
 void()	wiz_run2	=[ $hover2, wiz_run3 ] {ai_run(20);};

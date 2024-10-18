@@ -1363,6 +1363,7 @@ void() W_FireLightning =
 	{
 		if (trace_ent.takedamage)
 		{
+			dflags |= DF_SHOCK;
 			if (trace_ent.flags & FL_MONSTER)
 			{
 				if (trace_ent.monsterflags & MFL_HASHEAD)

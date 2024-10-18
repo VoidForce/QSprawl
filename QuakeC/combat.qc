@@ -500,7 +500,11 @@ void(entity targ, entity inflictor, entity attacker, float damage, float dflags,
 		if (dflags & DF_HEADSHOT && targ.monsterflags & MFL_HASHEAD)
 		{
 			targ.health_head -= take;
-			targ.health -= rint(take * 0.4);
+			if (dflags & DF_SHOCK)
+				targ.health -= rint(take);
+			else
+				targ.health -= rint(take * 0.6);
+				
 			targ.monsterflags |= MFL_PAIN_HEADSHOT;
 		}
 		else

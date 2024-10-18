@@ -336,20 +336,33 @@ void() sham_death11     =[      $death11,      decay    ] {
 	}
 };
 
+void(float isexploded) sham_drop =
+{
+	dropAmmo(self.origin, DROP_SHELLS, 20, 20, 16, 8);
+	dropAmmo(self.origin, DROP_NAILS, 150, 100, 80, 60);
+	if (isexploded)
+	{
+		dropAmmo(self.origin, DROP_ROCKETS, 6, 4, 3, 2);
+		dropAmmo(self.origin, DROP_BULLETS, 40, 40, 30, 20);
+		dropHealth(self.origin, DROP_ARMOR, 5, 4, 3, 2);
+	}
+	else
+	{
+		dropAmmo(self.origin, DROP_CELLS, 8, 7, 6, 4);
+		dropAmmo(self.origin, DROP_BULLETS, 20, 20, 10, 10);
+		dropHealth(self.origin, DROP_ARMOR, 4, 2, 0, 0);
+		dropHealth(self.origin, DROP_ARMOR_ONE, 0, 0, 4, 4);
+	}
+};
+
 void() sham_die =
 {
 	self.solid = SOLID_NOT;
 	// check for gib
-	dropAmmo(self.origin, DROP_SHELLS, 20, 20, 16, 8);
-	dropAmmo(self.origin, DROP_NAILS, 150, 100, 80, 60);
-	dropAmmo(self.origin, DROP_ROCKETS, 6, 4, 3, 2);
-	dropAmmo(self.origin, DROP_CELLS, 6, 4, 3, 2);
-	dropAmmo(self.origin, DROP_BULLETS, 40, 30, 20, 10);
-	dropHealth(self.origin, DROP_ARMOR, 4, 2, 1, 0);
-	dropHealth(self.origin, DROP_ARMOR_ONE, 0, 0, 4, 4);
 	
 	if (self.lasthit_damage > self.gib_threshold)
 	{
+		sham_drop(1); // exlopsion drops
 		sendMessageVec(self.origin, TE_EXPLOSION); // before throwhead, which changes origin
 		ThrowHead ("progs/h_shams.mdl", self.lasthit_damage);
 		ThrowGib ("progs/m_gib_01.mdl", self.lasthit_damage, 2);
@@ -362,8 +375,11 @@ void() sham_die =
 		ThrowGib ("progs/shambler_gib_shield.mdl", self.lasthit_damage);
 		return;
 	}
+	
 	if (self.health_head < 1)
 		self.monsterflags |= MFL_SHAM_EXPLODE;
+	else
+		sham_drop(0); // 0 for normal non-explosion drops
 
 	// regular death
 	sound (self, CHAN_VOICE, "shambler/sdeath.wav", 1, ATTN_NORM);
@@ -396,6 +412,7 @@ void() sham_explode =
 	ThrowGib ("progs/shambler_gib_leg_up.mdl", 300);
 	ThrowGib ("progs/shambler_gib_leg_bottom.mdl", 300);
 	ThrowGib ("progs/shambler_gib_shield.mdl", 300);
+	sham_drop(1); //1 for explosion drops
 	return;
 };
 

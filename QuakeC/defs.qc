@@ -764,6 +764,7 @@ const float DF_KATANA = 8; // damage was done by katana
 const float DF_EXPLOSION = 16; // damage was done by explosion
 const float DF_EPICENTER = 32; // target was close to the epicenter, used by ogres to explode their weapons
 const float DF_INSTAGIB = 64; // telefrag
+const float DF_SHOCK = 128;
 
 //monstertypes
 //"enum [class] [name_e]:type"
@@ -839,6 +840,8 @@ const armor_t A_SHAMBLER	= {0.8, 5,		0.95, 50,	0.75};
 #define OGRE_HEALTH_FAST	350		
 #define OGRE_HEAD			150
 #define OGRE_HEAD_FAST		100
+#define OGRE_HEAD_EXPLOSION_DAMAGE	175
+#define OGRE_MINHP			 50
 #define HELLKNIGHT_HEALTH	300
 #define HELLKNIGHT_HEAD		80
 #define FIEND_HEALTH		300

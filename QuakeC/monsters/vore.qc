@@ -432,6 +432,7 @@ void() shal_attack =
 void() shal_missile1     =[      $attack1,       shal_missile2    ] {Think(0.05);
 	sound (self, CHAN_VOICE, "shalrath/attack.wav", 1, ATTN_NORM);
 	ai_face();
+	self.pain_finished = time + 1;
 };
 
 void() shal_missile2     =[      $attack2,       shal_missile3    ] {Think(0.05);ai_face();};
@@ -448,6 +449,7 @@ void() shal_missile11    =[      $attack11,      shal_run1   ] {};
 void() shal_grenade1     =[      $attack1,       shal_grenade2    ] {Think(0.05);
 	sound (self, CHAN_VOICE, "shalrath/attack.wav", 1, ATTN_NORM);
 	ai_face();
+	self.pain_finished = time + 1;
 };
 
 void() shal_grenade2     =[      $attack2,       shal_grenade3    ] {Think(0.05);ai_face();};
