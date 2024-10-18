@@ -1829,7 +1829,7 @@ void SV_SpawnServer (const char *server)
 
 	PR_SwitchQCVM(vm);
 // load progs to get entity field count
-	PR_LoadProgs ("progs.dat", true);
+	PR_LoadProgs ("sprawl.dat", true);
 
 // allocate server memory
 	/* Host_ClearMemory() called above already cleared the whole sv structure */

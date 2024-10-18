@@ -67,8 +67,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //define	PARANOID			// speed sapping error checking
 
-#define	GAMENAME	"id1"		// directory to look in by default
-#define	TCGAMENAME	"sprawl"		// base total conversion directory
+#define	GAMENAME	"sprawl"		// directory to look in by default
+//#define	TCGAMENAME	"sprawl"		// base total conversion directory
 
 #ifndef RC_INVOKED // skip the rest of the file when compiling resources
 #include "q_stdinc.h"

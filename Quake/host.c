@@ -1050,8 +1050,8 @@ static void CL_LoadCSProgs (void)
 		// try csprogs.dat first, then fall back on progs.dat in case someone tried merging the two.
 		// we only care about it if it actually contains a CSQC_DrawHud, otherwise its either just a (misnamed) ssqc progs or a full csqc progs that would just
 		// crash us on 3d stuff.
-		if ((PR_LoadProgs ("csprogs.dat", false) && (qcvm->extfuncs.CSQC_DrawHud||qcvm->extfuncs.CSQC_DrawScores)) ||
-		    (PR_LoadProgs ("progs.dat", false) && qcvm->extfuncs.CSQC_DrawHud))
+		if ((PR_LoadProgs ("cssprawl.dat", false) && (qcvm->extfuncs.CSQC_DrawHud||qcvm->extfuncs.CSQC_DrawScores)) ||
+		    (PR_LoadProgs ("sprawl.dat", false) && qcvm->extfuncs.CSQC_DrawHud))
 		{
 			qcvm->max_edicts = CLAMP (MIN_EDICTS, (int)max_edicts.value, MAX_EDICTS);
 			qcvm->edicts = (edict_t *)malloc (qcvm->max_edicts * qcvm->edict_size);

@@ -2000,8 +2000,6 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 		{
 			//qsprawl, crc check information
 			Con_Printf("%d \n", qcvm->progs->crc);
-			Con_Printf("\n\nSprawl is not compatible with custom progs.dat\n\n");
-			Cbuf_InsertText("game sprawl\n");
 			Host_Error("%s system vars have been modified, progdefs.h is out of date", filename);
 		}
 		else
@@ -2041,7 +2039,7 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 	qcvm->functions = (dfunction_t *)((byte *)qcvm->progs + qcvm->progs->ofs_functions);
 	qcvm->strings = (char *)qcvm->progs + qcvm->progs->ofs_strings;
 	if (qcvm->progs->ofs_strings + qcvm->progs->numstrings >= com_filesize)
-		Host_Error ("progs.dat strings go past end of file\n");
+		Host_Error ("sprawl.dat strings go past end of file\n");
 
 	// initialize the strings
 	qcvm->numknownstrings = 0;

@@ -1206,6 +1206,14 @@ static qboolean Modlist_Check (const char *modname, const char *base)
 	if (Sys_FileExists (itempath))
 		return true;
 
+	q_snprintf(itempath, sizeof(itempath), "%s/sprawl.dat", modpath);
+	if (Sys_FileExists(itempath))
+		return true;
+
+	q_snprintf(itempath, sizeof(itempath), "%s/cssprawl.dat", modpath);
+	if (Sys_FileExists(itempath))
+		return true;
+
 	for (i = 0; i < countof (assetdirs); i++)
 	{
 		q_snprintf (itempath, sizeof (itempath), "%s/%s", modpath, assetdirs[i]);
