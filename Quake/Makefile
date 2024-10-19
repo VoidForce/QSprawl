@@ -287,7 +287,7 @@ OBJS += $(SYSOBJ_RES)
 
 .PHONY:	clean debug release
 
-DEFAULT_TARGET = ironwail
+DEFAULT_TARGET = sprawl96
 all: $(DEFAULT_TARGET)
 
 %.d:	%.c $(MAKEFILE)
@@ -297,12 +297,12 @@ all: $(DEFAULT_TARGET)
 	@echo "Compiling $<" && \
 	$(CC) $(DFLAGS) -c $(CFLAGS) $(SDL_CFLAGS) -o $@ $<
 
-ironwail:	$(OBJS) $(MAKEFILE)
+sprawl96:	$(OBJS) $(MAKEFILE)
 	@echo "Linking $@" && \
 	$(LINKER) $(OBJS) $(LDFLAGS) $(LIBS) $(SDL_LIBS) -o $@
 	$(call do_strip,$@)
 
-release:	ironwail
+release:	sprawl96
 debug:
 	$(error Use "make DEBUG=1")
 
@@ -310,15 +310,15 @@ clean: $(MAKEFILE)
 	$(RM) *.o *.d $(DEFAULT_TARGET)
 
 ifeq ($(HOST_OS),haiku)
-IW_APP_DIR=$(shell finddir B_APPS_DIRECTORY)/ironwail/
-install:	ironwail
+IW_APP_DIR=$(shell finddir B_APPS_DIRECTORY)/sprawl96/
+install:	sprawl96
 	mkdir -p $(IW_APP_DIR)
-	cp ironwail $(IW_APP_DIR)
-	cp ironwail.pak $(IW_APP_DIR)
+	cp sprawl96 $(IW_APP_DIR)
+	cp sprawl96.pak $(IW_APP_DIR)
 else
-install:	ironwail
-	cp ironwail /usr/local/games/quake
-	cp ironwail.pak /usr/local/games/quake
+install:	sprawl96
+	cp sprawl96 /usr/local/games/quake
+	cp sprawl96.pak /usr/local/games/quake
 endif
 
 #---------------------------------------------------------------
