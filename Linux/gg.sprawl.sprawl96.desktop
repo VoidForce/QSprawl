@@ -1,0 +1,12 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=SPRAWL 96
+Comment=A retro shooter based on the Quake engine
+Exec=sprawl96
+Icon=gg.sprawl.sprawl96
+StartupNotify=true
+PrefersNonDefaultGPU=true
+Terminal=false
+Type=Application
+Categories=Game;Shooter;
+Keywords=quake;first;person;shooter;
