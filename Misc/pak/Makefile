@@ -4,7 +4,7 @@ INPUT := gfx/menumods.lmp \
 	gfx/sp_maps.lmp \
 	default.cfg
 
-OUTPUT := ironwail.pak
+OUTPUT := sprawl96.pak
 
 $(OUTPUT): $(INPUT)
 	./mkpak.sh $(INPUT) > $(OUTPUT)

@@ -61,9 +61,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CONFIG_NAME				"sprawl96.cfg"
 #define SCREENSHOT_PREFIX		"sprawl96"
 #define ENGINE_PAK				"sprawl96.pak"
-#define ENGINE_USERDIR_WIN		"Ironwail"
-#define ENGINE_USERDIR_OSX		"Ironwail"
-#define ENGINE_USERDIR_UNIX		".ironwail"
+#define ENGINE_USERDIR_WIN		"Sprawl96"
+#define ENGINE_USERDIR_OSX		"Sprawl96"
+#define ENGINE_USERDIR_UNIX		".sprawl96"
 
 //define	PARANOID			// speed sapping error checking
 
@@ -165,8 +165,8 @@ typedef enum
 	IT_ROCKETS			= (1<<10),
 	IT_CELLS			= (1<<11),
 	IT_AXE				= (1<<12),
-	IT_ARMOR			= (1<<13), 
-	//14 
+	IT_ARMOR			= (1<<13),
+	//14
 	//15
 	IT_SUPERHEALTH		= (1<<16),
 	IT_KEY1				= (1<<17),
