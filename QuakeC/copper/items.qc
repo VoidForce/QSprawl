@@ -531,7 +531,7 @@ void(entity e) target_items_setweapon =
 	if (self.weapon)
 	{
 		if (self.weapon & e.items)
-			e.weapon = self.weapon;
+			deployGun(e.weapon); //e.weapon = self.weapon;
 	}
 	
 	SUB_CallAsSelf(W_SetCurrentAmmo, e);

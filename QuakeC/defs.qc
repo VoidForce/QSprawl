@@ -683,6 +683,10 @@ const float MF_NOACCELERATION = 16;
 const float MF_NOAIRACCELERATION = 32;
 const float MF_FORCEDSLIDE = 64;
 const float MF_AFTERDODGE = 128;
+const float MF_NOWALLJUMPS = 256;
+const float MF_NODODGES = 512;
+const float MF_NOSLIDES = 1024;
+const float MF_NOSPRINT = 2048;
 
 //muzzleflash
 const float	MF_PISTOL = 1;
@@ -1037,7 +1041,7 @@ nosave .float		cshift_value;
 // plats / doors / buttons
 //
 .float		lip;
-.float		state;
+//.float		state;
 .vector		pos1, pos2;		// top and bottom positions
 .float		height;
 

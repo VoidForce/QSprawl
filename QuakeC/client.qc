@@ -29,6 +29,35 @@ float	modelindex_eyes, modelindex_player;
 float	intermission_running;
 float	intermission_exittime;
 
+void() trigger_movementflags_use =
+{
+	if (activator.classname != "player")
+		return;
+	
+	if (!self.state) // set
+	{
+		activator.movementflags = self.movementflags;
+		return;
+	}
+	
+	if (self.state == 1) // add
+	{
+		activator.movementflags |= self.movementflags;
+		return;
+	}
+	
+	if (self.state == 2) // remove
+	{
+		activator.movementflags -= activator.movementflags & self.movementflags;
+		return;
+	}
+};
+
+void() trigger_movementflags =
+{
+	self.use = trigger_movementflags_use;
+};
+
 entity() get_closest_client =
 {
 	if (coop == 0 || clients == 1)
@@ -926,6 +955,9 @@ void() PlayerJump =
 	{
 		if (self.wall_jumps > 2) 
 			return;
+		if (self.movementflags & MF_NOWALLJUMPS)
+			return;
+		
 		self.wall_jumps++;
 		if (!self.jumpreset_time)
 			self.jumpreset_time = time + 1.5;
@@ -1291,8 +1323,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		return;
 	if (self.wall_jumps > 2) 
 		return;
-	self.wall_jumps++;
-	
+		
 // shift trail further into the past, so monsters looks confused
 	if (skill > 1)
 	{
@@ -1319,6 +1350,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 		if (self.weapon == IT_KATANA)
 			self.speedmodifier = 2;
+		self.wall_jumps++;
 	}
 	else 
 	{
@@ -1326,9 +1358,13 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 		makevectors(self.angles);
 		if (!(self.flags & FL_ONGROUND) && traceWall(self, fwall * v_forward, rwall * v_right))
 		{
-			self.velocity += v_forward * fvel + v_right * rvel; // + '0 0 -100'
+			//extra velocity for wall dodges to differentiate regular jumps and dodges
+			self.velocity += v_forward * (fvel * 1.25) + v_right * (rvel * 1.25); // + '0 0 -100'
 			if (self.velocity_z < 150) //270
 				self.velocity_z = 150;
+			// limit maximum upwards momentum, so it's more about moving to the side
+			if (self.velocity_z > 270)
+				self.velocity_z = 270;
 			self.dodge_time = time + 0.5;
 			consumeAdrenaline(0, 0.2);
 			addShake(-fvel * 0.2,rvel * 0.2, rvel * 0.4);
@@ -1338,6 +1374,7 @@ void(float fwall, float rwall, float fvel, float rvel, float type) makeDodge =
 			sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 			if (self.weapon == IT_KATANA)
 				self.speedmodifier = 2;
+			self.wall_jumps++; // not met requirements increment fixed
 		}
 	}
 };
@@ -1499,6 +1536,9 @@ void() checkMovementInput =
 // since now we have adjustable tap speed, we can allow dodges on any difficulty
 	//if (self.weapon != IT_KATANA && skill < 2)
 	//	return;
+	if (self.movementflags & MF_NODODGES)
+		return;
+	
 	catchComboInput();
 // Important! must be set after all the input/combo checks
 // any of this shouldn't be modified outside of body of this procedure
@@ -1566,6 +1606,9 @@ void() sprintFootsteps =
 
 void() basicFootsteps =
 {
+	if (self.movetype == MOVETYPE_NOCLIP)
+		return;
+	
 	if (self.footstep_timer > time)
 		return;
 	
@@ -1755,7 +1798,7 @@ void() PlayerPreThink =
 	}
 	
 //	Katana sprint
-	if (self.weapon == IT_KATANA && self.flags & FL_ONGROUND)
+	if (self.weapon == IT_KATANA && self.flags & FL_ONGROUND && !(self.movementflags & MF_NOSPRINT))
 	{
 		if (self.wallrun || self.b_slide)
 			self.speedmodifier = 1.25;
@@ -1915,77 +1958,80 @@ void() PlayerPreThink =
 	float boostspeed;
 
 	// Slide button pressed
-	if (self.b_slide)
+	if (!(self.movementflags & MF_NOSLIDES)) // new tutorial flag
 	{
-		// catch all events on the ground
-		if (self.flags & FL_ONGROUND)
+		if (self.b_slide)
 		{
-			// we not yet in the slide state, so dicide what to do
-			if (!(self.movementflags & MF_INSLIDE) && self.slide_time < time) 
+			// catch all events on the ground
+			if (self.flags & FL_ONGROUND)
 			{
-				// set slide movement params first
-				self.movementflags |= MF_INSLIDE;
-				self.crouch_timer = time + 0.2;
-				self.slide_time = time + 0.3;
-				SetMovementParams_Slide();
-				//StopAcceleration(-1);
-				
-				// we on the ground and it's first frame when we press the slide button, so do the slide initial boost
-				if (self.current_speed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
+				// we not yet in the slide state, so dicide what to do
+				if (!(self.movementflags & MF_INSLIDE) && self.slide_time < time) 
 				{
-					velocity2d = self.velocity;
-					velocity2d_z = 0;
-					velocity2d = normalize(velocity2d);
-					if (!(self.movementflags & MF_CROUCHINAIR))
+					// set slide movement params first
+					self.movementflags |= MF_INSLIDE;
+					self.crouch_timer = time + 0.2;
+					self.slide_time = time + 0.3;
+					SetMovementParams_Slide();
+					//StopAcceleration(-1);
+					
+					// we on the ground and it's first frame when we press the slide button, so do the slide initial boost
+					if (self.current_speed > SLIDE_STOPSPEED) //!(self.movementflags & MF_CROUCHINAIR) && 
 					{
-						boostspeed = 270;
-						addShake(-60,0,0);
+						velocity2d = self.velocity;
+						velocity2d_z = 0;
+						velocity2d = normalize(velocity2d);
+						if (!(self.movementflags & MF_CROUCHINAIR))
+						{
+							boostspeed = 270;
+							addShake(-60,0,0);
+						}
+						else
+						{
+							boostspeed = 150 * self.speedmodifier;
+							addShake(-30,0,0);
+							//boost after we land while holding crouch
+							//already have viewpunch from landing
+						}
+						if (boostspeed + self.current_speed > 720)
+							boostspeed = 720 - self.current_speed;
+							
+						self.velocity_x += velocity2d_x * boostspeed;
+						self.velocity_y += velocity2d_y * boostspeed;
 					}
-					else
-					{
-						boostspeed = 150 * self.speedmodifier;
-						addShake(-30,0,0);
-						//boost after we land while holding crouch
-						//already have viewpunch from landing
-					}
-					if (boostspeed + self.current_speed > 720)
-						boostspeed = 720 - self.current_speed;
-						
-					self.velocity_x += velocity2d_x * boostspeed;
-					self.velocity_y += velocity2d_y * boostspeed;
+				}
+				// we sliding too slow, so stop slide and start crouch-walk
+				else if (self.current_speed < SLIDE_STOPSPEED)
+				{
+					SetMovementParams_Crouchwalk();
+					//StartAcceleration();
 				}
 			}
-			// we sliding too slow, so stop slide and start crouch-walk
-			else if (self.current_speed < SLIDE_STOPSPEED)
+			
+			else
 			{
-				SetMovementParams_Crouchwalk();
-				//StartAcceleration();
+			// we trying to crouch in the air, mark it
+				if (!(self.movementflags & MF_INSLIDE))
+					self.movementflags |= MF_CROUCHINAIR;
 			}
 		}
-		
 		else
 		{
-		// we trying to crouch in the air, mark it
-			if (!(self.movementflags & MF_INSLIDE))
-				self.movementflags |= MF_CROUCHINAIR;
-		}
-	}
-	else
-	{
-		// slide button is not pressed anymore, but we still in the slide state
-		// so reset movement parameters, and get rid of the slide state
-		if (self.movementflags & MF_INSLIDE)
-		{
-			SetMovementParams_Standard(); //ok
-			//StartAcceleration();
-			self.movementflags -= self.movementflags & MF_INSLIDE; 
-			self.crouch_timer = time + 0.2; // save time for view offset lerping
-		}
+			// slide button is not pressed anymore, but we still in the slide state
+			// so reset movement parameters, and get rid of the slide state
+			if (self.movementflags & MF_INSLIDE)
+			{
+				SetMovementParams_Standard(); //ok
+				//StartAcceleration();
+				self.movementflags -= self.movementflags & MF_INSLIDE; 
+				self.crouch_timer = time + 0.2; // save time for view offset lerping
+			}
 
-		// reset crouch in the air flag
-		if (self.movementflags & MF_CROUCHINAIR)
-			self.movementflags -= self.movementflags & MF_CROUCHINAIR; 
-		
+			// reset crouch in the air flag
+			if (self.movementflags & MF_CROUCHINAIR)
+				self.movementflags -= self.movementflags & MF_CROUCHINAIR; 
+			
+		}
 	}
 	// View offset lerping when in/out of crouch
 	if ((self.movementflags & MF_INSLIDE) && self.view_ofs_z > SLIDE_OFFSET)
