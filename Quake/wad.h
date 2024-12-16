@@ -40,7 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	TYP_SOUND		67
 #define	TYP_MIPTEX		68
 
-#define	WADFILENAME "gfx.wad" //johnfitz -- filename is now hard-coded for honesty
+#define	WADFILENAME "sgfx.wad" //johnfitz -- filename is now hard-coded for honesty
 
 typedef struct
 {

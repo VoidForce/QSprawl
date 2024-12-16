@@ -2012,12 +2012,12 @@ void Sbar_IntermissionOverlay (void)
 	total = q_max (ltime, lsecrets);
 	total = q_max (lmonsters, total);
 
-	pic = Draw_CachePic ("gfx/inter.lmp");
+	pic = Draw_CachePic ("gfx/s_inter.lmp");
 	total += pic->width + 24;
 	total = q_min (320, total);
 	Draw_Pic (160 - total / 2, 56, pic);
 
-	pic = Draw_CachePic ("gfx/complete.lmp");
+	pic = Draw_CachePic ("gfx/s_complete.lmp");
 	Draw_Pic (160 - pic->width / 2, 24, pic);
 
 	Sbar_IntermissionText (160 + total / 2 - ltime, 64, time, 0);
@@ -2037,7 +2037,7 @@ void Sbar_FinaleOverlay (void)
 
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
-	pic = Draw_CachePic ("gfx/finale.lmp");
+	pic = Draw_CachePic ("gfx/s_finale.lmp");
 	Draw_Pic ( (320 - pic->width)/2, 16, pic); //johnfitz -- stretched menus
 }
 

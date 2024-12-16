@@ -457,15 +457,15 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 	// draw left side
 	cx = x;
 	cy = y;
-	p = Draw_CachePic ("gfx/box_tl.lmp");
+	p = Draw_CachePic ("gfx/s_box_tl.lmp");
 	M_DrawTransPic (cx, cy, p);
-	p = Draw_CachePic ("gfx/box_ml.lmp");
+	p = Draw_CachePic ("gfx/s_box_ml.lmp");
 	for (n = 0; n < lines; n++)
 	{
 		cy += 8;
 		M_DrawTransPic (cx, cy, p);
 	}
-	p = Draw_CachePic ("gfx/box_bl.lmp");
+	p = Draw_CachePic ("gfx/s_box_bl.lmp");
 	M_DrawTransPic (cx, cy+8, p);
 
 	// draw middle
@@ -473,17 +473,17 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 	while (width > 0)
 	{
 		cy = y;
-		p = Draw_CachePic ("gfx/box_tm.lmp");
+		p = Draw_CachePic ("gfx/s_box_tm.lmp");
 		M_DrawTransPic (cx, cy, p);
-		p = Draw_CachePic ("gfx/box_mm.lmp");
+		p = Draw_CachePic ("gfx/s_box_mm.lmp");
 		for (n = 0; n < lines; n++)
 		{
 			cy += 8;
 			if (n == 1)
-				p = Draw_CachePic ("gfx/box_mm2.lmp");
+				p = Draw_CachePic ("gfx/s_box_mm2.lmp");
 			M_DrawTransPic (cx, cy, p);
 		}
-		p = Draw_CachePic ("gfx/box_bm.lmp");
+		p = Draw_CachePic ("gfx/s_box_bm.lmp");
 		M_DrawTransPic (cx, cy+8, p);
 		width -= 2;
 		cx += 16;
@@ -491,21 +491,21 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 
 	// draw right side
 	cy = y;
-	p = Draw_CachePic ("gfx/box_tr.lmp");
+	p = Draw_CachePic ("gfx/s_box_tr.lmp");
 	M_DrawTransPic (cx, cy, p);
-	p = Draw_CachePic ("gfx/box_mr.lmp");
+	p = Draw_CachePic ("gfx/s_box_mr.lmp");
 	for (n = 0; n < lines; n++)
 	{
 		cy += 8;
 		M_DrawTransPic (cx, cy, p);
 	}
-	p = Draw_CachePic ("gfx/box_br.lmp");
+	p = Draw_CachePic ("gfx/s_box_br.lmp");
 	M_DrawTransPic (cx, cy+8, p);
 }
 
 void M_DrawQuakeCursor (int cx, int cy)
 {
-	qpic_t *pic = Draw_CachePic( va("gfx/menudot%i.lmp", (int)(realtime*10)%6+1 ) );
+	qpic_t *pic = Draw_CachePic( va("gfx/s_menudot%i.lmp", (int)(realtime*10)%6+1 ) );
 	M_DrawTransPic (cx, cy, pic);
 }
 
@@ -1210,11 +1210,11 @@ void M_Main_Draw (void)
 	int		cursor;
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/ttl_main.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_ttl_main.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
-	p = Draw_CachePic ("gfx/mainmenu.lmp");
+	p = Draw_CachePic ("gfx/s_mainmenu.lmp");
 	/* qSprawl_MODS
 	if (m_main_mods)
 	{
@@ -1227,7 +1227,7 @@ void M_Main_Draw (void)
 		M_DrawSubpic (72, 32 + split + 20, p, 0, split, p->width, p->height - split);
 	}
 	else*/
-		M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mainmenu.lmp"));
+		M_DrawTransPic (72, 32, Draw_CachePic ("gfx/s_mainmenu.lmp"));
 
 	cursor = m_main_cursor;
 	/*
@@ -1345,12 +1345,12 @@ void M_SinglePlayer_Draw (void)
 {
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/ttl_sgl.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_ttl_sgl.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
-	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/sp_menu.lmp") );
+	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/s_sp_menu.lmp") );
 	if (m_singleplayer_showlevels)
-		M_DrawTransPic (72, 92, Draw_CachePic ("gfx/sp_maps.lmp") );
+		M_DrawTransPic (72, 92, Draw_CachePic ("gfx/s_sp_maps.lmp") );
 
 	M_DrawQuakeCursor (54, 32 + m_singleplayer_cursor * 20);
 }
@@ -1507,7 +1507,7 @@ void M_Load_Draw (void)
 	int		i;
 	qpic_t	*p;
 
-	p = Draw_CachePic ("gfx/p_load.lmp");
+	p = Draw_CachePic ("gfx/s_p_load.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	for (i = 0; i < MAX_SAVEGAMES; i++)
@@ -1523,7 +1523,7 @@ void M_Save_Draw (void)
 	int		i;
 	qpic_t	*p;
 
-	p = Draw_CachePic ("gfx/p_save.lmp");
+	p = Draw_CachePic ("gfx/s_p_save.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	for (i = 0; i < MAX_SAVEGAMES; i++)
@@ -2094,7 +2094,7 @@ void M_Skill_Draw (void)
 	int		x, y, f;
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
 	p = Draw_CachePic (m_skill_usecustomtitle && !m_skill_canresume ? "gfx/p_skill.lmp" : "gfx/ttl_sgl.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
@@ -2108,7 +2108,7 @@ void M_Skill_Draw (void)
 
 	if (m_skill_usegfx)
 	{
-		M_DrawTransPic (x, y, Draw_CachePic ("gfx/skillmenu.lmp") );
+		M_DrawTransPic (x, y, Draw_CachePic ("gfx/s_skillmenu.lmp") );
 		if (m_skill_cursor < 4)
 			M_DrawQuakeCursor (x - 18, y + m_skill_cursor * 20);
 		y += 4 * 20;
@@ -2236,10 +2236,10 @@ void M_MultiPlayer_Draw (void)
 {
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
-	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mp_menu.lmp") );
+	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/s_mp_menu.lmp") );
 
 	M_DrawQuakeCursor (54, 32 + m_multiplayer_cursor * 20);
 
@@ -2337,8 +2337,8 @@ void M_Setup_Draw (void)
 {
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	M_Print (64, 40, "Hostname");
@@ -2545,8 +2545,8 @@ void M_Net_Draw (void)
 	int		f;
 	qpic_t	*p;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	f = 32;
@@ -4502,8 +4502,8 @@ void M_Options_Draw (void)
 	y = optionsmenu.y;
 	cols = 32;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_option.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_option.lmp");
 	M_DrawPic ( (320-p->width)/2, y + 4, p);
 
 	y += OPTIONS_LISTOFS + optionsmenu.yofs;
@@ -4810,7 +4810,7 @@ void M_Keys_Draw (void)
 	y = keysmenu.y;
 	cols = 40;
 
-	p = Draw_CachePic ("gfx/ttl_cstm.lmp");
+	p = Draw_CachePic ("gfx/s_ttl_cstm.lmp");
 	M_DrawPic ( (320-p->width)/2, y + 4, p);
 
 	if (bind_grab)
@@ -4981,7 +4981,7 @@ void M_Menu_Help_f (void)
 
 void M_Help_Draw (void)
 {
-	M_DrawPic (0, 0, Draw_CachePic ( va("gfx/help%i.lmp", help_page)) );
+	M_DrawPic (0, 0, Draw_CachePic ( va("gfx/s_help%i.lmp", help_page)) );
 }
 
 
@@ -5229,8 +5229,8 @@ void M_LanConfig_Draw (void)
 	const char	*startJoin;
 	const char	*protocol;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	basex = (320-p->width)/2;
 	M_DrawPic (basex, 4, p);
 
@@ -5594,8 +5594,8 @@ void M_GameOptions_Draw (void)
 	qpic_t	*p;
 	int		x;
 
-	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/s_qplaque.lmp") );
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	M_DrawTextBox (152, 32, 10, 1);
@@ -5913,7 +5913,7 @@ void M_Search_Draw (void)
 	qpic_t	*p;
 	int x;
 
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	x = (320/2) - ((12*8)/2) + 4;
 	M_DrawTextBox (x-8, 32, 12, 1);
@@ -5979,7 +5979,7 @@ void M_ServerList_Draw (void)
 		NET_SlistSort ();
 	}
 
-	p = Draw_CachePic ("gfx/p_multi.lmp");
+	p = Draw_CachePic ("gfx/s_p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	for (n = 0; n < hostCacheCount; n++)
 		M_Print (16, 32 + 8*n, NET_SlistPrintServer (n));
@@ -7225,13 +7225,13 @@ void M_CheckMods (void)
 	m_main_mods = M_CheckCustomGfx ("gfx/menumods.lmp",
 		"gfx/mainmenu.lmp", 26888, main_hashes, countof (main_hashes));
 */
-	m_singleplayer_showlevels = M_CheckCustomGfx ("gfx/sp_maps.lmp",
-		"gfx/sp_menu.lmp", 14856, sp_hashes, countof (sp_hashes));
+	m_singleplayer_showlevels = M_CheckCustomGfx ("gfx/s_sp_maps.lmp",
+		"gfx/s_sp_menu.lmp", 14856, sp_hashes, countof (sp_hashes));
 
-	m_skill_usegfx = M_CheckCustomGfx ("gfx/skillmenu.lmp",
-		"gfx/sp_menu.lmp", 14856, sp_hashes, countof (sp_hashes));
+	m_skill_usegfx = M_CheckCustomGfx ("gfx/s_skillmenu.lmp",
+		"gfx/s_sp_menu.lmp", 14856, sp_hashes, countof (sp_hashes));
 
-	m_skill_usecustomtitle = M_CheckCustomGfx ("gfx/p_skill.lmp",
-		"gfx/ttl_sgl.lmp", 6728, sgl_hashes, countof (sgl_hashes));
+	m_skill_usecustomtitle = M_CheckCustomGfx ("gfx/s_p_skill.lmp",
+		"gfx/s_ttl_sgl.lmp", 6728, sgl_hashes, countof (sgl_hashes));
 }
 

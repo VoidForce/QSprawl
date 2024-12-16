@@ -877,7 +877,7 @@ void Draw_ConsoleBackground (void)
 	qpic_t *pic;
 	float alpha, luma;
 
-	pic = Draw_CachePic ("gfx/conback.lmp");
+	pic = Draw_CachePic ("gfx/s_conback.lmp");
 	pic->width = vid.conwidth;
 	pic->height = vid.conheight;
 
