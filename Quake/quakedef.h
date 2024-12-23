@@ -41,12 +41,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef	QUAKESPASM_VER_SUFFIX
 #define	QUAKESPASM_VER_SUFFIX		// optional version suffix string literal like "-beta1"
 #endif
-
+// branched from version 0.6.0, used features of 0.7.0
 #define IRONWAIL_VER_MAJOR		0
 #define IRONWAIL_VER_MINOR		7
 #define IRONWAIL_VER_PATCH		99
 #ifndef IRONWAIL_VER_SUFFIX
-#define IRONWAIL_VER_SUFFIX		"-custom"// optional version suffix string literal like "-beta1"
+#define IRONWAIL_VER_SUFFIX		""// optional version suffix string literal like "-beta1"
+#endif
+#define SPRAWL_VER_MAJOR		1
+#define SPRAWL_VER_MINOR		2
+#ifndef SPRAWL_VER_SUFFIX
+#define SPRAWL_VER_SUFFIX		""// optional version suffix string literal like "-beta1"
 #endif
 
 #define	QS_STRINGIFY_(x)	#x
@@ -55,12 +60,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // combined version string like "0.92.1-beta1"
 #define	QUAKESPASM_VER_STRING	QS_STRINGIFY(QUAKESPASM_VERSION) "." QS_STRINGIFY(QUAKESPASM_VER_PATCH) QUAKESPASM_VER_SUFFIX
 #define	IRONWAIL_VER_STRING		QS_STRINGIFY(IRONWAIL_VER_MAJOR) "." QS_STRINGIFY(IRONWAIL_VER_MINOR) "." QS_STRINGIFY(IRONWAIL_VER_PATCH) IRONWAIL_VER_SUFFIX
+#define	SPRAWL_VER_STRING		QS_STRINGIFY(SPRAWL_VER_MAJOR) "." QS_STRINGIFY(SPRAWL_VER_MINOR) SPRAWL_VER_SUFFIX
 
-#define CONSOLE_TITLE_STRING	"Sprawl96 Ironwail " IRONWAIL_VER_STRING
-#define WINDOW_TITLE_STRING		"Sprawl96/Ironwail " IRONWAIL_VER_STRING
+#define CONSOLE_TITLE_STRING	"Ironwail Sprawl96 v" SPRAWL_VER_STRING
+#define WINDOW_TITLE_STRING		"Ironwail/Sprawl96 v" SPRAWL_VER_STRING
 #define CONFIG_NAME				"sprawl96.cfg"
 #define SCREENSHOT_PREFIX		"sprawl96"
 #define ENGINE_PAK				"sprawl96.pak"
+#define TC_PAK					"sprawl/sprawl.pak"
 #define ENGINE_USERDIR_WIN		"Sprawl96"
 #define ENGINE_USERDIR_OSX		"Sprawl96"
 #define ENGINE_USERDIR_UNIX		".sprawl96"
