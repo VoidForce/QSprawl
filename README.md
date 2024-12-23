@@ -1,3 +1,8 @@
+Fork of ironwail sourceport of Quake for total conversion mod Sprawl96.
+QuakeC is in separate repository.
+
+Original ironwail readme below:
+
 # What's this?
 A fork of the popular GLQuake descendant [QuakeSpasm](https://sourceforge.net/projects/quakespasm/) with a focus on high performance instead of maximum compatibility, with a few extra features sprinkled on top.
 
