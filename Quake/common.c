@@ -2355,6 +2355,8 @@ COM_AddGameDirectory -- johnfitz -- modified based on topaz's tutorial
 */
 void COM_AddGameDirectory (const char *dir)
 {
+// there is a lot of copy/paste stuff here, i don't really understand how this search paths code works,
+// so it looks ugly and repetitive, but it works
 	const char *base;
 	int i, j;
 	unsigned int path_id;
@@ -2372,6 +2374,36 @@ void COM_AddGameDirectory (const char *dir)
 	else
 		path_id = 1U;
 
+// load id1 paks first, should be reworked after librequake merge
+// engine looks for pak0 to see if gamdir is legit
+// i don't have time to think this through, so i keep blank pak in sprawl directory
+// id1/pak0.pak, id1/pak1.pak
+	q_snprintf(com_gamedir, sizeof(com_gamedir), "%s/id1", host_parms->basedir);
+
+	search = (searchpath_t *) Z_Malloc(sizeof(searchpath_t));
+	search->path_id = path_id;
+	q_strlcpy(search->filename, com_gamedir, sizeof(search->filename));
+	search->next = com_searchpaths;
+	com_searchpaths = search;
+
+	for (i = 0; i < 2; i++)
+	{
+		q_snprintf(pakfile, sizeof(pakfile), "%s/pak%i.pak", com_gamedir, i);
+		
+		pak = COM_LoadPackFile(pakfile);
+
+		if (!pak)
+			break;
+
+		search = (searchpath_t*)Z_Malloc(sizeof(searchpath_t));
+		search->path_id = path_id;
+		search->pack = pak;
+		search->next = com_searchpaths;
+		com_searchpaths = search;
+	}
+
+// normal paks inside the mod folder, (quake style mods)
+// pak0.pak - pak99.pak etc
 	for (j = 0; j < com_numbasedirs; j++)
 	{
 		base = com_basedirs[j];
@@ -2401,6 +2433,50 @@ void COM_AddGameDirectory (const char *dir)
 			// add engine pak after pak0.pak
 			if (i == 0 && j == 0 && path_id == 1u && !fitzmode)
 				COM_AddEnginePak ();
+		}
+	}
+
+// load sprawl specific pak after everything else, all the base resources here (models/sounds etc)
+// sprawl.pak
+	q_snprintf(pakfile, sizeof(pakfile), "%s/" TC_PAK, host_parms->basedir);
+	pak = COM_LoadPackFile(pakfile);
+
+	if (pak)
+	{
+		search = (searchpath_t*)Z_Malloc(sizeof(searchpath_t));
+		search->path_id = path_id;
+		search->pack = pak;
+		search->next = com_searchpaths;
+		com_searchpaths = search;
+	}
+
+// load sprawl mod packs (overwrite sprawl resources)
+// spak0.pak - spak99.pak etc
+	for (j = 0; j < com_numbasedirs; j++)
+	{
+		base = com_basedirs[j];
+		q_snprintf(com_gamedir, sizeof(com_gamedir), "%s/%s", base, dir);
+
+		// add the directory to the search path
+		search = (searchpath_t*)Z_Malloc(sizeof(searchpath_t));
+		search->path_id = path_id;
+		q_strlcpy(search->filename, com_gamedir, sizeof(search->filename));
+		search->next = com_searchpaths;
+		com_searchpaths = search;
+
+		// add any pak files in the format pak0.pak pak1.pak, ...
+		for (i = 0; ; i++)
+		{
+			q_snprintf(pakfile, sizeof(pakfile), "%s/spak%i.pak", com_gamedir, i);
+			pak = COM_LoadPackFile(pakfile);
+			if (!pak)
+				break;
+
+			search = (searchpath_t*)Z_Malloc(sizeof(searchpath_t));
+			search->path_id = path_id;
+			search->pack = pak;
+			search->next = com_searchpaths;
+			com_searchpaths = search;
 		}
 	}
 }
@@ -3221,7 +3297,7 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 	}
 	else
 	{
-		// start up with GAMENAME by default (id1)
+		// start up with GAMENAME by default (sprawl)
 		COM_AddGameDirectory (GAMENAME);
 	}
 
