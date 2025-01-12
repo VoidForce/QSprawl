@@ -7,6 +7,10 @@
     <name>Carlos "REVEL" Lizarraga, Hannah "EMBYR" Crawford, VoidForce, SPRAWL 96 contributors</name>
     <url>https://github.com/VoidForce/QSprawl/graphs/contributors</url>
   </developer>
+  <branding>
+    <color type="primary" scheme_preference="light">#e4b983</color>
+    <color type="primary" scheme_preference="dark">#1c2e5a</color>
+  </branding>
   <summary>A Quake mod based on the retro shooter SPRAWL</summary>
   <icon type="remote">https://cdn.jsdelivr.net/gh/VoidForce/QSprawl/Misc/gg.sprawl.sprawl96.svg</icon>
   <metadata_license>CC0-1.0</metadata_license>
