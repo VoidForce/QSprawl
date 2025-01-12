@@ -11,7 +11,7 @@
     <color type="primary" scheme_preference="light">#e4b983</color>
     <color type="primary" scheme_preference="dark">#1c2e5a</color>
   </branding>
-  <summary>A Quake mod based on the retro shooter SPRAWL</summary>
+  <summary>A cyberpunk retro shooter Quake mod</summary>
   <icon type="remote">https://cdn.jsdelivr.net/gh/VoidForce/QSprawl/Misc/gg.sprawl.sprawl96.svg</icon>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-2.0-only</project_license>
