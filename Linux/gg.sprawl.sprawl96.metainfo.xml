@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="https://cdn.jsdelivr.net/gh/fpiesche/flatpak-builds/_templates/app_page.xsl" ?>
 <component type="desktop-application">
   <id>gg.sprawl.sprawl96</id>
   <name>SPRAWL 96</name>
