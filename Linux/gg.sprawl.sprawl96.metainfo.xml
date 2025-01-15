@@ -77,7 +77,7 @@
     <release version="1.2" date="2024-12-27">
       <description>v1.2	includes a number of bug fixes to the engine and four new maps created by contributors as part of the SPRAWL 96 map jam!</description>
     </release>
-	<release version="1.1" date="2024-09-16">
+    <release version="1.1" date="2024-09-16">
       <description>v1.1 adds support for Copper maps</description>
     </release>
     <release version="1.0" date="2024-08-23">
