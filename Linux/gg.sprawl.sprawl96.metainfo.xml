@@ -11,9 +11,8 @@
     <color type="primary" scheme_preference="dark">#1c2e5a</color>
   </branding>
   <summary>Cyberpunk retro shooter Quake mod</summary>
-  <icon type="remote">https://cdn.jsdelivr.net/gh/VoidForce/QSprawl/Misc/gg.sprawl.sprawl96.svg</icon>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-2.0-only</project_license>
+  <project_license>GPL-2.0-only AND CC-BY-NC-SA-4.0 AND BSD-3-Clause</project_license>
   <launchable type="desktop-id">gg.sprawl.sprawl96.desktop</launchable>
   <url type="homepage">https://www.slipseer.com/index.php?resources/sprawl-96.398/</url>
   <url type="contact">https://discord.gg/4kVen5XDfn</url>
@@ -22,6 +21,12 @@
     <p>SPRAWL was originally built on the Darkplaces Quake engine, and the resources provided by nearly 30 years of dedicated modders made it possible to get it started.</p>
     <p>It's a revival in a sense of that original Quake engine version of SPRAWL. It answers the question “What if SPRAWL actually existed in 1996?”. So it includes every single SPRAWL weapon (sorta), some enemies, and our movement all on a custom fork of the Ironwail source port.</p>
     <p>By default, SPRAWL will install the LibreQuake content pack so it can be played even without having Quake itself, but you can add custom maps and replace LibreQuake with your normal Quake installation if you so wish.</p>
+    <p>Licenses:</p>
+    <ul>
+      <li>QSprawl engine code: GPL 2.0</li>
+      <li>LibreQuake base assets: BSD 3-Clause</li>
+      <li>SPRAWL 96 assets: CC BY-NC-SA 4.0 International</li>
+    </ul>
   </description>
   <screenshots>
     <screenshot type="default">
@@ -69,9 +74,6 @@
     <keyword>total conversion</keyword>
   </keywords>
   <releases>
-    <release version="1.2" date="2024-12-27">
-      <description>v1.2	includes a number of bug fixes to the engine and four new maps created by contributors as part of the SPRAWL 96 map jam!</description>
-    </release>
     <release version="1.1" date="2024-09-16">
       <description>v1.1 adds support for Copper maps</description>
     </release>
