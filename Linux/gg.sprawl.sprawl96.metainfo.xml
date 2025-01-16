@@ -28,7 +28,7 @@
 		add custom maps by copying them to <code>$HOME/.var/app/io.github.voidforce.qsprawl/data/sprawl/maps/</code>.</p>
     <p>Licenses:</p>
     <ul>
-      <li>QSprawl engine code: GPL 2.0</li>
+      <li>QSprawl engine code and QuakeC game logic: GPL 2.0</li>
       <li>LibreQuake base assets: BSD 3-Clause</li>
       <li>SPRAWL 96 assets: CC BY-NC-SA 4.0 International</li>
     </ul>
