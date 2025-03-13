@@ -43,6 +43,9 @@ usercmd_t	cmd;
 cvar_t	sv_idealpitchscale = {"sv_idealpitchscale","0.8",CVAR_NONE};
 cvar_t	sv_altnoclip = {"sv_altnoclip","1",CVAR_ARCHIVE}; //johnfitz
 
+#define WALLRUN_EXTRASPEED 1.8
+#define WALLRUN_VERTICALSPEED_THRESHOLD 48
+
 /*
 ===============
 SV_SetIdealPitch
@@ -208,13 +211,25 @@ void SV_Q2AirAccelerate(float wishspeed, vec3_t wishdir)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
+	float	wallaccel;
+	float	modified_wishspeed;
+
+	modified_wishspeed = wishspeed;
+
+	if (sv_player->v.wallrun && sv_player->v.velocity[2] < WALLRUN_VERTICALSPEED_THRESHOLD)
+	{
+		modified_wishspeed = wishspeed * WALLRUN_EXTRASPEED;
+		wallaccel = sv_player->v.phys_airacceleration;
+	}
+	else
+		wallaccel = sv_player->v.phys_airacceleration;
 
 	currentspeed = DotProduct(velocity, wishdir);
-	addspeed = wishspeed - currentspeed;
+	addspeed = modified_wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
 
-	accelspeed = host_frametime * wishspeed * sv_player->v.phys_airacceleration;
+	accelspeed = host_frametime * modified_wishspeed * wallaccel;
 
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
@@ -237,7 +252,7 @@ void SV_WallRunDetection()
 		return;
 	}
 	sv_player->v.wallrun = 0; //reset
-	WallDetectionDistance = 32;
+	WallDetectionDistance = 16;
 	//let us define tracing vectors
 	for (i = 0; i < 3; i++)
 	{
@@ -484,7 +499,8 @@ void SV_AirMove (void)
 	vec3_t		down = { 0, 0, -1 };//how do we define constant array without assigning it to a variable?
 	float		wall_direction;
 	vec3_t		wall_vector;
-	float		speed2d;
+	int			wallrun_previous_status;
+	float		speed2d, speedscale;
 	float		gravity_multiplier;
 	float		fmove, smove;
 
@@ -523,6 +539,7 @@ void SV_AirMove (void)
 	}
 	else
 	{
+		wallrun_previous_status = sv_player->v.wallrun;
 		sv_player->v.wallrun = 0; //reset
 		if (onground)
 		{
@@ -536,12 +553,16 @@ void SV_AirMove (void)
 			VectorCopy(velocity, current_velocity);
 			current_velocity[2] = 0;
 			speed2d = VectorNormalize(current_velocity);
-			speed2d = speed2d / sv_player->v.phys_speed;
+			speedscale = speed2d / sv_player->v.phys_speed;
 			//speed2d = clamp_f(0, speed2d, 1);
 
 			SV_WallRunDetection();
 			if (sv_player->v.wallrun)
 			{
+				if (!wallrun_previous_status && sv_player->v.velocity[2] < 0)
+				{
+					sv_player->v.velocity[2] *= 0.5;
+				}
 				// slide along the wall				 
 				CrossProduct(sv_player->v.wall_normal, down, wall_vector); // find a vector along the wall
 				VectorNormalize(wall_vector);
@@ -556,11 +577,16 @@ void SV_AirMove (void)
 
 				//gravity
 
-				sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speed2d, 1) *0.55));
+				sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speedscale, 1) * 0.55));
+				if (sv_player->v.velocity[2] < WALLRUN_VERTICALSPEED_THRESHOLD && sv_player->v.velocity[2] > -WALLRUN_VERTICALSPEED_THRESHOLD)
+				{
+					sv_player->v.phys_gravity *= LERP(1, 0.5, (clamp_f (0, speed2d / (sv_player->v.phys_speed * WALLRUN_EXTRASPEED), 1)));
+				}
 
 				//wall S U C C
 				// i used current velocity here to store the sucction vector, don't be confused
 				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
+				VectorScale(current_velocity, clamp_f(0, speedscale, 1), current_velocity);
 				velocity[0] += current_velocity[0];
 				velocity[1] += current_velocity[1];
 
@@ -569,11 +595,11 @@ void SV_AirMove (void)
 				{
 					if (velocity[2] < 0)
 					{
-						gravity_multiplier = 1 + CLAMP(0, -velocity[2] / 300, 0.6);
-						wish_speed *= 1 + gravity_multiplier;
+						gravity_multiplier = 1 + CLAMP(0, velocity[2] / -300, 0.5);
+						wish_speed *= gravity_multiplier;
 						//VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
 					}
-					sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speed2d, 1) * 0.4));
+					sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speedscale, 1) * 0.4));
 				}
 			}
 			else // not wallrunning
@@ -582,7 +608,7 @@ void SV_AirMove (void)
 			}
 
 			//Con_DPrintf("wish_speed = %f, wish_direction = [%f,%f,%f] \n", wish_speed, wish_direction[0], wish_direction[1], wish_direction[2]);
-			SV_UserFriction(clamp_f(0, speed2d, 5) * 0.1);
+			SV_UserFriction(clamp_f(0, speedscale, 5) * 0.1);
 			SV_AirAccelerate(wish_speed, wish_velocity);
 			SV_Q2AirAccelerate(wish_speed, wish_direction);
 		}
