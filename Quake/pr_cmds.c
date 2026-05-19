@@ -2673,6 +2673,17 @@ static void PF_bound(void)
 		curval = minval;
 	G_FLOAT(OFS_RETURN) = curval;
 }
+//float expDecay(float a, float b, float decay, float dt)
+extern float expDecay(float a, float b, float decay, float dt);
+static void PF_expdecay(void)
+{
+	float a = G_FLOAT(OFS_PARM0);
+	float b = G_FLOAT(OFS_PARM1);
+	float decay = G_FLOAT(OFS_PARM2);
+	float dt = G_FLOAT(OFS_PARM3);
+	a = expDecay(a, b, decay, dt);
+	G_FLOAT(OFS_RETURN) = a;
+}
 static void PF_anglemod(void)
 {
 	float v = G_FLOAT(OFS_PARM0);
@@ -3829,7 +3840,7 @@ builtindef_t pr_builtindefs[] =
 	{ "cvar_set",				PF_BOTH(PF_cvar_set),			72 },
 	{ "centerprint",			PF_SSQC(PF_centerprint),		73 },
 
-	{ "ambientsound",			PF_SSQC(PF_ambientsound),		74 },
+	{ "ambientsound", PF_SSQC(PF_ambientsound), 74 },
 
 	{ "precache_model2",		PF_SSQC(PF_precache_model),		75 },
 	{ "precache_sound2",		PF_SSQC(PF_precache_sound),		76 },	// precache_sound2 is different only for qcc
@@ -3852,11 +3863,11 @@ builtindef_t pr_builtindefs[] =
 	{ "ex_walkpathtogoal",		PF_SSQC(PF_walkpathtogoal) },			// float(float movedist, vector goal)
 	{ "ex_localsound",			PF_SSQC(PF_localsound) },				// void(entity client, string sample)
 
-	{ "min",						PF_BOTH(PF_min),				94},//		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
-	{ "max",						PF_BOTH(PF_max),				95},// 		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "min",						PF_BOTH(PF_min),				94 },//		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
+	{ "max",						PF_BOTH(PF_max),				95 },// 		DP_QC_MINMAXBOUND },	// float(float a, float b, ...)
 	{ "clamp",					PF_BOTH(PF_bound),				96 },// DP_QC_MINMAXBOUND },	// float(float minimum, float val, float maximum)
 
-	{ "pow",						PF_BOTH(PF_pow),				97},// 		DP_QC_SINCOSSQRTPOW },	// float(float value, float exp)
+	{ "pow",						PF_BOTH(PF_pow),				97 },// 		DP_QC_SINCOSSQRTPOW },	// float(float value, float exp)
 
 	{ "checkextension",			PF_BOTH(PF_checkextension),		99 },	// float(string extname)
 
@@ -3909,11 +3920,11 @@ builtindef_t pr_builtindefs[] =
 	{ "argv",					PF_BOTH(PF_ArgV),				442,	KRIMZON_SV_PARSECLIENTCOMMAND },	// string(float n)
 	{ "argc",					PF_BOTH(PF_ArgC) },						// float()
 
-	{ "asin",					PF_BOTH(PF_asin),				471},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float s)
-	{ "acos",					PF_BOTH(PF_acos),				472},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c)
-	{ "atan",					PF_BOTH(PF_atan),				473},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float t)
-	{ "atan2",					PF_BOTH(PF_atan2),				474},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c, float s)
-	{ "tan",					PF_BOTH(PF_tan),				475},//	DP_QC_ASINACOSATANATAN2TAN },	// float(float a)
+	{ "asin",					PF_BOTH(PF_asin),				471 },//	DP_QC_ASINACOSATANATAN2TAN },	// float(float s)
+	{ "acos",					PF_BOTH(PF_acos),				472 },//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c)
+	{ "atan",					PF_BOTH(PF_atan),				473 },//	DP_QC_ASINACOSATANATAN2TAN },	// float(float t)
+	{ "atan2",					PF_BOTH(PF_atan2),				474 },//	DP_QC_ASINACOSATANATAN2TAN },	// float(float c, float s)
+	{ "tan",					PF_BOTH(PF_tan),				475 },//	DP_QC_ASINACOSATANATAN2TAN },	// float(float a)
 
 	{ "tokenize_console",		PF_BOTH(PF_tokenize_console),	514,	DP_QC_TOKENIZE_CONSOLE },		// float(string str)
 
@@ -3929,6 +3940,7 @@ builtindef_t pr_builtindefs[] =
 	{ "bitshift",				PF_BOTH(PF_bitshift), 708 },
 	{ "spawncopy",				PF_SSQC(PF_SpawnCopy), 709 },
 	{ "copyedict",				PF_SSQC(PF_CopyEdict), 710 },
+	{ "expdecay",				PF_BOTH(PF_expdecay), 711 },
 };
 int pr_numbuiltindefs = Q_COUNTOF(pr_builtindefs);
 

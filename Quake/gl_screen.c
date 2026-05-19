@@ -87,7 +87,7 @@ cvar_t		scr_conwidth = {"scr_conwidth", "0", CVAR_ARCHIVE};
 cvar_t		scr_conscale = {"scr_conscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_pixelaspect = {"scr_pixelaspect", "1", CVAR_ARCHIVE};
 cvar_t		scr_showfps = {"scr_showfps", "0", CVAR_ARCHIVE};
-cvar_t		scr_showspeed = {"scr_showspeed", "0", CVAR_ARCHIVE};
+cvar_t		scr_showspeed = {"scr_showspeed", "1", CVAR_ARCHIVE};
 cvar_t		scr_clock = {"scr_clock", "0", CVAR_ARCHIVE};
 //johnfitz
 cvar_t		scr_usekfont = {"scr_usekfont", "0", CVAR_NONE}; // 2021 re-release
@@ -97,7 +97,7 @@ cvar_t		cl_screenshotname = {"cl_screenshotname", "screenshots/%map%_%date%_%tim
 cvar_t		scr_demobar_timeout = {"scr_demobar_timeout", "1", CVAR_ARCHIVE};
 
 cvar_t		scr_viewsize = {"viewsize","100", CVAR_ARCHIVE};
-cvar_t		scr_fov = {"fov","90",CVAR_ARCHIVE};	// 10 - 170
+cvar_t		scr_fov = {"fov","105",CVAR_ARCHIVE};	// 10 - 170
 cvar_t		scr_fov_adapt = {"fov_adapt","1",CVAR_ARCHIVE};
 cvar_t		scr_zoomfov = {"zoom_fov","30",CVAR_ARCHIVE};	// 10 - 170
 cvar_t		scr_zoomspeed = {"zoom_speed","8",CVAR_ARCHIVE};
@@ -697,8 +697,13 @@ void SCR_DrawSpeed (void)
 		{
 			char str[12];
 			sprintf (str, "%d", (int) display_speed);
-			GL_SetCanvas (CANVAS_CROSSHAIR);
-			Draw_String (-(int)strlen(str)*4, 4, str);
+
+			float hudscale;
+			hudscale = 8;
+			hudscale *= scr_sbarscale.value;
+
+			GL_SetCanvas(CANVAS_DEFAULT);
+			Draw_StringEx((int)glwidth * 0.25 -(int)strlen(str)*4, glheight * 0.58, (int)hudscale, str);
 		}
 	}
 
@@ -1066,7 +1071,7 @@ void SCR_DrawCrosshair (void)
 	int marker_color;
 	int marker_gap;
 
-	if (!crosshair.value)// || scr_viewsize.value >= 130)
+	if (!crosshair.value)
 		return;
 	
 	cr_length = (int)crosshair_length.value;
@@ -1077,8 +1082,10 @@ void SCR_DrawCrosshair (void)
 	cr_dot_color = (int)crosshair_dot_color.value;
 	cr_dot_alpha = crosshair_dot_alpha.value;
 
-	screen_width  = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
+	screen_width = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
 	screen_height = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
+	//screen_width  = (int)glwidth / 2 + (-cl.punchangle[YAW] * ((int)glwidth / scr_fov.value));
+	//screen_height = (int)glheight / 2 + (cl.punchangle[PITCH] * ((int)glheight / scr_fov.value));
 
 	cr_half_width = (int)cr_width / 2;
 	if (cr_half_width < 1)

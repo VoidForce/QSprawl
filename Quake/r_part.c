@@ -608,6 +608,7 @@ void R_RocketTrail (vec3_t start, vec3_t end, int type)
 				p->ramp = (rand()&3);
 				p->color = ramp3[(int)p->ramp];
 				p->type = pt_fire;
+				//p->wind = 0.5;
 				for (j=0 ; j<3 ; j++)
 					p->org[j] = start[j] + ((rand()%6)-3);
 				break;
@@ -618,6 +619,7 @@ void R_RocketTrail (vec3_t start, vec3_t end, int type)
 				p->ramp = rand() & 2;
 				p->color = rampgrenade[(int)p->ramp];
 				p->type = pt_fire;
+				//p->wind = 0.5;
 				for (j = 0; j < 3; j++)
 					p->org[j] = start[j] + ((rand() % 6) - 3);
 				break;
@@ -926,7 +928,7 @@ void R_GaussImpact(vec3_t impact, vec3_t shooter, vec3_t normal, int type)
 			VectorInverse(reflect); //why?
 			VectorNormalize(reflect);
 			VectorCopy(reflect, offset2);
-			VectorScale(offset2, 400, offset2); // speed of which particles will fly
+			VectorScale(offset2, 800, offset2); // speed of which particles will fly
 			short spread;
 			short half;
 			// if angle of impact is less than 30, spawn less particles
@@ -1325,10 +1327,11 @@ void CL_RunParticles (void)
 {
 	particle_t		*p;
 	int				cur, active;
-	float			time1, time2, time3, time4, time5, dvel, frametime, grav;
+	float			time1, time2, time3, time4, time5, time6, dvel, frametime, grav;
 	extern	cvar_t	sv_gravity;
 
 	frametime = cl.time - cl.oldtime;
+	time6 = frametime * 80;
 	time5 = frametime * 60;
 	time4 = frametime * 30;
 	time3 = frametime * 15;
@@ -1341,10 +1344,10 @@ void CL_RunParticles (void)
 	{
 		if (p->die < cl.time || p->spawn > cl.time)
 			continue;
-
-		p->org[0] += p->vel[0]*frametime;
-		p->org[1] += p->vel[1]*frametime;
-		p->org[2] += p->vel[2]*frametime;
+		
+		p->org[0] += p->vel[0] * frametime;
+		p->org[1] += p->vel[1] * frametime;
+		p->org[2] += p->vel[2] * frametime;
 
 		switch (p->type)
 		{
@@ -1370,7 +1373,10 @@ void CL_RunParticles (void)
 			if (p->ramp >= 12)
 				p->die = -1;
 			else
+			{
 				p->color = smoke[(int)p->ramp];
+				//p->wind = p->ramp * 0.02;
+			}
 			break;
 
 		case pt_muzzle:
@@ -1417,10 +1423,10 @@ void CL_RunParticles (void)
 		case pt_gaussexit:
 			if (p->flag == 1)
 			{
-				p->ramp += time5;
+				p->ramp += time4;
 				if (p->ramp > 80)
 					p->die = -1;
-				if ((int)p->ramp == 0)
+				else if ((int)p->ramp == 0)
 				{
 					p->ramp = 1; //be sure to execute only once
 					VectorCopy(p->wish_vel, p->vel);
@@ -1428,23 +1434,23 @@ void CL_RunParticles (void)
 					p->vel[1] += (rand() % (10 * 2)) - 10;
 					p->vel[2] += (rand() % (10 * 2)) - 10;
 				}
-				if (p->ramp > 0)
+				else if (p->ramp > 0)
 				{
-					p->vel[2] -= grav * 2;
+					p->vel[2] -= grav * 4;
 					p->color = spark[(int)p->ramp / 6]; // shouldn't run over 15 which is max index for sparks array, right?
 				}
 			}
 			else
 			{
-				p->ramp += time5;
+				p->ramp += time6;
 				if (p->ramp > 60)
 					p->die = -1;
-				if ((int)p->ramp == 0)
+				else if ((int)p->ramp == 0)
 				{
 					p->ramp = 1; //be sure to execute only once
 					VectorCopy(p->wish_vel, p->vel);
 				}
-				if (p->ramp > 0)
+				else if (p->ramp > 0)
 				{
 					p->vel[2] -= grav * 4;
 					p->color = spark[(int) p->ramp / 4]; // shouldn't run over 15 which is max index for sparks array, right?
@@ -1493,8 +1499,10 @@ void CL_RunParticles (void)
 
 		case pt_explode:
 			p->ramp += time2;
-			if (p->ramp >=9)
+			if (p->ramp >= 9)
 				p->die = -1;
+			//else if (p->ramp > 0)
+			//	p->wind = (float) p->ramp * 0.1;
 			else
 				p->color = rampinner[(int)p->ramp];
 			break;
@@ -1529,6 +1537,10 @@ void CL_RunParticles (void)
 			break;
 
 		}
+
+		//Con_DPrintf("wind = %f \n", p->wind);
+		//p->org[0] += ((400 + (rand() % 100) - 50) * frametime) * p->wind;
+		//p->org[1] += ((400 + (rand() % 100) - 50) * frametime) * p->wind;
 
 		if (cur != active)
 			particles[active] = *p;

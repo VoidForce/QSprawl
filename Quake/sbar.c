@@ -613,8 +613,8 @@ void Sbar_DrawInventory (void)
 	Sbar_DrawPic(32, -23, sb_ib_ammo[0]);
 	Sbar_DrawSmallNum (45, -24, cl.stats[STAT_NAILS]);
 	Sbar_DrawPic(71, -23, sb_ib_ammo[1]);
-	Sbar_DrawSmallNum (77, -24, cl.stats[STAT_BULLETS]);
-	Sbar_DrawPic(104, -23, sb_ib_ammo[2]);
+	Sbar_DrawSmallNum (84, -24, cl.stats[STAT_BULLETS]);
+	Sbar_DrawPic(110, -23, sb_ib_ammo[2]);
 	Sbar_DrawSmallNum (117, -24, cl.stats[STAT_ROCKETS]);
 	Sbar_DrawPic(144, -23, sb_ib_ammo[3]);
 	Sbar_DrawSmallNum (157, -24, cl.stats[STAT_CELLS]);
@@ -902,8 +902,8 @@ void Sbar_DrawInventory2 (void)
 			Sbar_DrawSmallNum(x + 45, y - 24, cl.stats[STAT_NAILS]);
 			Sbar_DrawPic(x + 71, y - 23, sb_ib_ammo[1]);
 
-			Sbar_DrawSmallNum(x + 77, y - 24, cl.stats[STAT_BULLETS]);
-			Sbar_DrawPic(x + 104, y - 23, sb_ib_ammo[2]);
+			Sbar_DrawSmallNum(x + 84, y - 24, cl.stats[STAT_BULLETS]);
+			Sbar_DrawPic(x + 110, y - 23, sb_ib_ammo[2]);
 
 			Sbar_DrawSmallNum(x + 117, y - 24, cl.stats[STAT_ROCKETS]);
 			Sbar_DrawPic(x + 144, y - 23, sb_ib_ammo[3]);
@@ -1341,7 +1341,6 @@ void Sbar_DrawAdrenaline(void)
 	float progress;
 	int color;
 	float transparency;
-	byte jumps = (byte)cl.stats[STAT_WALLJUMPS];
 
 	baseHeight = (int)glheight / 6.75;
 	baseLength = (int)glwidth / 160;
@@ -1364,27 +1363,7 @@ void Sbar_DrawAdrenaline(void)
 	Draw_Fill(	posX - offsetX - 2,	 posY + offsetY + 2,  baseLength + 4, -(baseHeight + 4),			 42,	0.3); // background
 	Draw_Fill(	posX - offsetX,		 posY + offsetY,	  baseLength,	  -baseHeight,					 0,		0.3); // black filler
 	Draw_Fill(	posX - offsetX,		 posY + offsetY,	  baseLength,	  -(int)(progress * baseHeight), color, transparency);	// value strip
-
-	// draw jumps
-	// should be better to draw pics instead, but right now it's simplier to use draw_fill to me
-	// jumps are reversed, 0 means all 3 jumps available, 1 - 2 jumps, 2 - 1 jump, 3 - all jumps been used
-	// outlines
-	Draw_Fill(posX - baseLength * 2 - 2, posY + offsetY - baseLength - 2,	  baseLength + 4, baseLength + 4, 42, 0.3);
-	Draw_Fill(posX - baseLength * 2 - 2, posY + offsetY - baseLength * 3 - 2, baseLength + 4, baseLength + 4, 42, 0.3);
-	Draw_Fill(posX - baseLength * 2 - 2, posY + offsetY - baseLength * 5 - 2, baseLength + 4, baseLength + 4, 42, 0.3);
-	switch (jumps)
-	{
-	case 0:
-		Draw_Fill(posX - baseLength * 2, posY + offsetY - baseLength * 5, baseLength, baseLength, 244, 0.5);
-	case 1:
-		Draw_Fill(posX - baseLength * 2, posY + offsetY - baseLength * 3, baseLength, baseLength, 244, 0.5);
-	case 2:
-		Draw_Fill(posX - baseLength * 2, posY + offsetY - baseLength,	  baseLength, baseLength, 244, 0.5);
-	default:
-		break;
-	}	
 }
-
 
 //extern void Draw_StringEx(float x, float y, float dim, const char* str);
 #define HUD_VERT_OFFSET 11

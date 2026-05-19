@@ -112,12 +112,6 @@ void SV_CheckVelocity (edict_t *ent)
 			length = 1995;
 			VectorScale(direction, length, ent->v.velocity);
 		}
-		/*
-		if (ent->v.velocity[i] > sv_maxvelocity.value)
-			ent->v.velocity[i] = sv_maxvelocity.value;
-		else if (ent->v.velocity[i] < -sv_maxvelocity.value)
-			ent->v.velocity[i] = -sv_maxvelocity.value;
-		*/
 	}
 }
 
@@ -459,6 +453,7 @@ void SV_AddGravity (edict_t *ent)
 			wscale = 0.1;
 		else
 			wscale = 1;
+
 		ent->v.velocity[0] += pr_global_struct->wind[0] * host_frametime * wscale;
 		ent->v.velocity[1] += pr_global_struct->wind[1] * host_frametime * wscale;
 		ent->v.velocity[2] += pr_global_struct->wind[2] * host_frametime * wscale;

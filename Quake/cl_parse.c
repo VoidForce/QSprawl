@@ -839,7 +839,7 @@ void CL_ParseClientdata (void)
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadByte (); //18
+	i = MSG_ReadShort (); //18
 	if (cl.stats[STAT_AMMO] != i)
 	{
 		cl.stats[STAT_AMMO] = i;
@@ -853,7 +853,7 @@ void CL_ParseClientdata (void)
 		Sbar_Changed ();
 	}
 
-	i = MSG_ReadByte(); //20
+	i = MSG_ReadShort(); //20
 	if (cl.stats[STAT_NAILS] != i)
 	{
 		cl.stats[STAT_NAILS] = i;
@@ -888,13 +888,6 @@ void CL_ParseClientdata (void)
 		Sbar_Changed();
 	}
 
-	i = MSG_ReadByte(); //24.5
-	if (cl.stats[STAT_WALLJUMPS] != i)
-	{
-		cl.stats[STAT_WALLJUMPS] = i;
-		Sbar_Changed();
-	}
-
 	i = MSG_ReadByte (); //25
 	if (standard_quake)
 	{
@@ -921,6 +914,7 @@ void CL_ParseClientdata (void)
 		cl.viewent.alpha = MSG_ReadByte(); //26
 	else
 		cl.viewent.alpha = ENTALPHA_DEFAULT;
+
 	//johnfitz
 	if (bits & SU_WEAPONSKIN)
 		cl.viewent.skinnum = MSG_ReadByte();

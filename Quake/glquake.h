@@ -76,6 +76,7 @@ typedef struct particle_s
 	float		ramp;
 	vec3_t		wish_vel;
 	byte		flag;
+	float		wind;
 } particle_t;
 
 

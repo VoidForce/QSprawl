@@ -1182,14 +1182,13 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 
 	MSG_WriteShort (msg, ent->v.health); // short (switch to byte?) 2 17
 	// so, for qSprawl we don't need ammo past 200, so the byte size would be enough
-	MSG_WriteByte (msg, ent->v.currentammo); // byte 1 18
+	MSG_WriteShort (msg, ent->v.currentammo); // byte 1 18
 	MSG_WriteByte (msg, ent->v.ammo_shells); // byte 1 19
-	MSG_WriteByte (msg, ent->v.ammo_nails);  // Short 2 20
+	MSG_WriteShort (msg, ent->v.ammo_nails);  // Short 2 20
 	MSG_WriteByte (msg, ent->v.ammo_rockets); // byte 1 21
 	MSG_WriteByte (msg, ent->v.ammo_cells);	 // byte 1 22
 	MSG_WriteByte (msg, ent->v.ammo_bullets); // byte 1 23
 	MSG_WriteByte (msg, ent->v.adrenaline * 255); // byte 1 24 
-	MSG_WriteByte (msg, ent->v.wall_jumps);
 
 	if (standard_quake)
 	{

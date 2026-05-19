@@ -3232,40 +3232,37 @@ void M_Menu_Crosshair_f(void)
 
 ////////////////////////////////////////////////////
 #define OPTIONS_LIST(def)							\
-	def (OPT_VIDEO,			"Video Options")		\
-	def (OPT_CUSTOMIZE,		"Controls")				\
-	def (OPT_GAMEPAD,		"Gamepad")				\
 	def (OPT_CONSOLE,		"Go To Console")		\
-	def (OPT_DEFAULTS,		"Reset Config")			\
-													\
 	def (OPT_SPACE1,		"")						\
-	def (OPT_PICKUPS,		"Drop Pickups")			\
-	def (OPT_DODGE,			"Dodge Tap Speed")		\
-	def (OPT_SPACE2,		"")						\
-													\
-	def (OPT_GAMMA,			"Brightness")			\
+	def (OPT_GAMMA,			"Gamma")				\
 	def (OPT_CONTRAST,		"Contrast")				\
-	def (OPT_SCALE,			"UI Scale")				\
-	def (OPT_UIMOUSE,		"UI Mouse")				\
+	def (OPT_VIDEO,			"Video Options")		\
+	def (OPT_SPACE2,		"")						\
+	def (OPT_MOUSESPEED,	"Mouse Sens")			\
+	def (OPT_INVMOUSE,		"Invert Mouse")			\
+	def (OPT_GAMEPAD,		"Gamepad")				\
+	def (OPT_CUSTOMIZE,		"Controls")				\
+	def (OPT_SPACE3,		"")						\
+	def (OPT_CROSSHAIR,		"Crosshair")			\
+	def (OPT_SPACECROSSHAIR,"")						\
+	def (OPT_PICKUPS,		"Drop Pickups")			\
+	def (OPT_DODGE,			"Dodge Tap Time")		\
+	def (OPT_FOV,			"Field Of View")		\
+	def (OPT_FOVDISTORT,	"Gun Position")			\
+	def (OPT_VIEWBOB,		"View Bob")				\
+	def (OPT_SPACE4,		"")						\
 	def (OPT_HUDSTYLE,		"HUD")					\
+	def (OPT_UIMOUSE,		"UI Mouse")				\
+	def (OPT_SCALE,			"UI Scale")				\
+	def (OPT_SCALEMENU,		"Menu Scale")			\
 	def (OPT_SBALPHA,		"HUD Alpha")			\
 	def (OPT_HUDLEVEL,		"HUD Detail")			\
-	def (OPT_CROSSHAIR,		"Crosshair")			\
-													\
-	def (OPT_SPACE3,		"")						\
-													\
-	def (OPT_MOUSESPEED,	"Mouse Speed")			\
-	def (OPT_INVMOUSE,		"Invert Mouse")			\
-	def (OPT_ALWAYSMLOOK,	"Mouse Look")			\
-	def (OPT_FOV,			"Field Of View")		\
-	def (OPT_FOVDISTORT,	"Gun Distortion")		\
-	def (OPT_VIEWBOB,		"View Bob")				\
-													\
-	def (OPT_SPACE4,		"")						\
-													\
+	def (OPT_SPACE5,		"")						\
 	def (OPT_SNDVOL,		"Sound Volume")			\
 	def (OPT_MUSICVOL,		"Music Volume")			\
 	def (OPT_MUSICEXT,		"External Music")		\
+	def (OPT_SPACE6,		"")						\
+	def (OPT_DEFAULTS,		"Reset Config")			\
 ////////////////////////////////////////////////////
 #define VIDEO_OPTIONS_LIST(def)						\
 	def (VID_OPT_RESOLUTION,	"Resolution")		\
@@ -3326,18 +3323,30 @@ void M_Menu_Crosshair_f(void)
 ////////////////////////////////////////////////////
 #define CROSSHAIR_OPTIONS_LIST(def)					\
 	def(CROSSHAIR_STATE,		"Crosshair")		\
-													\
 	def(CROSSHAIR_SPACE1,		"")					\
-													\
+	def(CROSSHAIR_SPACE2,		"")					\
+	def(CROSSHAIR_SPACE3,		"")					\
+	def(CROSSHAIR_SPACE4,		"")					\
+	def(CROSSHAIR_SPACE5,		"")					\
+	def(CROSSHAIR_SPACE6,		"")					\
+	def(CROSSHAIR_SPACE7,		"")					\
+	def(CROSSHAIR_SPACE8,		"")					\
+	def(CROSSHAIR_SPACE9,		"")					\
+	def(CROSSHAIR_SPACE10,		"")					\
+	def(CROSSHAIR_SPACE11,		"")					\
+	def(CROSSHAIR_SPACE12,		"")					\
+	def(CROSSHAIR_SPACE13,		"")					\
+	def(CROSSHAIR_SPACE14,		"")					\
+	def(CROSSHAIR_SPACE15,		"")					\
+	def(CROSSHAIR_SPACE16,		"")					\
 	def(CROSSHAIR_TYPE,			"Type")				\
+	def(CROSSHAIR_SPACETYPE,		"")				\
 	def(CROSSHAIR_WIDTH,		"Width")			\
 	def(CROSSHAIR_LENGTH,		"Length")			\
 	def(CROSSHAIR_GAP,			"Center Gap")		\
 	def(CROSSHAIR_COLOR,		"Color")			\
 	def(CROSSHAIR_ALPHA,		"Transparency")		\
-													\
-	def(CROSSHAIR_SPACE2,		"")					\
-													\
+	def(CROSSHAIR_SPACEDOT,		"")					\
 	def(CROSSHAIR_DOT,			"Center Dot")		\
 	def(CROSSHAIR_DOT_COLOR,	"Color")			\
 	def(CROSSHAIR_DOT_ALPHA,	"Transparency")		\
@@ -3601,6 +3610,7 @@ static void M_Options_SetUIMouse (uimouse_t opt)
 	}
 }
 
+// with keyboard
 void M_AdjustSliders (int dir)
 {
 	//int	curr_alwaysrun, target_alwaysrun;
@@ -3614,12 +3624,19 @@ void M_AdjustSliders (int dir)
 	{
 	case OPT_SCALE:	// console and menu scale
 		l = ((vid.width + 31) / 32) / 10.0;
-		f = scr_conscale.value + dir * .1;
+		f = scr_sbarscale.value + dir * .1;
 		if (f < 1)	f = 1;
 		else if(f > l)	f = l;
-		Cvar_SetValue ("scr_conscale", f);
-		Cvar_SetValue ("scr_menuscale", f);
+		//Cvar_SetValue ("scr_conscale", f);
+		//Cvar_SetValue ("scr_menuscale", f);
 		Cvar_SetValue ("scr_sbarscale", f);
+		break;
+	case OPT_SCALEMENU:	// console and menu scale
+		l = ((vid.width + 31) / 32) / 10.0;
+		f = scr_menuscale.value + dir * .1;
+		if (f < 1)	f = 1;
+		else if (f > l)	f = l;
+		Cvar_SetValue("scr_menuscale", f);
 		break;
 	case OPT_HUDLEVEL:	// hud detail
 		f = scr_viewsize.value - dir * 10;
@@ -3645,9 +3662,9 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValue ("contrast", f);
 		break;
 	case OPT_MOUSESPEED:	// mouse speed
-		f = sensitivity.value + dir * 0.5;
-		if (f > 11)	f = 11;
-		else if (f < 1)	f = 1;
+		f = sensitivity.value + dir * 0.05;
+		if (f > 10)	f = 10;
+		else if (f < 0.1)	f = 0.1;
 		Cvar_SetValue ("sensitivity", f);
 		break;
 	case OPT_SBALPHA:	// statusbar alpha
@@ -3657,7 +3674,7 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValue ("scr_sbaralpha", f);
 		break;
 	case OPT_MUSICVOL:	// music volume
-		f = bgmvolume.value + dir * 0.1;
+		f = bgmvolume.value + dir * 0.01;
 		if (f < 0)	f = 0;
 		else if (f > 1)	f = 1;
 		Cvar_SetValue ("bgmvolume", f);
@@ -3666,7 +3683,7 @@ void M_AdjustSliders (int dir)
 		Cvar_Set ("bgm_extmusic", bgm_extmusic.value ? "0" : "1");
 		break;
 	case OPT_SNDVOL:	// sfx volume
-		f = sfxvolume.value + dir * 0.1;
+		f = sfxvolume.value + dir * 0.01;
 		if (f < 0)	f = 0;
 		else if (f > 1)	f = 1;
 		Cvar_SetValue ("volume", f);
@@ -3701,6 +3718,7 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValue ("m_pitch", -m_pitch.value);
 		break;
 
+	/*
 	case OPT_ALWAYSMLOOK:
 		if ((in_mlook.state & 1) || freelook.value)
 		{
@@ -3712,7 +3730,7 @@ void M_AdjustSliders (int dir)
 			Cvar_SetValueQuick (&freelook, 1.f);
 		}
 		break;
-
+	*/
 	//
 	// Video options
 	//
@@ -3849,7 +3867,6 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValueQuick(&crosshair_gap, CLAMP(MIN_CROSSHAIR_GAP, crosshair_gap.value + dir * 1, MAX_CROSSHAIR_GAP));
 		break;
 	case CROSSHAIR_COLOR:
-		//static int crosshair_color_ramp[11] = { 0, 6, 13, 254, 144, 192, 208, 234, 242, 244, 251 };
 		type = (int)crosshair_color.value;
 		for (index = 0; index < 11; index++)
 		{
@@ -3909,7 +3926,7 @@ void M_AdjustSliders (int dir)
 		break;
 
 	case OPT_DODGE:
-		Cvar_SetValueQuick(&dodge_tap_speed, CLAMP(0.0f, dodge_tap_speed.value + dir * 0.05f, 0.5f));
+		Cvar_SetValueQuick(&dodge_tap_speed, CLAMP(0.0f, dodge_tap_speed.value + dir * 0.01f, 0.5f));
 		break;
 
 	default:
@@ -3917,8 +3934,7 @@ void M_AdjustSliders (int dir)
 	}
 }
 
-
-void M_DrawSlider (int x, int y, float range)
+void M_DrawSlider (int x, int y, float range, float value)
 {
 	int	i;
 
@@ -3931,6 +3947,7 @@ void M_DrawSlider (int x, int y, float range)
 		M_DrawCharacter (x + i*8, y, 129);
 	M_DrawCharacter (x+i*8, y, 130);
 	M_DrawCharacter (x + (SLIDER_RANGE-1)*8 * range, y, 131);
+	M_Print(x + 100, y, va("%.3f", value));
 }
 
 void M_DrawCheckbox (int x, int y, int on)
@@ -3938,6 +3955,7 @@ void M_DrawCheckbox (int x, int y, int on)
 	M_Print (x, y, on ? "On" : "Off");
 }
 
+// with mouse
 qboolean M_SetSliderValue (int option, float f)
 {
 	float l;
@@ -3949,15 +3967,19 @@ qboolean M_SetSliderValue (int option, float f)
 		target_scale_frac = f;
 		l = (vid.width / 320.0) - 1;
 		f = l > 0 ? f * l + 1 : 0;
-		Cvar_SetValue ("scr_conscale", f);
+		//Cvar_SetValue ("scr_conscale", f);
 		Cvar_SetValue ("scr_sbarscale", f);
-
+		return true;
+	case OPT_SCALEMENU:	// console and menu scale
+		target_scale_frac = f;
+		l = (vid.width / 320.0) - 1;
+		f = l > 0 ? f * l + 1 : 0;
 		// Delay the actual update until we release the mouse button
 		// to keep the UI layout stable while adjusting the scale
 		if (!slider_grab)
 		{
-			Cvar_SetValue ("scr_menuscale", f);
-			M_Options_UpdateLayout ();
+			Cvar_SetValue("scr_menuscale", f);
+			M_Options_UpdateLayout();
 		}
 		return true;
 	case OPT_HUDLEVEL:	// hud detail
@@ -3976,7 +3998,9 @@ qboolean M_SetSliderValue (int option, float f)
 		Cvar_SetValue ("contrast", f);
 		return true;
 	case OPT_MOUSESPEED:	// mouse speed
-		f = f * 10.f + 1.f;
+		f = f * 10.f;
+		f = floor(f * 10);
+		f = f * 0.1;
 		Cvar_SetValue ("sensitivity", f);
 		return true;
 	case OPT_SBALPHA:	// statusbar alpha
@@ -3984,9 +4008,13 @@ qboolean M_SetSliderValue (int option, float f)
 		Cvar_SetValue ("scr_sbaralpha", f);
 		return true;
 	case OPT_MUSICVOL:	// music volume
+		f = floor(f * 100);
+		f = f * 0.01;
 		Cvar_SetValue ("bgmvolume", f);
 		return true;
 	case OPT_SNDVOL:	// sfx volume
+		f = floor(f * 100);
+		f = f * 0.01;
 		Cvar_SetValue ("volume", f);
 		return true;
 	case OPT_FOV:	// field of view
@@ -4041,19 +4069,22 @@ qboolean M_SetSliderValue (int option, float f)
 		return true;
 
 	case CROSSHAIR_WIDTH:
-		f *= 100;
+		f *= 50;
 		if (f < 1)
 			f = 1;
+		f = floor(f);
 		Cvar_SetValue("crosshair_width", f);
 		return true;
 	case CROSSHAIR_LENGTH:
-		f *= 100;
+		f *= 50;
 		if (f < 1)
 			f = 1;
+		f = floor(f);
 		Cvar_SetValue("crosshair_length", f);
 		return true;
 	case CROSSHAIR_GAP:
-		f *= 100;
+		f *= 50;
+		f = floor(f);
 		Cvar_SetValue("crosshair_gap", f);
 		return true;
 	case CROSSHAIR_ALPHA:
@@ -4067,6 +4098,8 @@ qboolean M_SetSliderValue (int option, float f)
 		Cvar_SetValue("crosshair_dot_alpha", f);
 		return true;
 	case OPT_DODGE:
+		f = floor(f * 50);
+		f = f * 0.02;
 		f = LERP(0.0, 0.5, f);
 		Cvar_SetValue("dodge_tap_speed", f);
 		return true;
@@ -4095,6 +4128,8 @@ void M_ReleaseSliderGrab (void)
 	M_ThrottledSound ("misc/menu1.wav");
 	if (M_Options_GetSelected () == OPT_SCALE)
 		M_SetSliderValue (OPT_SCALE, target_scale_frac);
+	if (M_Options_GetSelected() == OPT_SCALEMENU)
+		M_SetSliderValue(OPT_SCALEMENU, target_scale_frac);
 }
 
 qboolean M_SliderClick (int cx, int cy)
@@ -4106,7 +4141,7 @@ qboolean M_SliderClick (int cx, int cy)
 	// HACK: we set the flag to true before updating the slider
 	// to avoid changing the UI scale and implicitly the layout
 	item = M_Options_GetSelected ();
-	if (item == OPT_SCALE)
+	if (item == OPT_SCALE || item == OPT_SCALEMENU)
 		slider_grab = true;
 	if (!M_SetSliderValue (item, M_MouseToSliderFraction (cx)))
 		return false;
@@ -4149,9 +4184,15 @@ static void M_Options_DrawItem (int y, int item)
 
 	switch (item)
 	{
+	case OPT_GAMEPAD:
+		str = IN_GetGamepadName();
+		if (!str)
+			M_Print(x, y, "Off");
+		else
+			M_Print(x - 4, y, "...");		
+		break;
 	case OPT_VIDEO:
 	case OPT_CUSTOMIZE:
-	case OPT_GAMEPAD:
 	//case OPT_MODS:
 	case OPT_CROSSHAIR:
 	case GPAD_OPT_CALIBRATE:
@@ -4160,16 +4201,24 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_SCALE:
 		l = (vid.width / 320.0) - 1;
-		r = l > 0 ? (scr_conscale.value - 1) / l : 0;
+		r = l > 0 ? (scr_sbarscale.value - 1) / l : 0;
 		if (slider_grab && M_Options_GetSelected () == OPT_SCALE)
 			r = target_scale_frac;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)scr_sbarscale.value);
+		break;
+
+	case OPT_SCALEMENU:
+		l = (vid.width / 320.0) - 1;
+		r = l > 0 ? (scr_menuscale.value - 1) / l : 0;
+		if (slider_grab && M_Options_GetSelected() == OPT_SCALEMENU)
+			r = target_scale_frac;
+		M_DrawSlider(x, y, r, (float)scr_menuscale.value);
 		break;
 
 	case OPT_HUDLEVEL:
 		r = (scr_viewsize.value - 100) / (130 - 100);
 		r = 1 - r;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)scr_viewsize.value);
 		break;
 	/*
 	case OPT_PIXELASPECT:
@@ -4189,22 +4238,22 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_GAMMA:
 		r = (1.0 - vid_gamma.value) / 0.5;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)vid_gamma.value);
 		break;
 
 	case OPT_CONTRAST:
 		r = vid_contrast.value - 1.0;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)vid_contrast.value);
 		break;
 	
 	case OPT_MOUSESPEED:
 		r = (sensitivity.value - 1)/10;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)sensitivity.value);
 		break;
 
 	case OPT_SBALPHA:
 		r = (1.0 - scr_sbaralpha.value) ; // scr_sbaralpha range is 1.0 to 0.0
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)scr_sbaralpha.value);
 		break;
 
 	case OPT_HUDSTYLE:
@@ -4220,58 +4269,40 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_SNDVOL:
 		r = sfxvolume.value;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)sfxvolume.value);
 		break;
 
 	case OPT_MUSICVOL:
 		r = bgmvolume.value;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)bgmvolume.value);
 		break;
 
 	case OPT_MUSICEXT:
 		M_DrawCheckbox (x, y, bgm_extmusic.value);
 		break;
-/*
-	case OPT_ALWAYRUN:
-		if (cl_alwaysrun.value)
-			M_Print (x, y, "QuakeSpasm");
-		else if (cl_forwardspeed.value > 200.0)
-			M_Print (x, y, "Vanilla");
-		else
-			M_Print (x, y, "Off");
-		break;
-*/
+
 	case OPT_VIEWBOB:
 		M_Print (x, y, cl_bob.value ? "On" : "Off");
 		break;
-
-	/* qSprawl Not allowed to change
-	case OPT_RECOIL:
-		if ((int)v_gunkick.value == 2)
-			M_Print (x, y, "Smooth");
-		else if ((int)v_gunkick.value == 1)
-			M_Print (x, y, "Classic");
-		else
-			M_Print (x, y, "Off");
-		break;
-	*/
 
 	case OPT_INVMOUSE:
 		M_DrawCheckbox (x, y, m_pitch.value < 0);
 		break;
 
+	/*
 	case OPT_ALWAYSMLOOK:
 		M_DrawCheckbox (x, y, (in_mlook.state & 1) || freelook.value);
 		break;
+	*/
 
 	case OPT_FOV:
 		r = (scr_fov.value - FOV_MIN) / (FOV_MAX - FOV_MIN);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)scr_fov.value);
 		break;
 
 	case OPT_FOVDISTORT:
 		r = 1.f - cl_gun_fovscale.value;
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)cl_gun_fovscale.value);
 		break;
 
 	//
@@ -4352,11 +4383,11 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_SENSX:
 		r = (joy_sensitivity_yaw.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_sensitivity_yaw.value);
 		break;
 	case GPAD_OPT_SENSY:
 		r = (joy_sensitivity_pitch.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_sensitivity_pitch.value);
 		break;
 	case GPAD_OPT_INVERT:
 		M_DrawCheckbox (x, y, joy_invert.value);
@@ -4366,23 +4397,23 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_EXPONENT_LOOK:
 		r = (joy_exponent.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_exponent.value);
 		break;
 	case GPAD_OPT_EXPONENT_MOVE:
 		r = (joy_exponent_move.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_exponent_move.value);
 		break;
 	case GPAD_OPT_DEADZONE_LOOK:
 		r = (joy_deadzone_look.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_deadzone_look.value);
 		break;
 	case GPAD_OPT_DEADZONE_MOVE:
 		r = (joy_deadzone_move.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_deadzone_move.value);
 		break;
 	case GPAD_OPT_DEADZONE_TRIG:
 		r = (joy_deadzone_trigger.value - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)joy_deadzone_trigger.value);
 		break;
 	case GPAD_OPT_GYROENABLE:
 		if (!IN_HasGyro ())
@@ -4404,17 +4435,18 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_GYROSENSX:
 		r = (gyro_yawsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)gyro_yawsensitivity.value);
 		break;
 	case GPAD_OPT_GYROSENSY:
 		r = (gyro_pitchsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)gyro_pitchsensitivity.value);
 		break;
 	case GPAD_OPT_GYRONOISE:
 		r = (gyro_noise_thresh.value - MIN_GYRO_NOISE_THRESH) / (MAX_GYRO_NOISE_THRESH - MIN_GYRO_NOISE_THRESH);
-		M_DrawSlider (x, y, r);
+		M_DrawSlider (x, y, r, (float)gyro_noise_thresh.value);
 		break;
 
+// sprawl96
 	case CROSSHAIR_STATE:
 		M_Print(x, y, crosshair.value == 1 ? "On" : "Off");
 		break;
@@ -4422,24 +4454,30 @@ static void M_Options_DrawItem (int y, int item)
 		switch ((int)crosshair_type.value)
 		{
 		default:
-		case 1:	M_Print(x, y, "+ Shape"); break;
-		case 2:	M_Print(x, y, "T Shape"); break;
-		case 3:	M_Print(x, y, "L Shape"); break;
-		case 4:	M_Print(x, y, "I Shape"); break;
+		case 1:	
+			Draw_Fill(x + 4, y + 0, 2, 4, 245, 255);
+		case 2:
+			Draw_Fill(x + 0, y + 4, 4, 2, 245, 255);
+		case 3:
+			Draw_Fill(x + 6, y + 4, 4, 2, 245, 255);
+		case 4:	
+			Draw_Fill(x + 4, y + 6, 2, 4, 245, 255);
+			M_Print(x, y, va("    %d", (int)crosshair_type.value));
+			break;
 		case 0:	M_Print(x, y, "No Reticles"); break;
 		}
 		break;
 	case CROSSHAIR_WIDTH:
 		r = (crosshair_width.value - MIN_CROSSHAIR_WIDTH) / (MAX_CROSSHAIR_WIDTH - MIN_CROSSHAIR_WIDTH);
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)crosshair_width.value);
 		break;
 	case CROSSHAIR_LENGTH:
 		r = (crosshair_length.value - MIN_CROSSHAIR_LENGTH) / (MAX_CROSSHAIR_LENGTH - MIN_CROSSHAIR_LENGTH);
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)crosshair_length.value);
 		break;
 	case CROSSHAIR_GAP:
 		r = (crosshair_gap.value - MIN_CROSSHAIR_GAP) / (MAX_CROSSHAIR_GAP - MIN_CROSSHAIR_GAP);
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)crosshair_gap.value);
 		break;
 	case CROSSHAIR_COLOR:
 		r = crosshair_color.value;
@@ -4448,7 +4486,7 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case CROSSHAIR_ALPHA:
 		r = (crosshair_alpha.value - MIN_CROSSHAIR_ALPHA) / (MAX_CROSSHAIR_ALPHA - MIN_CROSSHAIR_ALPHA);
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)crosshair_alpha.value);
 		break;
 	case CROSSHAIR_DOT:
 		if (crosshair_dot.value == 1)
@@ -4467,16 +4505,18 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case CROSSHAIR_DOT_ALPHA:
 		r = (crosshair_dot_alpha.value - MIN_CROSSHAIR_DOT_ALPHA) / (MAX_CROSSHAIR_DOT_ALPHA - MIN_CROSSHAIR_DOT_ALPHA);
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)crosshair_dot_alpha.value);
 		break;
-
 	case OPT_PICKUPS:
 		M_Print(x, y, game_pickups.value == 1 ? "On" : "Off");
 		break;
 	case OPT_DODGE:
-		//r = LERP(0.0, 1.0, dodge_tap_speed.value * 2);
 		r = dodge_tap_speed.value * 2.0f;
-		M_DrawSlider(x, y, r);
+		M_DrawSlider(x, y, r, (float)dodge_tap_speed.value);
+		if (dodge_tap_speed.value <= 0)
+			M_Print(x + 140, y, " OFF");
+		else
+			M_Print(x+140, y, " seconds");
 		break;
 
 	default:
@@ -4689,21 +4729,17 @@ void M_Options_Mousemove (int cx, int cy)
 
 static const char* const bindnames[][2] =
 {
-	{"+gyroaction",		"Gyro switch"},
 	{"+forward",		"Move forward"},
 	{"+back",			"Move backward"},
 	{"+moveleft",		"Move left"},
 	{"+moveright",		"Move right"},
-	{"+jump",			"Jump / swim up"},
-	//{"+moveup",			"Swim up"},
-	//{"+movedown",		"Swim down"},
-	//{"+speed",			"Run"},
-	{"+slide",			"Slide"},
+	{"+jump",			"Jump"},
+	{"+sprint",			"Sprint"},
+	{"+slide",			"Slide / Crouch"},
 	{"",				""},
 	{"+attack",			"Attack"},
 	//{"+attack2",		"Alternative attack"},
 	{"+melee",			"Quick melee"},
-	//{"+kick",			"Kick"},
 	{"+adrenaline",		"Adrenaline"},
 	//{"+reload",			"Reload"},
 	//{"+use",			"Use"},
@@ -4718,6 +4754,8 @@ static const char* const bindnames[][2] =
 	{"impulse 6",		"Grenade Launcher"},
 	{"impulse 7",		"Gauss Rifle"},
 	{"impulse 8",		"Lightning Gun"},
+	{"",				""},
+	{"+gyroaction",		"Gyro switch"},
 };
 
 #define	NUMCOMMANDS		Q_COUNTOF(bindnames)

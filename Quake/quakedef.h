@@ -152,7 +152,6 @@ typedef enum
 	STAT_INFO_HEAD		= 20,
 	STAT_INFO_HEAD_MAX	= 21,
 	STAT_INFO_TYPE		= 22,
-	STAT_WALLJUMPS		= 23,
 } stat_t;
 
 // stock defines

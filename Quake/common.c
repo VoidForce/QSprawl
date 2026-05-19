@@ -2374,34 +2374,6 @@ void COM_AddGameDirectory (const char *dir)
 	else
 		path_id = 1U;
 
-// load id1 paks first, should be reworked after librequake merge
-// engine looks for pak0 to see if gamdir is legit
-// i don't have time to think this through, so i keep blank pak in sprawl directory
-// id1/pak0.pak, id1/pak1.pak
-	q_snprintf(com_gamedir, sizeof(com_gamedir), "%s/id1", host_parms->basedir);
-
-	search = (searchpath_t *) Z_Malloc(sizeof(searchpath_t));
-	search->path_id = path_id;
-	q_strlcpy(search->filename, com_gamedir, sizeof(search->filename));
-	search->next = com_searchpaths;
-	com_searchpaths = search;
-
-	for (i = 0; i < 2; i++)
-	{
-		q_snprintf(pakfile, sizeof(pakfile), "%s/pak%i.pak", com_gamedir, i);
-		
-		pak = COM_LoadPackFile(pakfile);
-
-		if (!pak)
-			break;
-
-		search = (searchpath_t*)Z_Malloc(sizeof(searchpath_t));
-		search->path_id = path_id;
-		search->pack = pak;
-		search->next = com_searchpaths;
-		com_searchpaths = search;
-	}
-
 // normal paks inside the mod folder, (quake style mods)
 // pak0.pak - pak99.pak etc
 	for (j = 0; j < com_numbasedirs; j++)
@@ -3324,7 +3296,15 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 			COM_AddGameDirectory (p);
 	}
 
-	COM_CheckRegistered ();
+	for (i = 0; com_cmdline[i]; i++)
+	{
+		if (com_cmdline[i] != ' ')
+			break;
+	}
+
+	Cvar_SetROM("cmdline", &com_cmdline[i]);
+	Cvar_SetROM("registered", "1");
+	//COM_CheckRegistered ();
 }
 
 

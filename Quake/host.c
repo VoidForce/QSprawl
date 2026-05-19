@@ -75,7 +75,7 @@ cvar_t	samelevel = {"samelevel","0",CVAR_NONE};
 cvar_t	noexit = {"noexit","0",CVAR_NOTIFY|CVAR_SERVERINFO};
 cvar_t	skill = {"skill","1",CVAR_NONE};			// 0 - 3
 cvar_t	game_pickups = { "game_pickups", "0", CVAR_NOTIFY|CVAR_ARCHIVE };
-cvar_t	dodge_tap_speed = { "dodge_tap_speed", "0.25", CVAR_ARCHIVE };
+cvar_t	dodge_tap_speed = { "dodge_tap_speed", "0.18", CVAR_ARCHIVE };
 cvar_t	deathmatch = {"deathmatch","0",CVAR_NONE};	// 0, 1, or 2
 cvar_t	coop = {"coop","0",CVAR_NONE};			// 0 or 1
 

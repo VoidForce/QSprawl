@@ -60,8 +60,8 @@ cvar_t	v_idlescale = {"v_idlescale", "3", CVAR_NONE};
 cvar_t	crosshair = {"crosshair", "1", CVAR_ARCHIVE};
 cvar_t	crosshair_type = {"crosshair_type", "1", CVAR_ARCHIVE};
 cvar_t	crosshair_width = {"crosshair_width", "1", CVAR_ARCHIVE};
-cvar_t	crosshair_length = {"crosshair_length", "10", CVAR_ARCHIVE};
-cvar_t	crosshair_gap = { "crosshair_gap", "10", CVAR_ARCHIVE };
+cvar_t	crosshair_length = {"crosshair_length", "8", CVAR_ARCHIVE};
+cvar_t	crosshair_gap = { "crosshair_gap", "4", CVAR_ARCHIVE };
 cvar_t	crosshair_color = { "crosshair_color", "245", CVAR_ARCHIVE };
 cvar_t	crosshair_alpha = { "crosshair_alpha", "1.0", CVAR_ARCHIVE };
 cvar_t	crosshair_dot = { "crosshair_dot", "0", CVAR_ARCHIVE };
@@ -803,7 +803,7 @@ void View_ModelDrift(vec3_t vOrigin, vec3_t vAngles)
 		for (i = 0; i < 3; i++)
 		{
 			vOrigin[i] += (vDifference[i] * -1.0f) * 10.0f;
-			vAngles[YAW] += vDifference[i]*10;
+			//vAngles[YAW] +=  vDifference[i]*10;
 		}
 	}
 }

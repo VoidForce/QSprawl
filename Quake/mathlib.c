@@ -142,6 +142,10 @@ float	anglemod(float a)
 	return a;
 }
 
+float expDecay(float a, float b, float decay, float dt)
+{
+	return(b + (a - b) * exp(-decay * dt));
+}
 
 /*
 ==================

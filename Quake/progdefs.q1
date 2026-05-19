@@ -122,7 +122,7 @@ typedef struct
 	float	b_slide;
 	float	b_reload;
 	float	b_melee;
-	float	b_kick;
+	float	b_sprint;
 	float	b_adrenaline;
 	float	impulse;
 	float	fixangle;
@@ -166,7 +166,6 @@ typedef struct
 	float		entity_type;
 	float		wallrun;
 	vec3_t		wall_normal;
-	float		wall_jumps;
 	vec3_t		viewmodeloffset_angles;
 	float		adrenaline;
 	float		engineflags;
@@ -180,4 +179,4 @@ typedef struct
 	float		info_head_max;
 } entvars_t;
 
-#define PROGHEADER_CRC 18013
+#define PROGHEADER_CRC 25398

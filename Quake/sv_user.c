@@ -211,25 +211,13 @@ void SV_Q2AirAccelerate(float wishspeed, vec3_t wishdir)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
-	float	wallaccel;
-	float	modified_wishspeed;
-
-	modified_wishspeed = wishspeed;
-
-	if (sv_player->v.wallrun && sv_player->v.velocity[2] < WALLRUN_VERTICALSPEED_THRESHOLD)
-	{
-		modified_wishspeed = wishspeed * WALLRUN_EXTRASPEED;
-		wallaccel = sv_player->v.phys_airacceleration;
-	}
-	else
-		wallaccel = sv_player->v.phys_airacceleration;
 
 	currentspeed = DotProduct(velocity, wishdir);
-	addspeed = modified_wishspeed - currentspeed;
+	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
 
-	accelspeed = host_frametime * modified_wishspeed * wallaccel;
+	accelspeed = host_frametime * wishspeed * sv_player->v.phys_airacceleration;
 
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
@@ -241,7 +229,7 @@ void SV_Q2AirAccelerate(float wishspeed, vec3_t wishdir)
 void SV_WallRunDetection()
 {
 	trace_t	trace;
-	vec3_t w_forward, w_backward, w_left, w_right;
+	vec3_t w_forward, w_backward, w_left, w_right;// , w_down;
 	vec3_t half_mins, half_maxs;
 	int i;
 	float WallDetectionDistance;
@@ -251,6 +239,16 @@ void SV_WallRunDetection()
 		sv_player->v.wallrun = 0; //reset
 		return;
 	}
+
+// stop wallrunning right away from the floor
+	/*
+	VectorCopy(origin, w_down);
+	w_down[2] -= 30;
+	trace = SV_Move(origin, sv_player->v.mins, sv_player->v.maxs, w_down, false, sv_player);
+	if (trace.fraction != 1.0 && trace.plane.normal[2] == 1)
+		return;
+	*/
+
 	sv_player->v.wallrun = 0; //reset
 	WallDetectionDistance = 16;
 	//let us define tracing vectors
@@ -266,9 +264,10 @@ void SV_WallRunDetection()
 	i = 0;
 	VectorCopy(sv_player->v.mins, half_mins);
 	VectorCopy(sv_player->v.maxs, half_maxs);
+
 	//idk if there is a point in this? sv_move should use closest hull size instead of custom box size?
 	half_mins[2] += 12;
-	half_maxs[2] -= 16;
+	half_maxs[2] -= 32;
 
 	trace = SV_Move(origin, half_mins, half_maxs, w_forward, true, sv_player);
 	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
@@ -282,7 +281,7 @@ void SV_WallRunDetection()
 		sv_player->v.wallrun += 2;
 		VectorAdd(sv_player->v.wall_normal, trace.plane.normal, sv_player->v.wall_normal);
 	}
-
+	
 	trace = SV_Move(origin, half_mins, half_maxs, w_right, true, sv_player);
 	if (trace.fraction != 1.0 && trace.plane.normal[2] > -0.001)
 	{
@@ -300,16 +299,35 @@ void SV_WallRunDetection()
 	sv_player->v.wall_normal[2] = 0;
 	VectorNormalize(sv_player->v.wall_normal);
 
+	if (sv_player->v.wallrun)
+	{
+		float leanside;
+		leanside = DotProduct(right, sv_player->v.wall_normal);
+		if (leanside < -0.15)
+		{
+			sv_player->v.shakeangle[2] -= host_frametime * 45;
+			if (sv_player->v.shakeangle[2] < -15)
+				sv_player->v.shakeangle[2] = -15;
+		}
+		else if (leanside > 0.15)
+		{
+			sv_player->v.shakeangle[2] += host_frametime * 45;
+			if (sv_player->v.shakeangle[2] > 15)
+				sv_player->v.shakeangle[2] = 15;
+		}
+	}
+
 	//Con_DPrintf("wallrun = %f \n", sv_player->v.wallrun);
 	//Con_DPrintf("wall_normal = [%f,%f,%f] \n", sv_player->v.wall_normal[0], sv_player->v.wall_normal[1], sv_player->v.wall_normal[2]);
 }
 
-#define PUNCH_DAMPING		8.0f		// bigger number makes the response more damped, smaller is less damped
+#define PUNCH_DAMPING		10.0f		// bigger number makes the response more damped, smaller is less damped
 // currently the system will overshoot, with larger damping values it won't
 #define PUNCH_SPRING_CONSTANT	180.0f	// bigger number increases the speed at which the view corrects
 // hl2 spring force magnitude punch angle decay
 void DropPunchAngle (void)
 {
+	
 	vec3_t temp;
 	float damping,magnitude;
 
@@ -334,12 +352,7 @@ void DropPunchAngle (void)
 		VectorCopy(vec3_origin, sv_player->v.punchangle);
 		VectorCopy(vec3_origin, sv_player->v.punchvelocity);
 	}
-
-	/*len = VectorNormalize (sv_player->v.punchangle);
-	len -= (30 + len * 2) * host_frametime;
-	if (len < 0)
-		len = 0;
-	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);*/
+	
 }
 
 #define SHAKE_DAMPING		9.0f	
@@ -372,14 +385,14 @@ void DropShakeAngle(void)
 	}
 }
 
+extern float expDecay(float a, float b, float decay, float dt);
+
 void DropModelOffset(void)
 {
 	float len;
-	//VectorAdd(view->angles, cl.viewmodeloffset_angles, view->angles);
 	len = VectorNormalize (sv_player->v.viewmodeloffset_angles);
-	len -= (180 + len * 2) * host_frametime;
-	if (len < 0)
-		len = 0;
+
+	len = expDecay(len, 0.0, 10.0, host_frametime);
 	VectorScale (sv_player->v.viewmodeloffset_angles, len, sv_player->v.viewmodeloffset_angles);
 }
 
@@ -495,14 +508,13 @@ void SV_AirMove (void)
 	vec3_t		wish_velocity, wish_direction;
 	float		wish_speed;
 	vec3_t		current_velocity;
-	//vec3_t		current_direction;
 	vec3_t		down = { 0, 0, -1 };//how do we define constant array without assigning it to a variable?
 	float		wall_direction;
 	vec3_t		wall_vector;
-	int			wallrun_previous_status;
+	vec3_t		suction_vector;
 	float		speed2d, speedscale;
-	float		gravity_multiplier;
 	float		fmove, smove;
+	float		viewmodifier;
 
 	AngleVectors (sv_player->v.angles, forward, right, up);
 
@@ -523,8 +535,6 @@ void SV_AirMove (void)
 
 	VectorCopy (wish_velocity, wish_direction);
 	wish_speed = VectorNormalize(wish_direction);
-	//VectorCopy (velocity, current_direction);
-	//VectorNormalize(current_direction);
 
 	//limiting wish velocity to max speed
 	if (wish_speed > sv_player->v.phys_speed)
@@ -539,12 +549,9 @@ void SV_AirMove (void)
 	}
 	else
 	{
-		wallrun_previous_status = sv_player->v.wallrun;
 		sv_player->v.wallrun = 0; //reset
 		if (onground)
 		{
-			if (sv_player->v.wall_jumps)
-				sv_player->v.wall_jumps = 0;
 			SV_UserFriction(sv_player->v.phys_friction);
 			SV_Accelerate(wish_speed, wish_direction);
 		}
@@ -554,61 +561,75 @@ void SV_AirMove (void)
 			current_velocity[2] = 0;
 			speed2d = VectorNormalize(current_velocity);
 			speedscale = speed2d / sv_player->v.phys_speed;
-			//speed2d = clamp_f(0, speed2d, 1);
 
-			SV_WallRunDetection();
+			if (sv_player->v.b_slide)
+				sv_player->v.wallrun = 0;
+			else
+				SV_WallRunDetection();
+
 			if (sv_player->v.wallrun)
 			{
-				if (!wallrun_previous_status && sv_player->v.velocity[2] < 0)
-				{
-					sv_player->v.velocity[2] *= 0.5;
-				}
-				// slide along the wall				 
-				CrossProduct(sv_player->v.wall_normal, down, wall_vector); // find a vector along the wall
-				VectorNormalize(wall_vector);
-				wall_direction = DotProduct(wish_direction, wall_vector); //decide at which direction we want to go
-				if (wall_direction < 0)
-				{
-					VectorScale(wall_vector, -1, wall_vector);
-				}
-				VectorAdd(wall_vector, wish_direction, wall_vector);
-				VectorNormalize(wall_vector);
-				VectorScale(wall_vector, wish_speed, wish_velocity);
+				sv_player->v.phys_gravity = 1;
 
-				//gravity
-
-				sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speedscale, 1) * 0.55));
-				if (sv_player->v.velocity[2] < WALLRUN_VERTICALSPEED_THRESHOLD && sv_player->v.velocity[2] > -WALLRUN_VERTICALSPEED_THRESHOLD)
+				// performe these only when directional buttons pressed
+				if ( fmove || smove )
 				{
-					sv_player->v.phys_gravity *= LERP(1, 0.5, (clamp_f (0, speed2d / (sv_player->v.phys_speed * WALLRUN_EXTRASPEED), 1)));
-				}
+				// look direction dependant climb (horizon line or below, with additional angle to compensate slight downward looking)
+					//viewmodifier = -16 * clamp_f(-20, sv_player->v.v_angle[0] - 20, 30);
+					//viewmodifier += 300;
+					int sign;
+					float current_z;
+
+					if (speed2d > 450 && sv_player->v.b_sprint)
+					{
+						sign = 1;
+						current_z = sv_player->v.velocity[2];
+						viewmodifier = sv_player->v.v_angle[0] - 10;
+
+						if (viewmodifier > 0)
+							sign = -1;
+
+						viewmodifier = sign * floor(exp(abs(viewmodifier)));
+						viewmodifier = clamp_f(-50, viewmodifier, 200) * q_max(1, speed2d / 500);
+						//sv_player->v.velocity[2] = viewmodifier;
+						sv_player->v.velocity[2] = expDecay(sv_player->v.velocity[2], viewmodifier, 4, host_frametime);
+					}
+
+					//Con_DPrintf("viewmodifier = %f \n", viewmodifier);
+					//sv_player->v.velocity[2] += host_frametime * sv_player->v.phys_gravity * viewmodifier;
+					// sv_player->v.b_sprint
+					// sv_player->v.b_slide
+					// sv_player->v.button2
+					
+				// slide along the wall		
+					// find a vector along the wall
+					CrossProduct(sv_player->v.wall_normal, down, wall_vector); 
+					VectorNormalize(wall_vector);
+					//decide at which direction we want to go
+					wall_direction = DotProduct(wish_direction, wall_vector); 
+					if (wall_direction < 0)
+						VectorScale(wall_vector, -1, wall_vector);
+					VectorAdd(wall_vector, wish_direction, wall_vector);
+					VectorNormalize(wall_vector);
 
 				//wall S U C C
-				// i used current velocity here to store the sucction vector, don't be confused
-				VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, current_velocity);
-				VectorScale(current_velocity, clamp_f(0, speedscale, 1), current_velocity);
-				velocity[0] += current_velocity[0];
-				velocity[1] += current_velocity[1];
-
-				//move and fall faster when holding crouch
-				if (sv_player->v.b_slide)
-				{
-					if (velocity[2] < 0)
-					{
-						gravity_multiplier = 1 + CLAMP(0, velocity[2] / -300, 0.5);
-						wish_speed *= gravity_multiplier;
-						//VectorScale(wish_velocity, gravity_multiplier, wish_velocity);
-					}
-					sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speedscale, 1) * 0.4));
+					VectorScale(sv_player->v.wall_normal, -1 * host_frametime * 160, suction_vector);
+					VectorScale(suction_vector, clamp_f(0, speedscale, 1), suction_vector);
+					velocity[0] += suction_vector[0];
+					velocity[1] += suction_vector[1];
 				}
+				sv_player->v.phys_gravity = 1 * (1 - (clamp_f(0, speedscale, 1) * 0.5));
+				//Con_DPrintf("sv_player->v.phys_gravity = %f \n", sv_player->v.phys_gravity);
 			}
 			else // not wallrunning
 			{
-				sv_player->v.phys_gravity = 1; // 0.9
+				sv_player->v.phys_gravity = 1;
 			}
 
-			//Con_DPrintf("wish_speed = %f, wish_direction = [%f,%f,%f] \n", wish_speed, wish_direction[0], wish_direction[1], wish_direction[2]);
-			SV_UserFriction(clamp_f(0, speedscale, 5) * 0.1);
+			if (sv_player->v.wallrun && !wish_speed)
+				SV_UserFriction(2);
+			//else
+			//	SV_UserFriction(clamp_f(0, speedscale, 5) * 0.1);
 			SV_AirAccelerate(wish_speed, wish_velocity);
 			SV_Q2AirAccelerate(wish_speed, wish_direction);
 		}
@@ -697,15 +718,19 @@ void SV_ReadClientMove (usercmd_t *move)
 	host_client->num_pings++;
 
 // read current angles
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		//johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
 		if (sv.protocol == PROTOCOL_NETQUAKE)
-			angle[i] = MSG_ReadAngle (sv.protocolflags);
+			angle[i] = MSG_ReadAngle(sv.protocolflags);
 		else
-			angle[i] = MSG_ReadAngle16 (sv.protocolflags);
+			angle[i] = MSG_ReadAngle16(sv.protocolflags);
 		//johnfitz
 
 	VectorCopy (angle, host_client->edict->v.v_angle);
+
+	for (i = 0; i < 3; i++)
+		angle[i] = MSG_ReadAngle16(sv.protocolflags);
+	VectorCopy(angle, host_client->edict->v.punchangle);
 
 // read movement
 	move->forwardmove = MSG_ReadShort ();
@@ -722,7 +747,7 @@ void SV_ReadClientMove (usercmd_t *move)
 	host_client->edict->v.b_slide = (bits & 16) >> 4;
 	host_client->edict->v.b_reload = (bits & 32) >> 5;
 	host_client->edict->v.b_melee = (bits & 64) >> 6;
-	host_client->edict->v.b_kick = (bits & 128) >> 7;
+	host_client->edict->v.b_sprint = (bits & 128) >> 7;
 	host_client->edict->v.b_adrenaline = (bits & 256) >> 8;
 
 	host_client->edict->v.player_inputs = 0;

@@ -58,7 +58,7 @@ kbutton_t	in_lookup, in_lookdown, in_moveleft, in_moveright;
 kbutton_t	in_strafe, in_speed, in_use, in_jump, in_attack;
 kbutton_t	in_up, in_down;
 //qsprawl
-kbutton_t	in_attack2, in_slide, in_reload, in_melee, in_kick, in_adrenaline;
+kbutton_t	in_attack2, in_slide, in_reload, in_melee, in_sprint, in_adrenaline;
 
 int			in_impulse;
 
@@ -187,8 +187,8 @@ void IN_ReloadDown(void) { KeyDown(&in_reload); }
 void IN_ReloadUp(void) { KeyUp(&in_reload); }
 void IN_MeleeDown(void) { KeyDown(&in_melee); }
 void IN_MeleeUp(void) { KeyUp(&in_melee); }
-void IN_KickDown(void) { KeyDown(&in_kick); }
-void IN_KickUp(void) { KeyUp(&in_kick); }
+void IN_SprintDown(void) { KeyDown(&in_sprint); }
+void IN_SprintUp(void) { KeyUp(&in_sprint); }
 void IN_AdrenalineDown(void) { KeyDown(&in_adrenaline); }
 void IN_AdrenalineUp(void) { KeyUp(&in_adrenaline); }
 
@@ -402,7 +402,7 @@ void CL_SendMove (const usercmd_t *cmd)
 	sizebuf_t	buf;
 	byte	data[128];
 
-	buf.maxsize = 65536;
+	buf.maxsize = 131104;//65536;
 	buf.cursize = 0;
 	buf.data = data;
 
@@ -417,13 +417,16 @@ void CL_SendMove (const usercmd_t *cmd)
 
 		MSG_WriteFloat (&buf, cl.mtime[0]);	// so server can get ping times
 
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 			//johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
 			if (cl.protocol == PROTOCOL_NETQUAKE)
-				MSG_WriteAngle (&buf, cl.viewangles[i], cl.protocolflags);
+				MSG_WriteAngle(&buf, cl.viewangles[i], cl.protocolflags);
 			else
-				MSG_WriteAngle16 (&buf, cl.viewangles[i], cl.protocolflags);
+				MSG_WriteAngle16(&buf, cl.viewangles[i], cl.protocolflags);
 			//johnfitz
+
+		for (i = 0; i < 3; i++)
+			MSG_WriteAngle16(&buf, cl.punchangle[i], cl.protocolflags);
 
 		MSG_WriteShort (&buf, cmd->forwardmove);
 		MSG_WriteShort (&buf, cmd->sidemove);
@@ -462,9 +465,9 @@ void CL_SendMove (const usercmd_t *cmd)
 			bits |= 64;
 		in_melee.state &= ~2;
 
-		if (in_kick.state & 3)
+		if (in_sprint.state & 3)
 			bits |= 128;
-		in_kick.state &= ~2;
+		in_sprint.state &= ~2;
 
 		if (in_adrenaline.state & 3)
 			bits |= 256;
@@ -560,8 +563,8 @@ void CL_InitInput (void)
 	Cmd_AddCommand("-reload", IN_ReloadUp);
 	Cmd_AddCommand("+melee", IN_MeleeDown);
 	Cmd_AddCommand("-melee", IN_MeleeUp);
-	Cmd_AddCommand("+kick", IN_KickDown);
-	Cmd_AddCommand("-kick", IN_KickUp);
+	Cmd_AddCommand("+sprint", IN_SprintDown);
+	Cmd_AddCommand("-sprint", IN_SprintUp);
 	Cmd_AddCommand("+adrenaline", IN_AdrenalineDown);
 	Cmd_AddCommand("-adrenaline", IN_AdrenalineUp);
 }
