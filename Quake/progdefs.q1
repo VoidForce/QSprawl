@@ -165,7 +165,9 @@ typedef struct
 	float		player_inputs;
 	float		entity_type;
 	float		wallrun;
+	float		wall_energy;
 	vec3_t		wall_normal;
+	vec3_t		wall_normal_forward;
 	vec3_t		viewmodeloffset_angles;
 	float		adrenaline;
 	float		engineflags;
@@ -179,4 +181,4 @@ typedef struct
 	float		info_head_max;
 } entvars_t;
 
-#define PROGHEADER_CRC 25398
+#define PROGHEADER_CRC 18945
